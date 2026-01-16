@@ -3,12 +3,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, Star, ChevronRight 
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- CONFIG ---
-const API_URL = 'http://localhost:3001';
+// --- BULLETPROOF CONFIG ---
+const getBackendUrl = () => {
+  // 1. Explicit Env Var (Production)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  const hostname = window.location.hostname;
+
+  // 2. Codespaces / Gitpod Auto-Detection
+  // Looks for the specific "-5173" pattern that Codespaces uses
+  if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
+    if (hostname.includes('-5173')) {
+      return `https://${hostname.replace('-5173', '-3001')}`;
+    }
+  }
+
+  // 3. Fallback for Localhost
+  return 'http://localhost:3001';
+};
+
+const API_URL = getBackendUrl();
 
 // --- ANIMATION VARIANTS ---
 const fadeInUp = {
@@ -47,7 +67,6 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           <div className={`p-2 rounded-lg transition-all duration-300 ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          {/* UPDATED: Added text-center to center 'Notary Service' under 'Signature Seal' */}
           <div className="text-center">
             <h1 className={`font-serif text-2xl font-bold leading-none tracking-tight ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
             <span className={`text-[10px] tracking-[0.25em] uppercase font-bold block mt-1 opacity-80 ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Notary Service</span>
@@ -139,7 +158,8 @@ const AIChatWidget = ({ onRecommend }) => {
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting right now." }]);
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting to the server. Please check your connection." }]);
     } finally {
       setIsLoading(false);
     }
@@ -220,7 +240,6 @@ const AIChatWidget = ({ onRecommend }) => {
   );
 };
 
-// Booking Modal Component
 const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ service: '', date: '', time: '', name: '', email: '', address: '' });
@@ -242,8 +261,10 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
       if (res.ok) {
         setSuccess(true);
         setTimeout(() => { onClose(); setSuccess(false); setStep(1); setFormData({ service: '', date: '', time: '', name: '', email: '', address: '' }); }, 2000);
+      } else {
+        alert("Booking failed (Server Error)");
       }
-    } catch (err) { alert("Booking failed."); } finally { setIsSubmitting(false); }
+    } catch (err) { alert("Booking failed (Network Error)"); } finally { setIsSubmitting(false); }
   };
 
   return (
@@ -344,14 +365,99 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   );
 };
 
-// Admin Dashboard Component
-const AdminDashboard = () => {
+// --- AUTH & ADMIN COMPONENTS ---
+
+const LoginScreen = ({ onLogin }) => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        onLogin(data.token);
+      } else {
+        setError(data.error || "Login failed");
+      }
+    } catch (err) {
+      console.error(err);
+      // DEBUG: Show the exact URL we tried to hit
+      setError(`Cannot connect to: ${API_URL}. Ensure server is running.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-brand-navy-dark flex items-center justify-center p-6">
+      <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md text-center">
+        <div className="w-20 h-20 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-6">
+          <Lock className="w-10 h-10 text-brand-navy-dark" />
+        </div>
+        <h2 className="text-2xl font-bold text-brand-navy-dark mb-2">Admin Access</h2>
+        <p className="text-gray-500 mb-8">Please enter your master password.</p>
+        
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="relative">
+            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password" 
+              className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-teal outline-none transition-all"
+            />
+          </div>
+          
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-start gap-2 text-left">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <p>{error}</p>
+            </div>
+          )}
+          
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-brand-navy-dark text-white font-bold py-4 rounded-xl hover:bg-brand-teal transition-all disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Unlock Dashboard'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/bookings`).then(res => res.json()).then(data => { setBookings(data); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+    fetch(`${API_URL}/api/bookings`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then(data => { setBookings(data); setLoading(false); })
+      .catch((err) => {
+        console.error(err);
+        onLogout();
+      });
+  }, [token, onLogout]);
 
   return (
     <div className="container mx-auto px-6 py-24 min-h-screen bg-gray-50/50">
@@ -360,8 +466,13 @@ const AdminDashboard = () => {
           <div className="p-3 bg-white shadow-sm rounded-xl"><Lock className="w-8 h-8 text-brand-gold" /></div>
           Admin Portal
         </h2>
-        <div className="mt-4 md:mt-0 bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100 text-sm font-bold text-brand-teal">
-          {bookings.length} Active Bookings
+        <div className="flex items-center gap-4 mt-4 md:mt-0">
+          <div className="bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100 text-sm font-bold text-brand-teal">
+            {bookings.length} Active Bookings
+          </div>
+          <button onClick={onLogout} className="bg-red-50 text-red-500 p-3 rounded-full hover:bg-red-100 transition-colors">
+            <LogOut size={20} />
+          </button>
         </div>
       </div>
       
@@ -577,10 +688,22 @@ function App() {
   const [view, setView] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
+  const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
 
   const handleBookingOpen = (service = null) => {
     if (service) setPreSelectedService(service);
     setIsBookingOpen(true);
+  };
+
+  const handleLogin = (token) => {
+    localStorage.setItem('adminToken', token);
+    setAdminToken(token);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    setAdminToken(null);
+    setView('home');
   };
 
   return (
@@ -596,7 +719,7 @@ function App() {
             <AIChatWidget onRecommend={(service) => handleBookingOpen(service)} />
           </>
         ) : (
-          <AdminDashboard />
+          !adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />
         )}
       </main>
       <Footer onViewChange={setView} />

@@ -6,7 +6,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, // Needed for Codespaces to expose the port
+    host: true, 
     port: 5173,
+  },
+  build: {
+    outDir: 'dist',
   }
 })
