@@ -1,0 +1,18 @@
+node_modulesclient/node_modulesserver/node_modules.envdist.DS_Store
+### **Step 2: Clean up GitHub (Run in Terminal)**
+We need to remove the `node_modules` you already uploaded without deleting them from your computer.
+
+Run these commands in your **Codespaces Terminal** (one by one):
+
+```bash
+# 1. Tell Git to stop tracking the node_modules folders
+git rm -r --cached node_modules
+git rm -r --cached client/node_modules
+git rm -r --cached server/node_modules
+
+# 2. Add the new ignore file
+git add .gitignore
+
+# 3. Commit and Push the cleanup
+git commit -m "Fix: Remove node_modules from Git history"
+git push
