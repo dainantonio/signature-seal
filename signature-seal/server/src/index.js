@@ -11,7 +11,6 @@ const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
 // --- SECURITY CONFIG ---
-// Reads from environment variables, falls back to defaults for dev
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 
@@ -20,7 +19,7 @@ app.use(express.json());
 
 // --- HELPER: SIMULATE EMAIL SENDING ---
 const sendConfirmationEmail = async (email, name, date, time) => {
-  // TODO: Integrate SendGrid or Resend here for real emails
+  // TODO: Integrate SendGrid or Resend here for real production emails
   console.log(`[EMAIL MOCK] Sending confirmation to ${email} for ${name} at ${time} on ${date}`);
   return new Promise(resolve => setTimeout(resolve, 500)); 
 };
@@ -38,7 +37,7 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- AI LOGIC ---
+// --- AI LOGIC (UPDATED FOR COMPLIANCE) ---
 const recommendService = (query) => {
   const lowerQuery = query.toLowerCase();
   
@@ -46,7 +45,7 @@ const recommendService = (query) => {
     return {
       service: "Loan Signing",
       confidence: "High",
-      reasoning: "Real estate transactions require a certified Loan Signing Agent.",
+      reasoning: "Real estate transactions require a certified Loan Signing Agent. Our flat rate includes printing and courier service.",
       estimatedPrice: "$150 flat rate",
       action: "book_loan"
     };
@@ -57,7 +56,7 @@ const recommendService = (query) => {
       service: "Estate Planning",
       confidence: "High",
       reasoning: "These documents are sensitive. We recommend our Estate Planning service.",
-      estimatedPrice: "$35 + witness fees",
+      estimatedPrice: "$35 + State Fees ($5 OH / $10 WV per stamp)",
       action: "book_general"
     };
   }
@@ -67,7 +66,7 @@ const recommendService = (query) => {
       service: "Vehicle Title Transfer",
       confidence: "Medium",
       reasoning: "For vehicle transactions, a standard mobile notary service is perfect.",
-      estimatedPrice: "$35 + travel",
+      estimatedPrice: "$35 + State Fees ($5 OH / $10 WV per stamp)",
       action: "book_general"
     };
   }
@@ -76,18 +75,19 @@ const recommendService = (query) => {
     service: "Mobile Notary",
     confidence: "Medium",
     reasoning: "A standard Mobile Notary appointment fits your needs.",
-    estimatedPrice: "$35 + travel",
+    estimatedPrice: "$35 + State Fees ($5 OH / $10 WV per stamp)",
     action: "book_general"
   };
 };
 
 // --- ROUTES ---
 
-// Health Check (Important for deployment platforms)
+// Health Check
 app.get('/', (req, res) => {
   res.send('Signature Seal API is running.');
 });
 
+// AI Recommendation
 app.post('/api/recommend', (req, res) => {
   try {
     const { query } = req.body;
@@ -98,6 +98,7 @@ app.post('/api/recommend', (req, res) => {
   }
 });
 
+// Admin Login
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
@@ -108,6 +109,7 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+// Create Booking
 app.post('/api/bookings', async (req, res) => {
   try {
     const { name, email, service, date, time, notes, address } = req.body;
@@ -129,6 +131,7 @@ app.post('/api/bookings', async (req, res) => {
   }
 });
 
+// Get Bookings (Protected)
 app.get('/api/bookings', authenticateToken, async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });

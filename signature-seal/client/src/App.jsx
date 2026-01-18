@@ -9,22 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  // 1. Explicit Env Var (Production)
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   const hostname = window.location.hostname;
-
-  // 2. Codespaces / Gitpod Auto-Detection
-  // Looks for the specific "-5173" pattern that Codespaces uses
   if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
-    if (hostname.includes('-5173')) {
-      return `https://${hostname.replace('-5173', '-3001')}`;
-    }
+    if (hostname.includes('-5173')) return `https://${hostname.replace('-5173', '-3001')}`;
   }
-
-  // 3. Fallback for Localhost
   return 'http://localhost:3001';
 };
 
@@ -57,24 +46,13 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   }, []);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-3' : 'bg-transparent border-transparent py-6'}`}>
-      <div className="container mx-auto px-6 flex justify-between items-center">
-        {/* Logo Area */}
-        <div 
-          className="flex items-center gap-3 cursor-pointer group" 
-          onClick={() => onViewChange('home')}
-        >
-          <div className={`p-2 rounded-lg transition-all duration-300 ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
-            <Award className="w-8 h-8" />
-          </div>
-          <div className="text-center">
-            <h1 className={`font-serif text-2xl font-bold leading-none tracking-tight ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[10px] tracking-[0.25em] uppercase font-bold block mt-1 opacity-80 ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Notary Service</span>
-          </div>
-        </div>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
+      
+      {/* --- DESKTOP VIEW (Strict Grid for Symmetry) --- */}
+      <div className="hidden md:grid container mx-auto px-6 h-16 grid-cols-3 items-center"> 
         
-        {/* Centered Navigation for Symmetry */}
-        <div className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 space-x-10">
+        {/* Left: Navigation */}
+        <div className="justify-self-start flex items-center space-x-8">
           {currentView === 'home' && ['Services', 'Why Us', 'Pricing'].map((item) => (
             <a 
               key={item} 
@@ -86,10 +64,29 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           ))}
         </div>
 
-        {/* Action Button */}
-        <div className="hidden md:block">
+        {/* Center: Logo */}
+        <div 
+          className="justify-self-center flex items-center gap-3 cursor-pointer group select-none" 
+          onClick={() => onViewChange('home')}
+        >
+          <div className={`w-11 h-11 rounded-xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+            <Award className="w-6 h-6" />
+          </div>
+          
+          <div className="flex flex-col justify-center items-center"> 
+            <h1 className={`font-serif text-xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+              Signature Seal
+            </h1>
+            <span className={`text-[10px] leading-none tracking-widest uppercase font-bold mt-1 whitespace-nowrap text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+              Notary Service
+            </span>
+          </div>
+        </div>
+        
+        {/* Right: CTA Button */}
+        <div className="justify-self-end">
           <button 
-            onClick={onBookClick} 
+            onClick={() => onBookClick()} 
             className={`font-bold px-8 py-3 rounded-full transition-all duration-300 transform hover:-translate-y-0.5 ${
               scrolled 
                 ? 'bg-brand-teal text-white shadow-lg hover:shadow-brand-teal/30' 
@@ -99,11 +96,36 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
             Book Now
           </button>
         </div>
+      </div>
 
-        {/* Mobile Toggle */}
-        <button className={`md:hidden z-50 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
-        </button>
+      {/* --- MOBILE VIEW (Strict 3-Column Grid for Perfect Center) --- */}
+      <div className="md:hidden container mx-auto px-6 h-16 grid grid-cols-3 items-center">
+        
+        {/* Left Spacer */}
+        <div className="justify-self-start w-8"></div>
+
+        {/* Center Logo */}
+        <div 
+          className="justify-self-center flex flex-col items-center justify-center cursor-pointer w-full" 
+          onClick={() => onViewChange('home')}
+        >
+           <div className={`w-9 h-9 rounded-lg mb-1 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+            <Award className="w-5 h-5" />
+          </div>
+          <h1 className={`font-serif text-lg font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+            Signature Seal
+          </h1>
+          <span className={`text-[9px] leading-none uppercase font-bold mt-0.5 whitespace-nowrap text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+            Notary Service
+          </span>
+        </div>
+
+        {/* Right Menu Toggle */}
+        <div className="justify-self-end">
+          <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -392,7 +414,6 @@ const LoginScreen = ({ onLogin }) => {
       }
     } catch (err) {
       console.error(err);
-      // DEBUG: Show the exact URL we tried to hit
       setError(`Cannot connect to: ${API_URL}. Ensure server is running.`);
     } finally {
       setLoading(false);
@@ -423,7 +444,7 @@ const LoginScreen = ({ onLogin }) => {
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-start gap-2 text-left">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-              <p>{error}</p>
+              <p className="break-all">{error}</p>
             </div>
           )}
           
@@ -514,21 +535,21 @@ const Hero = ({ onBookClick }) => (
       <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-dark via-transparent to-transparent opacity-80"></div>
     </div>
 
-    <div className="container mx-auto px-6 relative z-10 pt-20 text-center">
+    <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-5xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-8">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-10">
           <Star className="w-3 h-3 fill-current" /> Premier Notary Service
         </div>
-        <h1 className="text-6xl md:text-8xl font-bold leading-tight mb-8 font-serif text-white tracking-tight">
+        <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold leading-tight mb-8 font-serif text-white tracking-tight">
           Trust in Every <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal via-white to-brand-gold">Signature.</span>
         </h1>
-        <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
           Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule.
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={onBookClick} className="bg-brand-teal text-white font-bold text-lg px-12 py-5 rounded-full shadow-[0_0_40px_-10px_rgba(26,188,156,0.5)] hover:bg-teal-500 hover:scale-105 transition-all duration-300">
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold text-lg px-12 py-5 rounded-full shadow-[0_0_40px_-10px_rgba(26,188,156,0.5)] hover:bg-teal-500 hover:scale-105 transition-all duration-300">
             Book Appointment
           </button>
           <a href="#services" className="bg-transparent border border-white/20 text-white font-bold text-lg px-12 py-5 rounded-full hover:bg-white hover:text-brand-navy-dark transition-all duration-300 backdrop-blur-sm">
@@ -584,6 +605,7 @@ const Services = () => (
 
 const WhyUs = () => (
   <section id="why-us" className="py-32 bg-brand-navy-dark text-white relative overflow-hidden">
+    {/* Decorative Elements */}
     <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-teal rounded-full blur-[120px]"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-gold rounded-full blur-[120px]"></div>
@@ -626,14 +648,14 @@ const Pricing = ({ onBookClick }) => (
             {/* Standard Card */}
             <div className="bg-white p-10 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100 flex flex-col items-center text-center group">
                 <span className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-4">Standard</span>
-                <h3 className="text-3xl font-bold text-brand-navy-dark mb-2">General Notary</h3>
+                <h3 className="text-3xl font-bold text-brand-navy-dark mb-2">Mobile Notary</h3>
                 <div className="text-6xl font-serif font-bold text-brand-navy-dark my-8 group-hover:scale-110 transition-transform duration-500">$35</div>
                 <ul className="space-y-4 mb-10 text-left w-full max-w-xs mx-auto">
-                    {['Travel included (15 miles)', '1 Notarial Act', 'State-compliant seal', '$5 per extra signature'].map((item, i) => (
+                    {['Travel included (15 miles)', '1 Notarial Act included', 'State-compliant seal', 'State-regulated fee per stamp ($5 OH / $10 WV)'].map((item, i) => (
                       <li key={i} className="flex items-center gap-3 text-gray-600 font-medium"><Check size={18} className="text-brand-teal shrink-0"/>{item}</li>
                     ))}
                 </ul>
-                <button onClick={onBookClick} className="w-full py-4 rounded-xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all duration-300">Choose Standard</button>
+                <button onClick={() => onBookClick('Mobile Notary')} className="w-full py-4 rounded-xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all duration-300">Choose Standard</button>
             </div>
 
             {/* Premium Card */}
@@ -647,12 +669,12 @@ const Pricing = ({ onBookClick }) => (
                       <li key={i} className="flex items-center gap-3 text-gray-300 font-medium"><Check size={18} className="text-brand-teal shrink-0"/>{item}</li>
                     ))}
                 </ul>
-                <button onClick={onBookClick} className="w-full py-4 rounded-xl bg-brand-teal text-white font-bold hover:bg-teal-500 shadow-lg shadow-brand-teal/25 transition-all duration-300">Choose Premium</button>
+                <button onClick={() => onBookClick('Loan Signing')} className="w-full py-4 rounded-xl bg-brand-teal text-white font-bold hover:bg-teal-500 shadow-lg shadow-brand-teal/25 transition-all duration-300">Choose Premium</button>
             </div>
         </div>
         
         <div className="mt-16 text-center">
-          <p className="text-gray-500">Need something custom? <button onClick={onBookClick} className="text-brand-navy-dark font-bold border-b-2 border-brand-gold hover:text-brand-teal transition-colors">Contact us for a quote</button></p>
+          <p className="text-gray-500">Need something custom? <button onClick={() => onBookClick()} className="text-brand-navy-dark font-bold border-b-2 border-brand-gold hover:text-brand-teal transition-colors">Contact us for a quote</button></p>
         </div>
     </div>
   </section>
@@ -715,7 +737,7 @@ function App() {
             <Hero onBookClick={() => handleBookingOpen()} />
             <Services />
             <WhyUs />
-            <Pricing onBookClick={() => handleBookingOpen()} />
+            <Pricing onBookClick={(service) => handleBookingOpen(service)} />
             <AIChatWidget onRecommend={(service) => handleBookingOpen(service)} />
           </>
         ) : (
