@@ -1,5 +1,1 @@
-{
-  "build": {
-    "rootDirectory": "/server"
-  }
-}
+{ "build": { "rootDirectory": "/server" } }
