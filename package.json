@@ -1,9 +1,0 @@
-{
-      "name": "signature-seal-root",
-      "version": "1.0.0",
-      "scripts": {
-        "start": "cd server && npm install && npx prisma db push && node src/index.js",
-        "build": "cd server && npm install && npx prisma generate"
-      },
-      "dependencies": {}
-    }

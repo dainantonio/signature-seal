@@ -1,9 +1,0 @@
-{
-  "build": {
-    "rootDirectory": "server"
-  },
-  "deploy": {
-    "startCommand": "npm start",
-    "restartPolicyType": "ON_FAILURE"
-  }
-}
