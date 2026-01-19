@@ -14,7 +14,8 @@
     "lucide-react": "^0.263.1",
     "framer-motion": "^10.15.1",
     "clsx": "^2.0.0",
-    "tailwind-merge": "^1.14.0"
+    "tailwind-merge": "^1.14.0",
+    "date-fns": "^2.30.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
