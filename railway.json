@@ -1,6 +1,6 @@
 {
   "build": {
-    "rootDirectory": "server"
+    "rootDirectory": "/"
   },
   "deploy": {
     "startCommand": "npm start",

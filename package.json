@@ -2,10 +2,11 @@
   "name": "signature-seal-fullstack",
   "version": "1.0.0",
   "scripts": {
-    "start": "npm run server",
-    "server": "cd server && npm install && npm start",
-    "client": "echo Skipping client build on backend",
-    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+    "start": "cd server && npm install && npm start",
+    "server": "cd server && npm start",
+    "client": "echo Frontend skipped on backend server",
+    "build": "cd server && npm install && npx prisma generate",
+    "install-all": "npm install && cd server && npm install"
   },
   "dependencies": {
     "concurrently": "^8.2.0"
