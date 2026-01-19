@@ -1,0 +1,27 @@
+{
+  "build": {
+    "rootDirectory": "server"
+  },
+  "deploy": {
+    "startCommand": "npm start",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
+```
+*(Notice I changed `signature-seal/server` to just `server`)*
+
+---
+
+### **Step 3: Commit and Push the Fix**
+
+Now we need to tell GitHub that we moved everything.
+
+```bash
+# 1. Stage the moved files
+git add .
+
+# 2. Commit the structural change
+git commit -m "Fix: Flatten directory structure to root"
+
+# 3. Push to GitHub
+git push
