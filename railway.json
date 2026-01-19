@@ -3,7 +3,7 @@
     "rootDirectory": "/"
   },
   "deploy": {
-    "startCommand": "cd server && npm install && npx prisma db push && node src/index.js",
+    "startCommand": "npm start",
     "restartPolicyType": "ON_FAILURE"
   }
 }

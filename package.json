@@ -1,12 +1,9 @@
 {
-  "name": "signature-seal-fullstack",
+  "name": "signature-seal-root",
   "version": "1.0.0",
   "scripts": {
-    "start": "cd server && npm install && npm start",
-    "server": "cd server && npm start",
-    "client": "echo Frontend skipped on backend server",
-    "build": "cd server && npm install && npx prisma generate",
-    "install-all": "npm install && cd server && npm install"
+    "postinstall": "cd server && npm install && npx prisma generate",
+    "start": "cd server && npx prisma db push --accept-data-loss && node src/index.js"
   },
   "dependencies": {
     "concurrently": "^8.2.0"
