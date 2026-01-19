@@ -19,13 +19,3 @@
     "nodemon": "^3.0.1"
   }
 }
-```
-
-### **What to do next:**
-
-1.  **Commit & Push:**
-    In your Codespace terminal:
-    ```bash
-    git add .
-    git commit -m "Fix: Add postinstall script for Railway deployment"
-    git push
