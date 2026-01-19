@@ -2,9 +2,7 @@
 
 echo "🧠 Performing Root Canal on Project Configuration..."
 
-# 1. REWRITE ROOT PACKAGE.JSON
-# We are removing any mention of the 'client'. 
-# If Railway runs this file, it will now simply redirect to the server.
+
 echo '{
   "name": "signature-seal-root",
   "version": "1.0.0",
@@ -17,7 +15,6 @@ echo '{
   }
 }' > package.json
 
-# 2. ENSURE SERVER PACKAGE.JSON IS CLEAN
 echo '{
   "name": "server",
   "version": "1.0.0",
@@ -41,8 +38,7 @@ echo '{
   }
 }' > server/package.json
 
-# 3. UPDATE RAILWAY CONFIG
-# We tell Railway to just use the Root directory, because we just fixed the Root to be safe.
+
 echo '{
   "build": {
     "rootDirectory": "/"
@@ -53,7 +49,7 @@ echo '{
   }
 }' > railway.json
 
-# 4. PUSH TO GITHUB
+
 git add .
 git commit -m "Fix: Make Root package.json act as Backend Proxy"
 git push

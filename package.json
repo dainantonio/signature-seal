@@ -1,13 +1,9 @@
 {
-  "name": "signature-seal-fullstack",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "echo 'Use npm run server or npm run client'",
-    "server": "cd server && npm install && npm start",
-    "client": "cd client && npm install && npm run dev",
-    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
-  },
-  "dependencies": {
-    "concurrently": "^8.2.0"
-  }
-}
+      "name": "signature-seal-root",
+      "version": "1.0.0",
+      "scripts": {
+        "start": "cd server && npm install && npx prisma db push && node src/index.js",
+        "build": "cd server && npm install && npx prisma generate"
+      },
+      "dependencies": {}
+    }
