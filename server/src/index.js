@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
+const { Resend } = require('resend');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -14,14 +15,45 @@ const PORT = process.env.PORT || 3001;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 
+// --- EMAIL CONFIG ---
+const resend = new Resend(process.env.RESEND_API_KEY);
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
+
 app.use(cors());
 app.use(express.json());
 
-// --- HELPER: SIMULATE EMAIL SENDING ---
-const sendConfirmationEmail = async (email, name, date, time) => {
-  // TODO: Integrate SendGrid or Resend here for real production emails
-  console.log(`[EMAIL MOCK] Sending confirmation to ${email} for ${name} at ${time} on ${date}`);
-  return new Promise(resolve => setTimeout(resolve, 500)); 
+// --- HELPER: SEND REAL EMAIL VIA RESEND ---
+const sendConfirmationEmail = async (email, name, service, date, time) => {
+  if (!process.env.RESEND_API_KEY) {
+    console.log("⚠️ No RESEND_API_KEY found. Email skipped.");
+    return;
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev', // Default Resend test domain
+      to: ADMIN_EMAIL, // This sends the notification to YOU
+      subject: `New Booking: ${name} - ${service}`,
+      html: `
+        <h1>New Appointment Request</h1>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Service:</strong> ${service}</p>
+        <p><strong>Date:</strong> ${date}</p>
+        <p><strong>Time:</strong> ${time}</p>
+        <p><strong>Client Email:</strong> ${email}</p>
+        <hr />
+        <p><em>Login to your dashboard to view full details.</em></p>
+      `
+    });
+
+    if (error) {
+      console.error("Resend Error:", error);
+    } else {
+      console.log("📧 Email sent successfully:", data);
+    }
+  } catch (err) {
+    console.error("Email System Fail:", err);
+  }
 };
 
 // --- MIDDLEWARE ---
@@ -37,7 +69,7 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- AI LOGIC (UPDATED FOR COMPLIANCE) ---
+// --- AI LOGIC (COMPLIANT) ---
 const recommendService = (query) => {
   const lowerQuery = query.toLowerCase();
   
@@ -87,7 +119,6 @@ app.get('/', (req, res) => {
   res.send('Signature Seal API is running.');
 });
 
-// AI Recommendation
 app.post('/api/recommend', (req, res) => {
   try {
     const { query } = req.body;
@@ -98,7 +129,6 @@ app.post('/api/recommend', (req, res) => {
   }
 });
 
-// Admin Login
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
@@ -109,7 +139,6 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-// Create Booking
 app.post('/api/bookings', async (req, res) => {
   try {
     const { name, email, service, date, time, notes, address } = req.body;
@@ -122,7 +151,9 @@ app.post('/api/bookings', async (req, res) => {
       data: { name, email, service, date: new Date(date), time, notes, address }
     });
     
-    await sendConfirmationEmail(email, name, date, time);
+    // Send Real Email Notification
+    await sendConfirmationEmail(email, name, service, date, time);
+    
     console.log(`✅ Booking confirmed for ${name}`);
     res.json(booking);
   } catch (error) {
@@ -131,7 +162,6 @@ app.post('/api/bookings', async (req, res) => {
   }
 });
 
-// Get Bookings (Protected)
 app.get('/api/bookings', authenticateToken, async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
