@@ -46,48 +46,46 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   }, []);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
       
-      {/* --- DESKTOP VIEW (Strict Grid for Symmetry) --- */}
-      <div className="hidden md:grid container mx-auto px-6 h-16 grid-cols-3 items-center"> 
+      {/* --- DESKTOP VIEW --- */}
+      <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
         
-        {/* Left: Navigation */}
-        <div className="justify-self-start flex items-center space-x-8">
-          {currentView === 'home' && ['Services', 'Why Us', 'Pricing'].map((item) => (
-            <a 
-              key={item} 
-              href={`#${item.toLowerCase().replace(' ', '-')}`} 
-              className={`font-medium text-sm tracking-wide transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}
-            >
-              {item}
-            </a>
-          ))}
-        </div>
-
-        {/* Center: Logo */}
+        {/* Logo Area */}
         <div 
-          className="justify-self-center flex items-center gap-3 cursor-pointer group select-none" 
+          className="flex items-center gap-4 cursor-pointer group select-none" 
           onClick={() => onViewChange('home')}
         >
-          <div className={`w-11 h-11 rounded-xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
-            <Award className="w-6 h-6" />
+          {/* Icon Box */}
+          <div className={`w-14 h-14 rounded-2xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+            <Award className="w-8 h-8" />
           </div>
           
+          {/* Text Stack */}
           <div className="flex flex-col justify-center items-center"> 
-            <h1 className={`font-serif text-xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+            <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
             </h1>
-            <span className={`text-[10px] leading-none tracking-widest uppercase font-bold mt-1 whitespace-nowrap text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 whitespace-nowrap text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
               Notary Service
             </span>
           </div>
         </div>
         
-        {/* Right: CTA Button */}
-        <div className="justify-self-end">
+        {/* Right: Navigation + CTA */}
+        <div className="flex items-center space-x-10">
+          {currentView === 'home' && ['Services', 'Why Us', 'Pricing'].map((item) => (
+            <a 
+              key={item} 
+              href={`#${item.toLowerCase().replace(' ', '-')}`} 
+              className={`font-medium text-base tracking-wide transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}
+            >
+              {item}
+            </a>
+          ))}
           <button 
             onClick={() => onBookClick()} 
-            className={`font-bold px-8 py-3 rounded-full transition-all duration-300 transform hover:-translate-y-0.5 ${
+            className={`font-bold px-10 py-3.5 rounded-full transition-all duration-300 transform hover:-translate-y-0.5 text-base ${
               scrolled 
                 ? 'bg-brand-teal text-white shadow-lg hover:shadow-brand-teal/30' 
                 : 'bg-white text-brand-navy-dark hover:bg-brand-gold hover:text-white shadow-xl'
@@ -98,32 +96,37 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
         </div>
       </div>
 
-      {/* --- MOBILE VIEW (Strict 3-Column Grid for Perfect Center) --- */}
-      <div className="md:hidden container mx-auto px-6 h-16 grid grid-cols-3 items-center">
+      {/* --- MOBILE VIEW --- */}
+      <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         
-        {/* Left Spacer */}
-        <div className="justify-self-start w-8"></div>
+        {/* Col 1: Empty Spacer (Left) */}
+        <div className="justify-self-start w-10"></div>
 
-        {/* Center Logo */}
+        {/* Col 2: Logo (Dead Center - Icon Left, Text Centered) */}
         <div 
-          className="justify-self-center flex flex-col items-center justify-center cursor-pointer w-full" 
+          className="justify-self-center flex flex-row items-center gap-3 cursor-pointer w-full justify-center" 
           onClick={() => onViewChange('home')}
         >
-           <div className={`w-9 h-9 rounded-lg mb-1 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
-            <Award className="w-5 h-5" />
+           {/* Icon Box */}
+           <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+            <Award className="w-8 h-8" />
           </div>
-          <h1 className={`font-serif text-lg font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
-            Signature Seal
-          </h1>
-          <span className={`text-[9px] leading-none uppercase font-bold mt-0.5 whitespace-nowrap text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
-            Notary Service
-          </span>
+          
+          {/* Text Stack: Flex Column + Items Center ensures subtitle is centered under title */}
+          <div className="flex flex-col justify-center items-center">
+            <h1 className={`font-serif text-xl sm:text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+              Signature Seal
+            </h1>
+            <span className={`text-[10px] sm:text-xs leading-none uppercase font-bold mt-1 whitespace-nowrap text-center tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+              Notary Service
+            </span>
+          </div>
         </div>
 
-        {/* Right Menu Toggle */}
+        {/* Col 3: Menu Toggle (Right) */}
         <div className="justify-self-end">
           <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+            {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
           </button>
         </div>
       </div>
