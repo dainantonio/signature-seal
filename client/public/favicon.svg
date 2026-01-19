@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Bottom Ribbons: Brand Navy -->
+  <path d="M8.21 13.89L7 23L12 20L17 23L15.79 13.88" fill="#2c3e50" stroke="#2c3e50" stroke-width="2" stroke-linejoin="round"/>
+  
+  <!-- Main Seal Circle: Brand Navy with Gold Border -->
+  <circle cx="12" cy="8" r="7" fill="#2c3e50" stroke="#c59d5f" stroke-width="1.5"/>
+  
+  <!-- Inner Gold Core -->
+  <circle cx="12" cy="8" r="2.5" fill="#c59d5f"/>
+</svg>
