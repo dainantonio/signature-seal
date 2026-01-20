@@ -5,54 +5,73 @@ const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const { Resend } = require('resend');
 
-console.log("🚀 Server process started...");
-
 const app = express();
 const prisma = new PrismaClient();
 
-// Render and other platforms inject the PORT variable. 
-// We must use process.env.PORT or the deployment will fail.
+// Render Requirement: Use the port provided by the environment
 const PORT = process.env.PORT || 3001;
 
 // --- CONFIGURATION ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 
-// --- EMAIL SETUP (CRASH PROTECTION) ---
-// We check if the key exists first. If not, we log a warning instead of crashing.
-const resend = process.env.RESEND_API_KEY 
-  ? new Resend(process.env.RESEND_API_KEY) 
-  : null;
-
+// --- EMAIL SETUP ---
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'notary@example.com';
 
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allows Vercel frontend to communicate with Render backend
+  credentials: true
+}));
 app.use(express.json());
 
-// --- EMAIL HELPER ---
-const sendAdminNotification = async (booking) => {
+// --- NOTIFICATION HELPER ---
+const sendAdminNotification = async (email, name, service, date, time, address, notes) => {
   if (!resend) {
-    console.log("⚠️ Email Notification Skipped: RESEND_API_KEY not found in environment.");
+    console.log("⚠️ Email skipped: RESEND_API_KEY not set.");
     return;
   }
+
   try {
-    await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: ADMIN_EMAIL,
-      subject: `New Booking: ${booking.name}`,
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev', // Default Resend test domain
+      to: ADMIN_EMAIL, 
+      reply_to: email, // <--- ALLOWS YOU TO REPLY DIRECTLY TO THE CUSTOMER
+      subject: `New Booking: ${name} - ${service}`,
       html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2>New Notary Request</h2>
-          <p><strong>Client:</strong> ${booking.name}</p>
-          <p><strong>Service:</strong> ${booking.service}</p>
-          <p><strong>When:</strong> ${booking.date} at ${booking.time}</p>
-          <p><strong>Contact:</strong> ${booking.email}</p>
+        <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Appointment Request</h2>
+          
+          <p><strong>Customer Name:</strong> ${name}</p>
+          <p><strong>Requested Service:</strong> ${service}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${time}</p>
+          <p><strong>Customer Email:</strong> ${email}</p>
+          
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>📍 Meeting Address:</strong></p>
+            <p style="margin: 5px 0 0 0; color: #555;">${address || 'No address provided'}</p>
+          </div>
+
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>📝 Special Instructions/Notes:</strong></p>
+            <p style="margin: 5px 0 0 0; color: #555;">${notes || 'No specific instructions provided'}</p>
+          </div>
+
+          <p style="font-size: 12px; color: #999; margin-top: 30px;">
+            Tip: You can reply directly to this email to contact the customer.
+          </p>
         </div>
       `
     });
-    console.log("📧 Admin notification email sent successfully.");
+
+    if (error) {
+      console.error("Resend Error:", error);
+    } else {
+      console.log("📧 Notification email sent.");
+    }
   } catch (err) {
-    console.error("❌ Resend Email Error:", err.message);
+    console.error("Email processing failed:", err);
   }
 };
 
@@ -61,7 +80,6 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.sendStatus(401);
-
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
@@ -69,75 +87,68 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- AI PRICING LOGIC ---
-const getServiceRecommendation = (query) => {
-  const q = query.toLowerCase();
-  
-  if (q.includes('loan') || q.includes('mortgage') || q.includes('closing')) {
-    return {
-      service: "Loan Signing",
-      reasoning: "Real estate and loan packages require specialized certified agents.",
-      estimatedPrice: "$150 flat rate (includes printing & courier)",
-      action: "book_loan"
-    };
-  }
-  
-  if (q.includes('will') || q.includes('trust') || q.includes('poa')) {
-    return {
-      service: "Estate Planning",
-      reasoning: "Wills and Trusts are sensitive documents. We recommend our specialized mobile service.",
-      estimatedPrice: "$35 base + state fees ($5 OH / $10 WV per stamp)",
-      action: "book_general"
-    };
-  }
+// --- ROUTES ---
 
-  return {
-    service: "Mobile Notary",
-    reasoning: "A standard mobile notary appointment covers most general documents.",
-    estimatedPrice: "$35 base + state fees ($5 OH / $10 WV per stamp)",
-    action: "book_general"
-  };
-};
-
-// --- API ROUTES ---
-
-// Health Check (Critical for Render "Live" status)
-app.get('/', (req, res) => {
-  console.log("📍 Health check ping received.");
-  res.send('Signature Seal API - Status: Active');
-});
+app.get('/', (req, res) => res.send('Signature Seal API - Online'));
 
 app.post('/api/recommend', (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ error: "Query required" });
-  res.json(getServiceRecommendation(query));
+  
+  const q = query.toLowerCase();
+  if (q.includes('loan') || q.includes('mortgage')) {
+    res.json({ 
+        service: "Loan Signing", 
+        reasoning: "Loan packages require specialized agents.", 
+        estimatedPrice: "$150 flat rate", 
+        action: "book_loan" 
+    });
+  } else {
+    res.json({ 
+        service: "Mobile Notary", 
+        reasoning: "Standard notary request.", 
+        estimatedPrice: "$35 base + fees ($5 OH / $10 WV per stamp)", 
+        action: "book_general" 
+    });
+  }
 });
 
 app.post('/api/login', (req, res) => {
-  const { password } = req.body;
-  if (password === ADMIN_PASSWORD) {
+  if (req.body.password === ADMIN_PASSWORD) {
     const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' });
     res.json({ token });
   } else {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Invalid password" });
   }
 });
 
 app.post('/api/bookings', async (req, res) => {
   try {
     const { name, email, service, date, time, notes, address } = req.body;
+
+    if (!name || !email || !service || !date || !time) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
     const booking = await prisma.booking.create({
-      data: { name, email, service, date: new Date(date), time, notes, address }
+      data: { 
+        name, 
+        email, 
+        service, 
+        date: new Date(date), 
+        time, 
+        notes, 
+        address 
+      }
     });
     
-    // Attempt to notify admin via email
-    sendAdminNotification(booking);
+    // Trigger notification with all fields included
+    await sendAdminNotification(email, name, service, date, time, address, notes);
     
-    console.log(`✅ New booking created for ${name}`);
     res.json(booking);
   } catch (error) {
-    console.error("❌ Database Booking Error:", error);
-    res.status(500).json({ error: "Failed to process booking." });
+    console.error("Booking failed:", error);
+    res.status(500).json({ error: "Could not save booking" });
   }
 });
 
@@ -146,12 +157,11 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
     const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(bookings);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch bookings." });
+    res.status(500).json({ error: "Fetch failed" });
   }
 });
 
-// START THE SERVER
+// CRITICAL: Bind to '0.0.0.0' for Render/Cloud deployment
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ SUCCESS: Signature Seal Server is listening on port ${PORT}`);
-  console.log(`🔗 Health check available at: http://0.0.0.0:${PORT}/`);
+  console.log(`🚀 Server live on port ${PORT}`);
 });
