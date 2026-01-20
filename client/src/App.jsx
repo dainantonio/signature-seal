@@ -1,5 +1,5 @@
 // filename: client/src/App.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
@@ -50,18 +50,13 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
       
       {/* --- DESKTOP VIEW --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
-        
-        {/* Logo Area */}
         <div 
           className="flex items-center gap-4 cursor-pointer group select-none" 
           onClick={() => onViewChange('home')}
         >
-          {/* Icon Box */}
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          
-          {/* Text Stack */}
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
@@ -72,7 +67,6 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           </div>
         </div>
         
-        {/* Right: Navigation + CTA */}
         <div className="flex items-center space-x-10">
           {currentView === 'home' && ['Services', 'Why Us', 'Pricing'].map((item) => (
             <a 
@@ -98,32 +92,23 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
 
       {/* --- MOBILE VIEW --- */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
-        
-        {/* Col 1: Empty Spacer (Left) */}
         <div className="justify-self-start w-10"></div>
-
-        {/* Col 2: Logo (Dead Center - Icon Left, Text Centered) */}
         <div 
           className="justify-self-center flex flex-row items-center gap-3 cursor-pointer w-full justify-center" 
           onClick={() => onViewChange('home')}
         >
-           {/* Icon Box */}
            <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          
-          {/* Text Stack: Flex Column + Items Center ensures subtitle is centered under title */}
-          <div className="flex flex-col justify-center items-center">
-            <h1 className={`font-serif text-xl sm:text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+          <div className="flex flex-col justify-center">
+            <h1 className={`font-serif text-xl sm:text-2xl font-bold leading-none whitespace-nowrap ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
             </h1>
-            <span className={`text-[10px] sm:text-xs leading-none uppercase font-bold mt-1 whitespace-nowrap text-center tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+            <span className={`text-[10px] sm:text-xs leading-none uppercase font-bold mt-1 whitespace-nowrap tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
               Notary Service
             </span>
           </div>
         </div>
-
-        {/* Col 3: Menu Toggle (Right) */}
         <div className="justify-self-end">
           <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
@@ -267,11 +252,28 @@ const AIChatWidget = ({ onRecommend }) => {
 
 const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({ service: '', date: '', time: '', name: '', email: '', address: '' });
+  const [formData, setFormData] = useState({ service: '', date: '', time: '', name: '', email: '', address: '', notes: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
+
+  // --- DYNAMIC TIME SLOTS LOGIC ---
+  const timeSlots = useMemo(() => {
+    if (!formData.date) return [];
+    
+    // Create a date object (appending time ensures local timezone is respected in most browsers)
+    const dateObj = new Date(formData.date + 'T12:00:00');
+    const day = dateObj.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+
+    if (day === 0) { // Sunday
+      return []; // Closed
+    } else if (day === 6) { // Saturday (10am - 4pm)
+      return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+    } else { // Mon-Fri (6pm - 9pm)
+      return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
+    }
+  }, [formData.date]);
 
   if (!isOpen) return null;
 
@@ -285,7 +287,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
       });
       if (res.ok) {
         setSuccess(true);
-        setTimeout(() => { onClose(); setSuccess(false); setStep(1); setFormData({ service: '', date: '', time: '', name: '', email: '', address: '' }); }, 2000);
+        setTimeout(() => { onClose(); setSuccess(false); setStep(1); setFormData({ service: '', date: '', time: '', name: '', email: '', address: '', notes: '' }); }, 2000);
       } else {
         alert("Booking failed (Server Error)");
       }
@@ -342,13 +344,32 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
                       <input type="date" className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-brand-teal outline-none" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                      {/* Day Availability Message */}
+                      {formData.date && new Date(formData.date + 'T12:00:00').getDay() === 0 && (
+                        <p className="text-red-500 text-xs font-bold">Closed on Sundays.</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-500 uppercase">Time</label>
-                      <select className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-brand-teal outline-none" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time}>
-                        <option value="">Select</option>
-                        {['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM'].map(t => <option key={t} value={t}>{t}</option>)}
+                      <select 
+                        className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-brand-teal outline-none disabled:bg-gray-100 disabled:text-gray-400" 
+                        onChange={(e) => setFormData({...formData, time: e.target.value})} 
+                        value={formData.time}
+                        disabled={!formData.date || timeSlots.length === 0}
+                      >
+                        <option value="">{timeSlots.length === 0 && formData.date ? "Closed" : "Select"}</option>
+                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
+                    </div>
+                  </div>
+                  
+                  {/* Business Hours Note */}
+                  <div className="bg-blue-50 p-4 rounded-xl flex items-start gap-3 border border-blue-100">
+                    <Clock className="w-5 h-5 text-brand-teal mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-bold text-brand-navy-dark">Business Hours</h4>
+                      <p className="text-xs text-gray-600 mt-1">Mon-Fri: 6pm - 9pm <br/> Sat: 10am - 4pm <br/> Sun: Closed</p>
+                      <p className="text-xs text-brand-teal font-bold mt-2">Appointments available outside listed hours by request.</p>
                     </div>
                   </div>
                 </div>
@@ -359,6 +380,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <input type="text" placeholder="Full Name" className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-teal outline-none bg-white transition-shadow focus:shadow-lg" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-teal outline-none bg-white transition-shadow focus:shadow-lg" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   <textarea placeholder="Meeting Address & Instructions" rows={3} className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-teal outline-none bg-white transition-shadow focus:shadow-lg" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                  <textarea placeholder="Additional Notes (Optional)" rows={2} className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-teal outline-none bg-white transition-shadow focus:shadow-lg" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                 </div>
               )}
 
@@ -520,6 +542,13 @@ const AdminDashboard = ({ token, onLogout }) => {
                 <div className="flex items-center gap-3 text-sm font-medium text-gray-600"><Clock size={16} className="text-brand-gold" /> {booking.time}</div>
                 <div className="flex items-start gap-3 text-sm font-medium text-gray-600"><MapPin size={16} className="text-brand-gold mt-1" /> <span className="flex-1 line-clamp-2">{booking.address || "Virtual / No address"}</span></div>
               </div>
+              
+              {/* Added Notes Section to Admin Card */}
+              {booking.notes && (
+                <div className="mt-4 pt-4 border-t border-gray-50 text-xs text-gray-500 italic">
+                   "{booking.notes}"
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -548,7 +577,7 @@ const Hero = ({ onBookClick }) => (
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal via-white to-brand-gold">Signature.</span>
         </h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
-          Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule.
+          Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule. Appointments available outside listed hours by request.
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center gap-6">
