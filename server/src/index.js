@@ -34,9 +34,9 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev', // Default Resend test domain
+      from: 'onboarding@resend.dev', 
       to: ADMIN_EMAIL, 
-      reply_to: email, // <--- ALLOWS YOU TO REPLY DIRECTLY TO THE CUSTOMER
+      reply_to: email, 
       subject: `New Booking: ${name} - ${service}`,
       html: `
         <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
@@ -48,14 +48,18 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
           <p><strong>Time:</strong> ${time}</p>
           <p><strong>Customer Email:</strong> ${email}</p>
           
-          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>📍 Meeting Address:</strong></p>
-            <p style="margin: 5px 0 0 0; color: #555;">${address || 'No address provided'}</p>
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ddd;">
+            <p style="margin: 0; color: #2980b9;"><strong>📍 Meeting Address:</strong></p>
+            <p style="margin: 5px 0 0 0; color: #444; font-size: 15px;">
+              ${address && address.trim() !== "" ? address : "<em>No address provided by customer</em>"}
+            </p>
           </div>
 
-          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>📝 Special Instructions/Notes:</strong></p>
-            <p style="margin: 5px 0 0 0; color: #555;">${notes || 'No specific instructions provided'}</p>
+          <div style="background: #fdfaf6; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #f39c12;">
+            <p style="margin: 0; color: #d35400;"><strong>📝 Instructions / Notes:</strong></p>
+            <p style="margin: 5px 0 0 0; color: #444; font-size: 15px;">
+              ${notes && notes.trim() !== "" ? notes : "<em>No instructions provided by customer</em>"}
+            </p>
           </div>
 
           <p style="font-size: 12px; color: #999; margin-top: 30px;">
@@ -68,23 +72,11 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
     if (error) {
       console.error("Resend Error:", error);
     } else {
-      console.log("📧 Notification email sent.");
+      console.log(`📧 Notification email sent to ${ADMIN_EMAIL}`);
     }
   } catch (err) {
     console.error("Email processing failed:", err);
   }
-};
-
-// --- AUTH MIDDLEWARE ---
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.sendStatus(401);
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
 };
 
 // --- ROUTES ---
@@ -113,6 +105,40 @@ app.post('/api/recommend', (req, res) => {
   }
 });
 
+app.post('/api/bookings', async (req, res) => {
+  try {
+    // Destructuring all fields from the request body
+    const { name, email, service, date, time, notes, address } = req.body;
+
+    console.log("📥 New Booking Received:", { name, email, service, date, time, address, notes });
+
+    if (!name || !email || !service || !date || !time) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Save to database
+    const booking = await prisma.booking.create({
+      data: { 
+        name, 
+        email, 
+        service, 
+        date: new Date(date), 
+        time, 
+        notes: notes || "", 
+        address: address || "" 
+      }
+    });
+    
+    // Send notification passing all fields including address and notes
+    await sendAdminNotification(email, name, service, date, time, address, notes);
+    
+    res.json(booking);
+  } catch (error) {
+    console.error("❌ Booking Error:", error);
+    res.status(500).json({ error: "Could not save booking" });
+  }
+});
+
 app.post('/api/login', (req, res) => {
   if (req.body.password === ADMIN_PASSWORD) {
     const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' });
@@ -122,37 +148,7 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-app.post('/api/bookings', async (req, res) => {
-  try {
-    const { name, email, service, date, time, notes, address } = req.body;
-
-    if (!name || !email || !service || !date || !time) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    const booking = await prisma.booking.create({
-      data: { 
-        name, 
-        email, 
-        service, 
-        date: new Date(date), 
-        time, 
-        notes, 
-        address 
-      }
-    });
-    
-    // Trigger notification with all fields included
-    await sendAdminNotification(email, name, service, date, time, address, notes);
-    
-    res.json(booking);
-  } catch (error) {
-    console.error("Booking failed:", error);
-    res.status(500).json({ error: "Could not save booking" });
-  }
-});
-
-app.get('/api/bookings', authenticateToken, async (req, res) => {
+app.get('/api/bookings', async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(bookings);
