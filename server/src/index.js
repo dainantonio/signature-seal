@@ -58,23 +58,32 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
   }
 };
 
-// --- AI LOGIC (UPDATED FOR TRAVEL FEE) ---
+// --- AUTH MIDDLEWARE ---
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+// --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
-  
   if (q.includes('loan') || q.includes('mortgage') || q.includes('closing')) {
     return {
       service: "Loan Signing",
-      reasoning: "Real estate transactions require a certified Loan Signing Agent. Our flat rate includes printing and courier service.",
+      reasoning: "Real estate transactions require a certified Loan Signing Agent.",
       estimatedPrice: "$150 flat rate",
       action: "book_loan"
     };
   }
-  
-  // Default Mobile Notary Logic
   return {
     service: "Mobile Notary",
-    reasoning: "A standard Mobile Notary appointment. A travel fee applies based on distance.",
+    reasoning: "A standard Mobile Notary appointment based on distance.",
     estimatedPrice: "$40 Minimum (Travel + 1 Stamp). Mileage fee applies for 10+ miles.",
     action: "book_general"
   };
@@ -109,7 +118,6 @@ app.post('/api/bookings', async (req, res) => {
     });
     
     await sendAdminNotification(email, name, service, date, time, address, notes);
-    
     res.json(booking);
   } catch (error) {
     console.error("Booking Error:", error);
@@ -117,17 +125,24 @@ app.post('/api/bookings', async (req, res) => {
   }
 });
 
-app.get('/api/bookings', async (req, res) => {
-    // Basic Auth Check (simplified for example)
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.sendStatus(401);
-
-    jwt.verify(token, JWT_SECRET, async (err, user) => {
-      if (err) return res.sendStatus(403);
+app.get('/api/bookings', authenticateToken, async (req, res) => {
+    try {
       const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
       res.json(bookings);
-    });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to load bookings" });
+    }
+});
+
+// NEW: Delete Booking Route
+app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.booking.delete({ where: { id: parseInt(id) } });
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete" });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
