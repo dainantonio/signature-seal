@@ -19,9 +19,10 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 
 // --- CORS CONFIGURATION (FIXED) ---
+// Explicitly allowing DELETE method
 app.use(cors({
-  origin: true, // Reflects the request origin (fixes the * + credentials issue)
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow DELETE
+  origin: '*', // Allow all for now to ensure connection works
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
@@ -138,7 +139,7 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE ROUTE (DEBUGGED)
+// DELETE ROUTE (RESTORED)
 app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   console.log(`🗑️ Request to delete booking ID: ${id}`);
