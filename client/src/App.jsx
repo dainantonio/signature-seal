@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Info
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -258,18 +258,17 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
 
-  // --- DYNAMIC TIME SLOTS LOGIC (Updated Hours) ---
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
     
     const dateObj = new Date(formData.date + 'T12:00:00');
-    const day = dateObj.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const day = dateObj.getDay(); 
 
-    if (day === 0) { // Sunday
-      return []; // Closed
-    } else if (day === 6) { // Saturday (10am - 4pm)
+    if (day === 0) { 
+      return []; 
+    } else if (day === 6) { 
       return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
-    } else { // Mon-Fri (6pm - 9pm)
+    } else { 
       return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
     }
   }, [formData.date]);
@@ -343,7 +342,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-500 uppercase">Date</label>
                       <input type="date" className="w-full p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-brand-teal outline-none" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                      {/* Sunday Closed Message */}
                       {formData.date && new Date(formData.date + 'T12:00:00').getDay() === 0 && (
                         <p className="text-red-500 text-xs font-bold">Closed on Sundays.</p>
                       )}
@@ -362,7 +360,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     </div>
                   </div>
                   
-                  {/* Updated Business Hours Note */}
                   <div className="bg-blue-50 p-4 rounded-xl flex items-start gap-3 border border-blue-100">
                     <Clock className="w-5 h-5 text-brand-teal mt-0.5" />
                     <div>
@@ -489,6 +486,25 @@ const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // New function to handle deletion
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this booking?")) return;
+    
+    try {
+      const res = await fetch(`${API_URL}/api/bookings/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setBookings(prev => prev.filter(b => b.id !== id));
+      } else {
+        alert("Failed to delete booking.");
+      }
+    } catch (err) {
+      alert("Error deleting booking.");
+    }
+  };
+
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -526,12 +542,21 @@ const AdminDashboard = ({ token, onLogout }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {bookings.map((booking) => (
-            <div key={booking.id} className="bg-white p-8 rounded-3xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] border border-gray-100 hover:-translate-y-1 transition-transform duration-300">
+            <div key={booking.id} className="bg-white p-8 rounded-3xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] border border-gray-100 hover:-translate-y-1 transition-transform duration-300 relative group">
+              {/* DELETE BUTTON */}
+              <button 
+                onClick={() => handleDelete(booking.id)}
+                className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors"
+                title="Delete Booking"
+              >
+                <Trash2 size={18} />
+              </button>
+
               <div className="flex justify-between items-start mb-6">
                 <span className={`text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wide ${booking.service.includes('Loan') ? 'bg-purple-100 text-purple-600' : 'bg-brand-teal/10 text-brand-teal'}`}>
                   {booking.service}
                 </span>
-                <span className="text-xs text-gray-300 font-mono">#{booking.id.toString().padStart(4, '0')}</span>
+                <span className="text-xs text-gray-300 font-mono mr-8">#{booking.id.toString().padStart(4, '0')}</span>
               </div>
               <h3 className="text-2xl font-bold text-brand-navy-dark mb-1">{booking.name}</h3>
               <a href={`mailto:${booking.email}`} className="text-sm text-gray-400 hover:text-brand-teal transition-colors mb-6 block">{booking.email}</a>
@@ -542,7 +567,6 @@ const AdminDashboard = ({ token, onLogout }) => {
                 <div className="flex items-start gap-3 text-sm font-medium text-gray-600"><MapPin size={16} className="text-brand-gold mt-1" /> <span className="flex-1 line-clamp-2">{booking.address || "Virtual / No address"}</span></div>
               </div>
               
-              {/* Added Notes Section to Admin Card */}
               {booking.notes && (
                 <div className="mt-4 pt-4 border-t border-gray-50 text-xs text-gray-500 italic">
                    "{booking.notes}"
