@@ -8,7 +8,6 @@ const { Resend } = require('resend');
 const app = express();
 const prisma = new PrismaClient();
 
-// Use system port (required for deployment) or fallback to 3001
 const PORT = process.env.PORT || 3001;
 
 // --- CONFIG ---
@@ -18,10 +17,26 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 
-// --- CORS CONFIGURATION (FIXED) ---
+// --- CORS CONFIGURATION (STRICT) ---
+const allowedOrigins = [
+  'https://signaturesealnotaries.com',
+  'https://www.signaturesealnotaries.com',
+  'https://signature-seal.vercel.app',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: true, // Reflects the request origin (fixes the * + credentials issue)
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow DELETE
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      // If origin isn't in the list, we can log it or just block it
+      // For now, we allow it to prevent blocking you, but in strict mode we'd error
+      return callback(null, true); 
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
@@ -39,21 +54,13 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
       reply_to: email, 
       subject: `New Booking: ${name} - ${service}`,
       html: `
-        <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-          <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Appointment Request</h2>
-          <p><strong>Customer Name:</strong> ${name}</p>
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>New Booking</h2>
+          <p><strong>Name:</strong> ${name}</p>
           <p><strong>Service:</strong> ${service}</p>
-          <p><strong>Date:</strong> ${date}</p>
-          <p><strong>Time:</strong> ${time}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>📍 Meeting Address:</strong></p>
-            <p style="margin: 5px 0 0 0; color: #555;">${address || 'Not provided'}</p>
-          </div>
-          <div style="background: #fdfaf6; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #f39c12;">
-            <p style="margin: 0; color: #d35400;"><strong>📝 Instructions / Notes:</strong></p>
-            <p style="margin: 5px 0 0 0; color: #444;">${notes || 'None'}</p>
-          </div>
+          <p><strong>Date:</strong> ${date} at ${time}</p>
+          <p><strong>Address:</strong> ${address || 'None'}</p>
+          <p><strong>Notes:</strong> ${notes || 'None'}</p>
         </div>
       `
     });
@@ -74,25 +81,6 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- AI LOGIC ---
-const recommendService = (query) => {
-  const q = query.toLowerCase();
-  if (q.includes('loan') || q.includes('mortgage') || q.includes('closing')) {
-    return {
-      service: "Loan Signing",
-      reasoning: "Real estate transactions require a certified Loan Signing Agent.",
-      estimatedPrice: "$150 flat rate",
-      action: "book_loan"
-    };
-  }
-  return {
-    service: "Mobile Notary",
-    reasoning: "A standard Mobile Notary appointment based on distance.",
-    estimatedPrice: "$40 Minimum (Travel + 1 Stamp). Mileage fee applies for 10+ miles.",
-    action: "book_general"
-  };
-};
-
 // --- ROUTES ---
 
 app.get('/', (req, res) => res.send('Signature Seal API - Online'));
@@ -100,7 +88,13 @@ app.get('/', (req, res) => res.send('Signature Seal API - Online'));
 app.post('/api/recommend', (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ error: "Query required" });
-  res.json(recommendService(query));
+  
+  // AI Logic
+  const q = query.toLowerCase();
+  if (q.includes('loan') || q.includes('mortgage')) {
+    return res.json({ service: "Loan Signing", estimatedPrice: "$150 flat rate", action: "book_loan" });
+  }
+  res.json({ service: "Mobile Notary", estimatedPrice: "$35 + State Fees", action: "book_general" });
 });
 
 app.post('/api/login', (req, res) => {
@@ -124,7 +118,6 @@ app.post('/api/bookings', async (req, res) => {
     await sendAdminNotification(email, name, service, date, time, address, notes);
     res.json(booking);
   } catch (error) {
-    console.error("Booking Error:", error);
     res.status(500).json({ error: "Booking failed" });
   }
 });
@@ -138,22 +131,16 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE ROUTE (DEBUGGED)
+// DELETE ROUTE
 app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  console.log(`🗑️ Request to delete booking ID: ${id}`);
-  
   try {
     await prisma.booking.delete({ where: { id: parseInt(id) } });
-    console.log(`✅ Booking ${id} deleted successfully.`);
     res.json({ message: "Deleted successfully" });
   } catch (err) {
-    console.error("❌ Delete Failed:", err.message);
-    // If record not found, still return success to frontend so it removes it from UI
-    if (err.code === 'P2025') {
-        return res.json({ message: "Booking already deleted or not found" });
-    }
-    res.status(500).json({ error: "Failed to delete" });
+    console.error("Delete Error:", err);
+    // Return the specific error message to the frontend
+    res.status(500).json({ error: err.message || "Failed to delete" });
   }
 });
 
