@@ -19,9 +19,9 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 
 // --- CORS CONFIGURATION (FIXED) ---
-// Explicitly allowing DELETE method
+// Changed origin from '*' to true to allow credentials/headers correctly
 app.use(cors({
-  origin: '*', // Allow all for now to ensure connection works
+  origin: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
