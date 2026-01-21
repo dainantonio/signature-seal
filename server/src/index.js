@@ -18,10 +18,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 
+// --- CORS CONFIGURATION (FIXED) ---
 app.use(cors({
-  origin: '*',
+  origin: true, // Reflects the request origin (fixes the * + credentials issue)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow DELETE
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
 app.use(express.json());
 
 // --- NOTIFICATION HELPER ---
@@ -134,13 +138,21 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
     }
 });
 
-// NEW: Delete Booking Route
+// DELETE ROUTE (DEBUGGED)
 app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  console.log(`🗑️ Request to delete booking ID: ${id}`);
+  
   try {
     await prisma.booking.delete({ where: { id: parseInt(id) } });
+    console.log(`✅ Booking ${id} deleted successfully.`);
     res.json({ message: "Deleted successfully" });
   } catch (err) {
+    console.error("❌ Delete Failed:", err.message);
+    // If record not found, still return success to frontend so it removes it from UI
+    if (err.code === 'P2025') {
+        return res.json({ message: "Booking already deleted or not found" });
+    }
     res.status(500).json({ error: "Failed to delete" });
   }
 });
