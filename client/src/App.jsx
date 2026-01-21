@@ -57,11 +57,11 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          <div className="flex flex-col justify-center items-center"> 
+          <div className="flex flex-col justify-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
             </h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 whitespace-nowrap text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 whitespace-nowrap ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
               Notary Service
             </span>
           </div>
@@ -493,14 +493,23 @@ const AdminDashboard = ({ token, onLogout }) => {
     try {
       const res = await fetch(`${API_URL}/api/bookings/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
       });
+      
       if (res.ok) {
         setBookings(prev => prev.filter(b => b.id !== id));
       } else {
-        alert("Failed to delete booking.");
+        if (res.status === 401 || res.status === 403) {
+            alert("Session expired. Please log out and log in again.");
+        } else {
+            alert("Failed to delete booking.");
+        }
       }
     } catch (err) {
+      console.error("Delete exception:", err);
       alert("Error deleting booking.");
     }
   };
