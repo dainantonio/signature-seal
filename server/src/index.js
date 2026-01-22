@@ -17,19 +17,19 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 
-// --- CORS: ALLOW EVERYTHING (Fixes Delete Issues) ---
+// --- CORS ---
 app.use(cors({
   origin: true, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
 app.use(express.json());
 
-// --- NOTIFICATION HELPER ---
+// --- EMAIL HELPER ---
 const sendAdminNotification = async (email, name, service, date, time, address, notes) => {
   if (!resend) return;
-
   try {
     await resend.emails.send({
       from: 'onboarding@resend.dev', 
@@ -37,14 +37,13 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
       reply_to: email, 
       subject: `New Booking: ${name} - ${service}`,
       html: `
-        <div style="font-family: sans-serif; color: #333; padding: 20px;">
+        <div style="font-family: sans-serif; padding: 20px;">
           <h2>New Booking</h2>
           <p><strong>Name:</strong> ${name}</p>
           <p><strong>Service:</strong> ${service}</p>
           <p><strong>Date:</strong> ${date} at ${time}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Address:</strong> ${address || 'None'}</p>
-          <p><strong>Notes:</strong> ${notes || 'None'}</p>
+          <p><strong>Address:</strong> ${address}</p>
+          <p><strong>Notes:</strong> ${notes}</p>
         </div>
       `
     });
@@ -53,7 +52,7 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
   }
 };
 
-// --- AUTH MIDDLEWARE ---
+// --- MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -92,9 +91,12 @@ app.post('/api/login', (req, res) => {
 app.post('/api/bookings', async (req, res) => {
   try {
     const { name, email, service, date, time, notes, address } = req.body;
+    if (!name || !email || !service || !date || !time) return res.status(400).json({ error: "Missing fields" });
+
     const booking = await prisma.booking.create({
       data: { name, email, service, date: new Date(date), time, notes: notes || "", address: address || "" }
     });
+    
     await sendAdminNotification(email, name, service, date, time, address, notes);
     res.json(booking);
   } catch (error) {
@@ -102,24 +104,57 @@ app.post('/api/bookings', async (req, res) => {
   }
 });
 
+// GET BOOKINGS (PAGINATED)
 app.get('/api/bookings', authenticateToken, async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 9; // 9 cards per page
+    const skip = (page - 1) * limit;
+
     try {
-      const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
-      res.json(bookings);
+      // Fetch data + count in one go
+      const [bookings, total] = await prisma.$transaction([
+        prisma.booking.findMany({
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.booking.count()
+      ]);
+
+      res.json({
+        data: bookings,
+        pagination: {
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (err) {
       res.status(500).json({ error: "Failed to load bookings" });
     }
 });
 
-// DELETE ROUTE
+// DELETE ROUTE (Standard)
 app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
     await prisma.booking.delete({ where: { id: parseInt(id) } });
     res.json({ message: "Deleted successfully" });
   } catch (err) {
-    // Return success even if not found (idempotent)
-    res.json({ message: "Deleted" }); 
+    if (err.code === 'P2025') return res.json({ message: "Already deleted" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE ROUTE (Fallback POST)
+app.post('/api/bookings/delete/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.booking.delete({ where: { id: parseInt(id) } });
+    res.json({ message: "Deleted successfully via POST" });
+  } catch (err) {
+    if (err.code === 'P2025') return res.json({ message: "Already deleted" });
+    res.status(500).json({ error: err.message });
   }
 });
 
