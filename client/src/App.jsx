@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -46,7 +46,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   }, []);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
       
       {/* --- DESKTOP VIEW --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
@@ -490,11 +490,11 @@ const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // New function to handle deletion with Fallback
+  // Function to handle deletion with Fallback
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) return;
     
-    // Optimistic Update
+    // Optimistic Update: Remove from UI immediately
     const originalBookings = [...bookings];
     setBookings(prev => prev.filter(b => b.id !== id));
 
@@ -507,7 +507,6 @@ const AdminDashboard = ({ token, onLogout }) => {
         }
       });
       if (!res.ok) {
-        // If 404/403, might be session or already gone
         if (res.status === 401 || res.status === 403) throw new Error("Session Expired");
         throw new Error(`Failed: ${res.status}`);
       }
@@ -524,7 +523,8 @@ const AdminDashboard = ({ token, onLogout }) => {
         await deleteAttempt('POST', `${API_URL}/api/bookings/delete/${id}`);
       } catch (finalErr) {
         console.error("Both delete methods failed:", finalErr);
-        setBookings(originalBookings); // Revert UI
+        // Revert UI if failure
+        setBookings(originalBookings);
         if (finalErr.message === "Session Expired") {
             alert("Session expired. Please log out and log in again.");
             onLogout();
@@ -533,6 +533,36 @@ const AdminDashboard = ({ token, onLogout }) => {
         }
       }
     }
+  };
+  
+  // NEW: Export to CSV for Google Sheets
+  const handleExport = () => {
+    if (!bookings.length) {
+        alert("No bookings to export.");
+        return;
+    }
+    
+    const headers = ["ID", "Name", "Email", "Service", "Date", "Time", "Address", "Notes"];
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n" 
+      + bookings.map(b => [
+          b.id, 
+          `"${b.name}"`, 
+          b.email, 
+          b.service, 
+          new Date(b.date).toLocaleDateString(), 
+          b.time, 
+          `"${b.address || ''}"`, 
+          `"${b.notes || ''}"`
+        ].join(",")).join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `signature_seal_bookings_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   useEffect(() => {
@@ -552,16 +582,26 @@ const AdminDashboard = ({ token, onLogout }) => {
 
   return (
     <div className="container mx-auto px-6 py-24 min-h-screen bg-gray-50">
-      <div className="flex flex-col md:flex-row items-center justify-between mb-12">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-4">
         <h2 className="text-4xl font-serif text-brand-navy-dark font-bold flex items-center gap-4">
           <div className="p-3 bg-white shadow-sm rounded-xl"><Lock className="w-8 h-8 text-brand-gold" /></div>
           Admin Portal
         </h2>
-        <div className="flex items-center gap-4 mt-4 md:mt-0">
+        <div className="flex items-center gap-4 flex-wrap justify-center">
           <div className="bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100 text-sm font-bold text-brand-teal">
             {bookings.length} Active Bookings
           </div>
-          <button onClick={onLogout} className="bg-red-50 text-red-500 p-3 rounded-full hover:bg-red-100 transition-colors">
+          
+          {/* EXPORT BUTTON */}
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-brand-navy-dark text-white px-4 py-3 rounded-full hover:bg-brand-gold transition-colors text-sm font-bold"
+            title="Export to CSV (Excel/Sheets)"
+          >
+            <Download size={18} /> Export CSV
+          </button>
+          
+          <button onClick={onLogout} className="bg-red-50 text-red-500 p-3 rounded-full hover:bg-red-100 transition-colors" title="Log Out">
             <LogOut size={20} />
           </button>
         </div>
