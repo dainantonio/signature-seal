@@ -78,41 +78,18 @@ const authenticateToken = (req, res, next) => {
 // --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
-  
-  if (q.includes('loan') || q.includes('mortgage') || q.includes('closing') || q.includes('refinance')) {
+  if (q.includes('loan') || q.includes('mortgage') || q.includes('closing')) {
     return {
       service: "Loan Signing",
-      reasoning: "Real estate transactions require a certified Loan Signing Agent. Our flat rate includes printing and courier service.",
+      reasoning: "Real estate transactions require a certified Loan Signing Agent.",
       estimatedPrice: "$150 flat rate",
       action: "book_loan"
     };
   }
-  
-  if (q.includes('will') || q.includes('trust') || q.includes('poa') || q.includes('power') || q.includes('healthcare')) {
-    return {
-      service: "Estate Planning",
-      confidence: "High",
-      reasoning: "These documents are sensitive. We recommend our Estate Planning service.",
-      estimatedPrice: "$35 + State Fees ($5 OH / $10 WV per stamp)",
-      action: "book_general"
-    };
-  }
-
-  if (q.includes('car') || q.includes('title') || q.includes('dmv') || q.includes('bill of sale')) {
-    return {
-      service: "Vehicle Title Transfer",
-      confidence: "Medium",
-      reasoning: "For vehicle transactions, a standard mobile notary service is perfect.",
-      estimatedPrice: "$35 + State Fees ($5 OH / $10 WV per stamp)",
-      action: "book_general"
-    };
-  }
-
   return {
     service: "Mobile Notary",
-    confidence: "Medium",
-    reasoning: "A standard Mobile Notary appointment fits your needs.",
-    estimatedPrice: "$35 + State Fees ($5 OH / $10 WV per stamp)",
+    reasoning: "A standard Mobile Notary appointment based on distance.",
+    estimatedPrice: "$40 Minimum (Travel + 1 Stamp). Mileage fee applies for 10+ miles.",
     action: "book_general"
   };
 };
