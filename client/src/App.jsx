@@ -3,25 +3,17 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, 
-  Trash2, Download
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  // 1. Production (Vercel)
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  
-  // 2. Codespaces / Gitpod Auto-Detection
   const hostname = window.location.hostname;
   if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
-    if (hostname.includes('-5173')) {
-      return `https://${hostname.replace('-5173', '-3001')}`;
-    }
+    if (hostname.includes('-5173')) return `https://${hostname.replace('-5173', '-3001')}`;
   }
-
-  // 3. Localhost Fallback
   return 'http://localhost:3001';
 };
 
@@ -65,7 +57,6 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
@@ -402,10 +393,10 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             </div>
 
             <div className="p-6 border-t border-gray-100 flex justify-between bg-white">
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full md:w-auto">
+                 {/* CANCEL BUTTON */}
+                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm whitespace-nowrap">Cancel</button>
                 <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
-                {/* CANCEL BUTTON */}
-                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm md:hidden">Cancel</button>
               </div>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
@@ -583,6 +574,15 @@ const AdminDashboard = ({ token, onLogout }) => {
   };
 
   useEffect(() => {
+    // START: LOADING TIMEOUT PROTECTION
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        // Uncomment below line if you want to alert on slow connection
+        // alert("Connection is slow. Some bookings may not load.");
+      }
+    }, 10000); // 10 second timeout
+
     fetch(`${API_URL}/api/bookings`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -594,8 +594,11 @@ const AdminDashboard = ({ token, onLogout }) => {
       .catch((err) => {
         console.error(err);
         onLogout();
-      });
-  }, [token, onLogout]);
+      })
+      .finally(() => clearTimeout(timeoutId));
+      
+    return () => clearTimeout(timeoutId);
+  }, [token, onLogout, loading]);
 
   return (
     <div className="container mx-auto px-6 py-24 min-h-screen bg-gray-50">
