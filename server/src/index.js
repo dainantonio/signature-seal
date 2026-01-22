@@ -18,14 +18,19 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 
-// --- CORS CONFIGURATION (FIXED) ---
-// Explicitly allowing DELETE method
-app.use(cors({
-  origin: true, // Allow requests from any origin while supporting credentials
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+// --- ROBUST CORS CONFIGURATION ---
+const corsOptions = {
+  origin: true, // Allow any origin while respecting credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly list DELETE
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
-}));
+};
+
+// Apply CORS to all routes
+app.use(cors(corsOptions));
+
+// FORCE HANDLE PREFLIGHT REQUESTS (The Sledgehammer Fix)
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
