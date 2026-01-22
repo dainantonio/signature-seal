@@ -69,16 +69,18 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
       </div>
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="justify-self-start w-10"></div>
-        <div className="justify-self-center flex flex-col items-center justify-center cursor-pointer w-full" onClick={() => onViewChange('home')}>
-           <div className={`w-14 h-14 rounded-2xl mb-1.5 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+        <div className="justify-self-center flex flex-row items-center gap-3 cursor-pointer w-full justify-center" onClick={() => onViewChange('home')}>
+           <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          <h1 className={`font-serif text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
-            Signature Seal
-          </h1>
-          <span className={`text-xs leading-none uppercase font-bold mt-1 whitespace-nowrap text-center tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
-            Notary Service
-          </span>
+          <div className="flex flex-col justify-center items-center">
+            <h1 className={`font-serif text-xl sm:text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+              Signature Seal
+            </h1>
+            <span className={`text-[10px] sm:text-xs leading-none uppercase font-bold mt-1 whitespace-nowrap text-center tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+              Notary Service
+            </span>
+          </div>
         </div>
         <div className="justify-self-end">
           <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>{isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}</button>
@@ -251,6 +253,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                 <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-lg space-y-6">
                   <p><strong>Service:</strong> {formData.service}</p>
                   <p><strong>When:</strong> {formData.date} at {formData.time}</p>
+                  <p><strong>Where:</strong> {formData.address}</p>
                 </div>
               )}
             </div>
@@ -270,6 +273,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   );
 };
 
+// Login Screen
 const LoginScreen = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -296,7 +300,7 @@ const LoginScreen = ({ onLogin }) => {
   );
 };
 
-// --- UPDATED ADMIN DASHBOARD WITH CRASH PROTECTION ---
+// Admin Dashboard - FIX: Added pt-32 to container to clear Navbar overlap
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -307,22 +311,19 @@ const AdminDashboard = ({ token, onLogout }) => {
     fetch(`${API_URL}/api/bookings?page=${page}&limit=9`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => {
-        // Safe check: ensure data is in expected format
         if (Array.isArray(data)) {
-            setBookings(data); // Legacy format support
+            setBookings(data);
         } else if (data && data.data && Array.isArray(data.data)) {
-            setBookings(data.data); // New paginated format
+            setBookings(data.data);
             setPagination(data.pagination);
         } else {
-            console.warn("Unexpected response:", data);
-            setBookings([]); // prevent crash
+            setBookings([]);
         }
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
-        // Do not auto-logout, allow user to retry
       });
   };
 
@@ -363,7 +364,8 @@ const AdminDashboard = ({ token, onLogout }) => {
   };
 
   return (
-    <div className="container mx-auto px-6 py-24 min-h-screen bg-gray-50">
+    // FIXED: Increased pt-24 to pt-32 to clear the Navbar on mobile
+    <div className="container mx-auto px-6 py-24 pt-32 min-h-screen bg-gray-50">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h2 className="text-3xl font-bold text-brand-navy-dark">Admin Portal</h2>
         <div className="flex gap-4">
@@ -397,23 +399,10 @@ const AdminDashboard = ({ token, onLogout }) => {
             ))}
             </div>
 
-            {/* Pagination Controls */}
             <div className="flex justify-center items-center gap-6 pb-20">
-                <button 
-                    onClick={() => fetchBookings(pagination.page - 1)} 
-                    disabled={pagination.page === 1}
-                    className="p-3 rounded-full bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"
-                >
-                    <ChevronLeft size={20} />
-                </button>
+                <button onClick={() => fetchBookings(pagination.page - 1)} disabled={pagination.page === 1} className="p-3 rounded-full bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"><ChevronLeft size={20} /></button>
                 <span className="text-sm font-bold text-gray-500">Page {pagination.page} of {pagination.totalPages}</span>
-                <button 
-                    onClick={() => fetchBookings(pagination.page + 1)} 
-                    disabled={pagination.page >= pagination.totalPages}
-                    className="p-3 rounded-full bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"
-                >
-                    <ChevronRight size={20} />
-                </button>
+                <button onClick={() => fetchBookings(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages} className="p-3 rounded-full bg-white shadow-sm disabled:opacity-50 hover:bg-gray-50"><ChevronRight size={20} /></button>
             </div>
         </>
       )}
@@ -453,6 +442,14 @@ const Hero = ({ onBookClick }) => (
             Our Services
           </a>
         </div>
+        
+        <div className="mt-24 pt-10 border-t border-white/10 flex justify-center gap-12 flex-wrap opacity-60 hover:opacity-100 transition-opacity duration-500">
+          {['NNA Certified', 'Bonded & Insured', 'Background Checked'].map((item, i) => (
+            <div key={i} className="flex items-center gap-3 text-sm font-semibold text-white tracking-wide">
+              <div className="bg-brand-teal p-1 rounded-full"><Check className="w-3 h-3 text-white" /></div> {item}
+            </div>
+          ))}
+        </div>
       </motion.div>
     </div>
   </section>
@@ -488,6 +485,7 @@ const Services = () => (
 
 const WhyUs = () => (
   <section id="why-us" className="py-32 bg-brand-navy-dark text-white relative overflow-hidden">
+    {/* Decorative Elements */}
     <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-teal rounded-full blur-[120px]"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-gold rounded-full blur-[120px]"></div>
@@ -495,6 +493,7 @@ const WhyUs = () => (
     <div className="container mx-auto px-6 relative z-10">
       <div className="text-center mb-24">
         <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">The Signature Standard</h2>
+        <p className="text-xl text-gray-400 max-w-2xl mx-auto">We don't just stamp paper. We ensure peace of mind.</p>
       </div>
       <div className="grid md:grid-cols-3 gap-12 text-center">
         {[
@@ -558,6 +557,10 @@ const Pricing = ({ onBookClick }) => (
                 <button onClick={() => onBookClick('Loan Signing')} className="w-full py-4 rounded-xl bg-brand-teal text-white font-bold hover:bg-teal-500 shadow-lg shadow-brand-teal/25 transition-all duration-300">Choose Premium</button>
             </div>
         </div>
+        
+        <div className="mt-16 text-center">
+          <p className="text-gray-500">Need something custom? <button onClick={() => onBookClick()} className="text-brand-navy-dark font-bold border-b-2 border-brand-gold hover:text-brand-teal transition-colors">Contact us for a quote</button></p>
+        </div>
     </div>
   </section>
 );
@@ -569,6 +572,13 @@ const Footer = ({ onViewChange }) => (
         <Award className="w-10 h-10 text-brand-gold" />
       </div>
       <h2 className="text-2xl font-serif font-bold mb-8">Signature Seal Notary</h2>
+      
+      <div className="flex justify-center gap-8 mb-12 font-medium text-gray-500">
+        <a href="#services" className="hover:text-brand-teal transition-colors">Services</a>
+        <a href="#why-us" className="hover:text-brand-teal transition-colors">About</a>
+        <a href="#pricing" className="hover:text-brand-teal transition-colors">Pricing</a>
+      </div>
+      
       <div className="text-sm text-gray-400 flex flex-col items-center gap-4">
         <p>&copy; {new Date().getFullYear()} Signature Seal Notary. All rights reserved.</p>
         <button onClick={() => onViewChange('admin')} className="text-gray-300 hover:text-brand-navy-dark transition-colors flex items-center gap-1">
