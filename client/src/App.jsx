@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, Laptop
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -393,9 +393,10 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             </div>
 
             <div className="p-6 border-t border-gray-100 flex justify-between bg-white">
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full md:w-auto">
+                 {/* VISIBLE CANCEL BUTTON FOR DESKTOP & MOBILE */}
+                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm whitespace-nowrap">Cancel</button>
                 <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
-                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm md:hidden">Cancel</button>
               </div>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
@@ -490,86 +491,72 @@ const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Function to handle deletion with Fallback
+  // --- SMART DELETE (POST FALLBACK) ---
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) return;
     
-    // Optimistic Update: Remove from UI immediately
     const originalBookings = [...bookings];
-    setBookings(prev => prev.filter(b => b.id !== id));
-
-    const deleteAttempt = async (method, url) => {
-      const res = await fetch(url, {
-        method: method,
-        headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
-      });
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) throw new Error("Session Expired");
-        throw new Error(`Failed: ${res.status}`);
-      }
-      return res;
-    };
+    setBookings(prev => prev.filter(b => b.id !== id)); // Optimistic delete
 
     try {
-      // Try Standard DELETE
-      await deleteAttempt('DELETE', `${API_URL}/api/bookings/${id}`);
-    } catch (err) {
-      console.warn("Standard DELETE failed, trying fallback POST...");
-      try {
-        // Try Fallback POST
-        await deleteAttempt('POST', `${API_URL}/api/bookings/delete/${id}`);
-      } catch (finalErr) {
-        console.error("Both delete methods failed:", finalErr);
-        // Revert UI if failure
-        setBookings(originalBookings);
-        if (finalErr.message === "Session Expired") {
+      // 1. Try standard DELETE
+      let res = await fetch(`${API_URL}/api/bookings/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+
+      // 2. If blocked (405 Method Not Allowed), try POST fallback
+      if (!res.ok && res.status === 405) {
+         console.warn("DELETE method blocked, trying POST fallback...");
+         res = await fetch(`${API_URL}/api/bookings/delete/${id}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+         });
+      }
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
             alert("Session expired. Please log out and log in again.");
             onLogout();
         } else {
-            alert("Could not delete booking. Please check connection.");
+            throw new Error(`Server returned ${res.status}`);
         }
       }
+    } catch (err) {
+      console.error("Delete failed:", err);
+      setBookings(originalBookings); // Revert UI
+      alert("Could not delete. Check console for details.");
     }
   };
   
-  // NEW: Export to CSV (Blob Method)
+  // --- ROBUST EXPORT ---
   const handleExport = () => {
-    if (!bookings.length) {
-      alert("No bookings to export.");
-      return;
+    if (!bookings.length) return alert("No bookings to export.");
+
+    try {
+        const headers = ["ID", "Name", "Email", "Service", "Date", "Time", "Address", "Notes"];
+        const safe = (t) => `"${(t || '').toString().replace(/"/g, '""')}"`;
+        
+        const rows = bookings.map(b => [
+          b.id, safe(b.name), safe(b.email), safe(b.service), 
+          safe(new Date(b.date).toLocaleDateString()), safe(b.time), 
+          safe(b.address), safe(b.notes)
+        ].join(","));
+        
+        const csv = [headers.join(","), ...rows].join("\n");
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `signature_seal_bookings_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (err) {
+        console.error("Export error:", err);
+        alert("Export failed.");
     }
-
-    const headers = ["ID", "Name", "Email", "Service", "Date", "Time", "Address", "Notes"];
-    
-    // Helper to escape CSV fields properly
-    const safeCsv = (text) => `"${(text || '').toString().replace(/"/g, '""')}"`;
-
-    const csvContent = [
-      headers.join(","),
-      ...bookings.map(b => [
-        b.id,
-        safeCsv(b.name),
-        safeCsv(b.email),
-        safeCsv(b.service),
-        safeCsv(new Date(b.date).toLocaleDateString()),
-        safeCsv(b.time),
-        safeCsv(b.address),
-        safeCsv(b.notes)
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `signature_seal_bookings_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   useEffect(() => {
@@ -599,11 +586,9 @@ const AdminDashboard = ({ token, onLogout }) => {
             {bookings.length} Active Bookings
           </div>
           
-          {/* EXPORT BUTTON */}
           <button 
             onClick={handleExport}
             className="flex items-center gap-2 bg-brand-navy-dark text-white px-4 py-3 rounded-full hover:bg-brand-gold transition-colors text-sm font-bold"
-            title="Export to CSV (Excel/Sheets)"
           >
             <Download size={18} /> Export CSV
           </button>
@@ -620,10 +605,9 @@ const AdminDashboard = ({ token, onLogout }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {bookings.map((booking) => (
             <div key={booking.id} className="bg-white p-8 rounded-3xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] border border-gray-100 hover:-translate-y-1 transition-transform duration-300 relative group">
-              {/* DELETE BUTTON */}
               <button 
                 onClick={() => handleDelete(booking.id)}
-                className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors"
+                className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors bg-white p-2 rounded-full hover:bg-red-50 z-10"
                 title="Delete Booking"
               >
                 <Trash2 size={18} />
@@ -677,7 +661,7 @@ const Hero = ({ onBookClick }) => (
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal via-white to-brand-gold">Signature.</span>
         </h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
-          Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule. Appointments available outside listed hours by request.
+          Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule.
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center gap-6">
