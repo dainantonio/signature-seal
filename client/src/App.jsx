@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- CONFIG ---
+// --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   const hostname = window.location.hostname;
@@ -19,9 +19,21 @@ const getBackendUrl = () => {
 };
 const API_URL = getBackendUrl();
 
-// --- COMPONENTS (Navbar, AI, Booking, Login omitted for brevity - same as before) ---
-// Note: In a real paste, you keep the other components. I am focusing on AdminDashboard update.
-// RE-PASTING ALL COMPONENTS TO ENSURE FULL FILE INTEGRITY.
+// --- ANIMATION VARIANTS ---
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15 }
+  }
+};
+
+// --- COMPONENTS ---
 
 const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,14 +69,16 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
       </div>
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="justify-self-start w-10"></div>
-        <div className="justify-self-center flex flex-row items-center gap-3 cursor-pointer w-full justify-center" onClick={() => onViewChange('home')}>
-           <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+        <div className="justify-self-center flex flex-col items-center justify-center cursor-pointer w-full" onClick={() => onViewChange('home')}>
+           <div className={`w-14 h-14 rounded-2xl mb-1.5 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          <div className="flex flex-col justify-center items-center">
-            <h1 className={`font-serif text-xl sm:text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[10px] sm:text-xs leading-none uppercase font-bold mt-1 whitespace-nowrap text-center tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Notary Service</span>
-          </div>
+          <h1 className={`font-serif text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+            Signature Seal
+          </h1>
+          <span className={`text-xs leading-none uppercase font-bold mt-1 whitespace-nowrap text-center tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+            Notary Service
+          </span>
         </div>
         <div className="justify-self-end">
           <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>{isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}</button>
@@ -282,7 +296,7 @@ const LoginScreen = ({ onLogin }) => {
   );
 };
 
-// --- UPDATED ADMIN DASHBOARD WITH PAGINATION ---
+// --- UPDATED ADMIN DASHBOARD WITH CRASH PROTECTION ---
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -293,19 +307,22 @@ const AdminDashboard = ({ token, onLogout }) => {
     fetch(`${API_URL}/api/bookings?page=${page}&limit=9`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => {
-        // Handle both old (array) and new (paginated object) response formats for safety
+        // Safe check: ensure data is in expected format
         if (Array.isArray(data)) {
-            setBookings(data);
-        } else {
-            setBookings(data.data);
+            setBookings(data); // Legacy format support
+        } else if (data && data.data && Array.isArray(data.data)) {
+            setBookings(data.data); // New paginated format
             setPagination(data.pagination);
+        } else {
+            console.warn("Unexpected response:", data);
+            setBookings([]); // prevent crash
         }
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
-        // onLogout(); // Removed auto-logout on error to prevent loops during dev
         setLoading(false);
+        // Do not auto-logout, allow user to retry
       });
   };
 
@@ -323,7 +340,6 @@ const AdminDashboard = ({ token, onLogout }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) {
-         // Fallback
          await fetch(`${API_URL}/api/bookings/delete/${id}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -333,7 +349,7 @@ const AdminDashboard = ({ token, onLogout }) => {
   };
 
   const handleExport = () => {
-    if (!bookings.length) return alert("No bookings visible.");
+    if (!bookings.length) return alert("No bookings to export.");
     const headers = ["ID", "Name", "Email", "Service", "Date", "Time", "Address", "Notes"];
     const safe = (t) => `"${(t || '').toString().replace(/"/g, '""')}"`;
     const csv = [headers.join(","), ...bookings.map(b => [b.id, safe(b.name), safe(b.email), safe(b.service), safe(b.date), safe(b.time), safe(b.address), safe(b.notes)].join(","))].join("\n");
@@ -359,7 +375,7 @@ const AdminDashboard = ({ token, onLogout }) => {
       {loading ? <Loader2 className="animate-spin mx-auto w-10 h-10" /> : (
         <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {bookings.map(booking => (
+            {bookings.length === 0 ? <p>No bookings found.</p> : bookings.map(booking => (
                 <div key={booking.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative">
                     <div className="flex justify-between items-start mb-4">
                         <span className="text-xs font-bold text-brand-teal uppercase">{booking.service}</span>
@@ -405,7 +421,163 @@ const AdminDashboard = ({ token, onLogout }) => {
   );
 };
 
-// Page Sections (Hero, Services, WhyUs, Pricing, Footer) omitted for brevity as they are unchanged
+// Page Sections (Hero, Services, WhyUs, Pricing, Footer) omitted for brevity
+// REINSERTED FOR COMPLETENESS
+
+const Hero = ({ onBookClick }) => (
+  <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <div className="absolute inset-0 z-0">
+      <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop" alt="Background" className="w-full h-full object-cover scale-105" />
+      <div className="absolute inset-0 bg-brand-navy-dark/90 mix-blend-multiply"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-dark via-transparent to-transparent opacity-80"></div>
+    </div>
+
+    <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-5xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-10">
+          <Star className="w-3 h-3 fill-current" /> Premier Notary Service
+        </div>
+        <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold leading-tight mb-8 font-serif text-white tracking-tight">
+          Trust in Every <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal via-white to-brand-gold">Signature.</span>
+        </h1>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
+          Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule. Appointments available outside listed hours by request.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row justify-center gap-6">
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold text-lg px-12 py-5 rounded-full shadow-[0_0_40px_-10px_rgba(26,188,156,0.5)] hover:bg-teal-500 hover:scale-105 transition-all duration-300">
+            Book Appointment
+          </button>
+          <a href="#services" className="bg-transparent border border-white/20 text-white font-bold text-lg px-12 py-5 rounded-full hover:bg-white hover:text-brand-navy-dark transition-all duration-300 backdrop-blur-sm">
+            Our Services
+          </a>
+        </div>
+      </motion.div>
+    </div>
+  </section>
+);
+
+const Services = () => (
+  <section id="services" className="py-32 bg-white relative">
+    <div className="container mx-auto px-6">
+      <div className="text-center mb-24 max-w-3xl mx-auto">
+        <h2 className="text-4xl md:text-5xl font-bold text-brand-navy-dark font-serif mb-6">Our Expertise</h2>
+        <p className="text-xl text-gray-500">Comprehensive notary solutions tailored to your specific legal needs.</p>
+      </div>
+      
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
+        {[
+          { icon: Car, title: "Mobile Notary", desc: "We travel to you—homes, offices, or hospitals—for seamless notarization." },
+          { icon: FileSignature, title: "Loan Signings", desc: "Expert handling of closings, refinancing, and HELOCs." },
+          { icon: ShieldCheck, title: "Legal Docs", desc: "Wills, POAs, and affidavits handled with strict legal compliance." }
+        ].map((s, i) => (
+          <motion.div key={i} variants={fadeInUp} className="group p-10 rounded-[2rem] bg-gray-50 hover:bg-white hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-500 text-center border border-transparent hover:border-gray-100">
+             <div className="bg-white w-20 h-20 rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-sm group-hover:bg-brand-navy-dark group-hover:scale-110 transition-all duration-500">
+               <s.icon className="w-10 h-10 text-brand-navy-dark group-hover:text-brand-gold transition-colors" />
+             </div>
+             <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
+             <p className="text-gray-500 leading-relaxed mb-8">{s.desc}</p>
+             <div className="w-12 h-1 bg-gray-200 mx-auto group-hover:bg-brand-teal group-hover:w-20 transition-all duration-500"></div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
+  </section>
+);
+
+const WhyUs = () => (
+  <section id="why-us" className="py-32 bg-brand-navy-dark text-white relative overflow-hidden">
+    <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-teal rounded-full blur-[120px]"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-gold rounded-full blur-[120px]"></div>
+    </div>
+    <div className="container mx-auto px-6 relative z-10">
+      <div className="text-center mb-24">
+        <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">The Signature Standard</h2>
+      </div>
+      <div className="grid md:grid-cols-3 gap-12 text-center">
+        {[
+          { title: "Speed", desc: "Same-day appointments often available.", icon: Clock },
+          { title: "Accuracy", desc: "Zero-error guarantee on all loan packages.", icon: Check },
+          { title: "Comfort", desc: "We meet you where you are most comfortable.", icon: Star }
+        ].map((item, i) => (
+          <div key={i} className="flex flex-col items-center group">
+            <div className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center mb-6 group-hover:bg-white/5 transition-colors">
+              <item.icon className="w-8 h-8 text-brand-teal" />
+            </div>
+            <h3 className="text-2xl font-bold mb-3">{item.title}</h3>
+            <p className="text-gray-400 leading-relaxed max-w-xs">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+const Pricing = ({ onBookClick }) => (
+  <section id="pricing" className="py-32 bg-gray-50">
+     <div className="container mx-auto px-6">
+        <div className="text-center mb-24">
+            <h2 className="text-4xl md:text-5xl font-serif text-brand-navy-dark font-bold mb-6">Transparent Pricing</h2>
+            <p className="text-xl text-gray-500">Simple flat rates. No hidden fees.</p>
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Standard Card */}
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100 flex flex-col items-center text-center group">
+                <span className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-4">Standard</span>
+                <h3 className="text-3xl font-bold text-brand-navy-dark mb-2">Mobile Notary</h3>
+                <div className="text-6xl font-serif font-bold text-brand-navy-dark my-8 group-hover:scale-110 transition-transform duration-500">From $40</div>
+                <ul className="space-y-4 mb-10 text-left w-full max-w-xs mx-auto">
+                    {[
+                      'Travel included up to 10 miles',
+                      'Mileage fee applies for 10+ miles',
+                      '1 Notarial Act included',
+                      'State-regulated fee per stamp ($5 OH / $10 WV)',
+                      'Available evenings & weekends'
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-3 text-gray-600 font-medium"><Check size={18} className="text-brand-teal shrink-0"/>{item}</li>
+                    ))}
+                </ul>
+                <button onClick={() => onBookClick('Mobile Notary')} className="w-full py-4 rounded-xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all duration-300">Choose Standard</button>
+                <p className="text-xs text-gray-400 mt-4">*Base travel fee covers local service area.</p>
+            </div>
+
+            {/* Premium Card */}
+            <div className="bg-brand-navy-dark p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col items-center text-center transform md:-translate-y-4">
+                <div className="absolute top-0 w-full h-2 bg-gradient-to-r from-brand-teal to-brand-gold"></div>
+                <span className="text-sm font-bold tracking-widest text-brand-gold uppercase mb-4">All-Inclusive</span>
+                <h3 className="text-3xl font-bold text-white mb-2">Loan Signing</h3>
+                <div className="text-6xl font-serif font-bold text-white my-8">$150</div>
+                <ul className="space-y-4 mb-10 text-left w-full max-w-xs mx-auto">
+                    {['Printing (up to 150 pages)', 'Document courier service', 'After-hours availability', 'Scan-backs included', 'Travel included (up to 20 miles)'].map((item, i) => (
+                      <li key={i} className="flex items-center gap-3 text-gray-300 font-medium"><Check size={18} className="text-brand-teal shrink-0"/>{item}</li>
+                    ))}
+                </ul>
+                <button onClick={() => onBookClick('Loan Signing')} className="w-full py-4 rounded-xl bg-brand-teal text-white font-bold hover:bg-teal-500 shadow-lg shadow-brand-teal/25 transition-all duration-300">Choose Premium</button>
+            </div>
+        </div>
+    </div>
+  </section>
+);
+
+const Footer = ({ onViewChange }) => (
+  <footer className="bg-white text-brand-navy-dark py-16 border-t border-gray-100">
+    <div className="container mx-auto px-6 text-center">
+      <div className="inline-block p-3 bg-gray-50 rounded-2xl mb-8">
+        <Award className="w-10 h-10 text-brand-gold" />
+      </div>
+      <h2 className="text-2xl font-serif font-bold mb-8">Signature Seal Notary</h2>
+      <div className="text-sm text-gray-400 flex flex-col items-center gap-4">
+        <p>&copy; {new Date().getFullYear()} Signature Seal Notary. All rights reserved.</p>
+        <button onClick={() => onViewChange('admin')} className="text-gray-300 hover:text-brand-navy-dark transition-colors flex items-center gap-1">
+          <Lock size={12} /> Admin
+        </button>
+      </div>
+    </div>
+  </footer>
+);
 
 // Main App
 function App() {
