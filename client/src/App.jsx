@@ -46,7 +46,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   }, []);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       
       {/* --- DESKTOP VIEW --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
@@ -297,7 +297,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] relative" // Added relative here
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         {success ? (
           <div className="p-20 flex flex-col items-center justify-center text-center">
@@ -309,22 +309,14 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
           </div>
         ) : (
           <>
-            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white">
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Step {step} of 3</span>
                 <h2 className="text-xl font-bold text-brand-navy-dark font-serif">
                   {step === 1 ? 'Select Service' : step === 2 ? 'Your Details' : 'Review'}
                 </h2>
               </div>
-              
-              {/* UPDATED CLOSE BUTTON: Larger touch area & improved positioning */}
-              <button 
-                onClick={onClose} 
-                className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
-                aria-label="Close Booking"
-              >
-                <X size={24}/>
-              </button>
+              <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-full text-gray-400 transition-colors"><X size={24}/></button>
             </div>
 
             <div className="p-8 overflow-y-auto bg-gray-50/30">
@@ -402,7 +394,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             <div className="p-6 border-t border-gray-100 flex justify-between bg-white">
               <div className="flex gap-2">
                 <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
-                {/* NEW CANCEL BUTTON */}
+                {/* CANCEL BUTTON */}
                 <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm md:hidden">Cancel</button>
               </div>
               <button 
@@ -498,37 +490,48 @@ const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // New function to handle deletion
+  // New function to handle deletion with Fallback
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) return;
     
-    // OPTIMISTIC UPDATE: Remove from UI immediately
+    // Optimistic Update
     const originalBookings = [...bookings];
     setBookings(prev => prev.filter(b => b.id !== id));
 
-    try {
-      const res = await fetch(`${API_URL}/api/bookings/${id}`, {
-        method: 'DELETE',
+    const deleteAttempt = async (method, url) => {
+      const res = await fetch(url, {
+        method: method,
         headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         }
       });
-      
       if (!res.ok) {
-        // Revert if failed
-        setBookings(originalBookings);
-        if (res.status === 401 || res.status === 403) {
+        // If 404/403, might be session or already gone
+        if (res.status === 401 || res.status === 403) throw new Error("Session Expired");
+        throw new Error(`Failed: ${res.status}`);
+      }
+      return res;
+    };
+
+    try {
+      // Try Standard DELETE
+      await deleteAttempt('DELETE', `${API_URL}/api/bookings/${id}`);
+    } catch (err) {
+      console.warn("Standard DELETE failed, trying fallback POST...");
+      try {
+        // Try Fallback POST
+        await deleteAttempt('POST', `${API_URL}/api/bookings/delete/${id}`);
+      } catch (finalErr) {
+        console.error("Both delete methods failed:", finalErr);
+        setBookings(originalBookings); // Revert UI
+        if (finalErr.message === "Session Expired") {
             alert("Session expired. Please log out and log in again.");
             onLogout();
         } else {
-            alert("Failed to delete booking.");
+            alert("Could not delete booking. Please check connection.");
         }
       }
-    } catch (err) {
-      console.error("Delete exception:", err);
-      setBookings(originalBookings);
-      alert("Error deleting booking.");
     }
   };
 
@@ -548,7 +551,7 @@ const AdminDashboard = ({ token, onLogout }) => {
   }, [token, onLogout]);
 
   return (
-    <div className="container mx-auto px-6 py-24 min-h-screen bg-gray-50/50">
+    <div className="container mx-auto px-6 py-24 min-h-screen bg-gray-50">
       <div className="flex flex-col md:flex-row items-center justify-between mb-12">
         <h2 className="text-4xl font-serif text-brand-navy-dark font-bold flex items-center gap-4">
           <div className="p-3 bg-white shadow-sm rounded-xl"><Lock className="w-8 h-8 text-brand-gold" /></div>
