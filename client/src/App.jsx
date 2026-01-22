@@ -46,7 +46,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   }, []);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       
       {/* --- DESKTOP VIEW --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
@@ -535,7 +535,7 @@ const AdminDashboard = ({ token, onLogout }) => {
     }
   };
   
-  // NEW: Export to CSV for Google Sheets
+  // Export to CSV for Google Sheets
   const handleExport = () => {
     if (!bookings.length) {
         alert("No bookings to export.");
