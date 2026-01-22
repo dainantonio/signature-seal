@@ -57,11 +57,11 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          <div className="flex flex-col justify-center"> 
+          <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
             </h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 whitespace-nowrap ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 whitespace-nowrap text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>
               Notary Service
             </span>
           </div>
@@ -297,7 +297,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] relative" // Added relative here
       >
         {success ? (
           <div className="p-20 flex flex-col items-center justify-center text-center">
@@ -309,14 +309,22 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
           </div>
         ) : (
           <>
-            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white">
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Step {step} of 3</span>
                 <h2 className="text-xl font-bold text-brand-navy-dark font-serif">
                   {step === 1 ? 'Select Service' : step === 2 ? 'Your Details' : 'Review'}
                 </h2>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-full text-gray-400 transition-colors"><X size={24}/></button>
+              
+              {/* UPDATED CLOSE BUTTON: Larger touch area & improved positioning */}
+              <button 
+                onClick={onClose} 
+                className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
+                aria-label="Close Booking"
+              >
+                <X size={24}/>
+              </button>
             </div>
 
             <div className="p-8 overflow-y-auto bg-gray-50/30">
@@ -392,7 +400,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             </div>
 
             <div className="p-6 border-t border-gray-100 flex justify-between bg-white">
-              <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
+              <div className="flex gap-2">
+                <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
+                {/* NEW CANCEL BUTTON */}
+                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm md:hidden">Cancel</button>
+              </div>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
                 disabled={step === 1 && (!formData.service || !formData.date || !formData.time)}
@@ -490,6 +502,10 @@ const AdminDashboard = ({ token, onLogout }) => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) return;
     
+    // OPTIMISTIC UPDATE: Remove from UI immediately
+    const originalBookings = [...bookings];
+    setBookings(prev => prev.filter(b => b.id !== id));
+
     try {
       const res = await fetch(`${API_URL}/api/bookings/${id}`, {
         method: 'DELETE',
@@ -499,17 +515,19 @@ const AdminDashboard = ({ token, onLogout }) => {
         }
       });
       
-      if (res.ok) {
-        setBookings(prev => prev.filter(b => b.id !== id));
-      } else {
+      if (!res.ok) {
+        // Revert if failed
+        setBookings(originalBookings);
         if (res.status === 401 || res.status === 403) {
             alert("Session expired. Please log out and log in again.");
+            onLogout();
         } else {
             alert("Failed to delete booking.");
         }
       }
     } catch (err) {
       console.error("Delete exception:", err);
+      setBookings(originalBookings);
       alert("Error deleting booking.");
     }
   };
