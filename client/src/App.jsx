@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, Laptop
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -323,7 +323,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-8">
                   <div className="grid md:grid-cols-2 gap-4">
-                    {['Mobile Notary', 'Loan Signing', 'Estate Planning', 'Vehicle Title'].map(svc => (
+                    {/* Updated Service List including RON */}
+                    {['Mobile Notary', 'Loan Signing', 'Estate Planning', 'Vehicle Title', 'Remote Online Notary (OH Only)'].map(svc => (
                       <button
                         key={svc}
                         onClick={() => setFormData({...formData, service: svc})}
