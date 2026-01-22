@@ -46,7 +46,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   }, []);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
       
       {/* --- DESKTOP VIEW --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
@@ -394,7 +394,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             <div className="p-6 border-t border-gray-100 flex justify-between bg-white">
               <div className="flex gap-2">
                 <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
-                {/* CANCEL BUTTON */}
                 <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm md:hidden">Cancel</button>
               </div>
               <button 
@@ -535,31 +534,38 @@ const AdminDashboard = ({ token, onLogout }) => {
     }
   };
   
-  // Export to CSV for Google Sheets
+  // NEW: Export to CSV (Blob Method)
   const handleExport = () => {
     if (!bookings.length) {
-        alert("No bookings to export.");
-        return;
+      alert("No bookings to export.");
+      return;
     }
-    
+
     const headers = ["ID", "Name", "Email", "Service", "Date", "Time", "Address", "Notes"];
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + headers.join(",") + "\n" 
-      + bookings.map(b => [
-          b.id, 
-          `"${b.name}"`, 
-          b.email, 
-          b.service, 
-          new Date(b.date).toLocaleDateString(), 
-          b.time, 
-          `"${b.address || ''}"`, 
-          `"${b.notes || ''}"`
-        ].join(",")).join("\n");
-        
-    const encodedUri = encodeURI(csvContent);
+    
+    // Helper to escape CSV fields properly
+    const safeCsv = (text) => `"${(text || '').toString().replace(/"/g, '""')}"`;
+
+    const csvContent = [
+      headers.join(","),
+      ...bookings.map(b => [
+        b.id,
+        safeCsv(b.name),
+        safeCsv(b.email),
+        safeCsv(b.service),
+        safeCsv(new Date(b.date).toLocaleDateString()),
+        safeCsv(b.time),
+        safeCsv(b.address),
+        safeCsv(b.notes)
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
     link.setAttribute("download", `signature_seal_bookings_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
