@@ -8,7 +8,6 @@ const { Resend } = require('resend');
 const app = express();
 const prisma = new PrismaClient();
 
-// Use system port (required for deployment) or fallback to 3001
 const PORT = process.env.PORT || 3001;
 
 // --- CONFIG ---
@@ -17,11 +16,10 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
+const CLIENT_URL = process.env.CLIENT_URL || 'https://signaturesealnotaries.com';
 
 // --- STRIPE CONFIG ---
-// Get this from: https://dashboard.stripe.com/apikeys (Secret Key)
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
-const CLIENT_URL = process.env.CLIENT_URL || 'https://signaturesealnotaries.com';
 
 // --- CORS CONFIGURATION ---
 app.use(cors({
@@ -34,7 +32,7 @@ app.use(cors({
 app.use(express.json());
 
 // --- NOTIFICATION HELPER ---
-const sendAdminNotification = async (email, name, service, date, time, address, notes, paid = false) => {
+const sendAdminNotification = async (email, name, service, date, time, address, notes, status = 'New Request') => {
   if (!resend) return;
 
   try {
@@ -42,23 +40,24 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
       from: 'onboarding@resend.dev', 
       to: ADMIN_EMAIL, 
       reply_to: email, 
-      subject: `New Booking: ${name} - ${service} ${paid ? '(PAID)' : ''}`,
+      subject: `New Booking: ${name} - ${service} [${status}]`,
       html: `
-        <div style="font-family: sans-serif; color: #333; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-          <h2 style="color: #2c3e50; border-bottom: 2px solid ${paid ? '#27ae60' : '#3498db'}; padding-bottom: 10px;">
-            ${paid ? '✅ Payment Received' : '📅 New Appointment Request'}
-          </h2>
+        <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Appointment Request</h2>
+          <p><strong>Status:</strong> ${status}</p>
           <p><strong>Customer Name:</strong> ${name}</p>
           <p><strong>Service:</strong> ${service}</p>
-          <p><strong>Date:</strong> ${date} at ${time}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${time}</p>
           <p><strong>Email:</strong> ${email}</p>
           <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0; font-weight: bold;">Meeting Address:</p>
-            <p style="margin: 5px 0 15px 0;">${address || 'Not provided'}</p>
-            <p style="margin: 0; font-weight: bold;">Notes:</p>
-            <p style="margin: 5px 0 0 0;">${notes || 'None'}</p>
+            <p style="margin: 0;"><strong>📍 Meeting Address:</strong></p>
+            <p style="margin: 5px 0 0 0; color: #555;">${address || 'Not provided'}</p>
           </div>
-          ${paid ? '<p style="color: #27ae60; font-weight: bold;">Note: Customer has paid the booking deposit online.</p>' : ''}
+          <div style="background: #fdfaf6; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #f39c12;">
+            <p style="margin: 0; color: #d35400;"><strong>📝 Instructions / Notes:</strong></p>
+            <p style="margin: 5px 0 0 0; color: #444;">${notes || 'None'}</p>
+          </div>
         </div>
       `
     });
@@ -79,16 +78,15 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- AI LOGIC (COMPLIANT) ---
+// --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  // Payment Policy Question
   if (q.includes('pay') || q.includes('cost') || q.includes('price')) {
     return {
       service: "Payment Options",
-      reasoning: "We accept Stripe (Online) & Square (In-Person). Invoices are itemized by Travel, Service, and State Notary Fees.",
-      estimatedPrice: "Travel/Service Fee + State Fees ($5 OH / $10 WV)",
+      reasoning: "We accept Stripe (Online) & Square (In-Person).",
+      estimatedPrice: "Service Fee + State Notary Fees",
       action: "read_policy"
     };
   }
@@ -97,15 +95,15 @@ const recommendService = (query) => {
     return {
       service: "Loan Signing",
       reasoning: "Real estate transactions require a certified Loan Signing Agent.",
-      estimatedPrice: "$150 flat rate (Includes Travel, Printing & Courier)",
+      estimatedPrice: "$150 flat rate",
       action: "book_loan"
     };
   }
   
-  if (q.includes('remote') || q.includes('online') || q.includes('ron')) {
+  if (q.includes('remote') || q.includes('online')) {
      return {
       service: "Remote Online Notary (OH & WV)",
-      reasoning: "Authorized for Remote Online Notarization in OH & WV.",
+      reasoning: "Authorized for RON in OH & WV.",
       estimatedPrice: "$25 Platform Fee + Notary Fees",
       action: "book_general"
     };
@@ -113,8 +111,8 @@ const recommendService = (query) => {
 
   return {
     service: "Mobile Notary",
-    reasoning: "Standard mobile appointment. We travel to you.",
-    estimatedPrice: "$40 Base (Travel & Service) + State Fees per stamp",
+    reasoning: "Standard mobile appointment.",
+    estimatedPrice: "$40 Base + State Fees",
     action: "book_general"
   };
 };
@@ -138,7 +136,7 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-// Standard Booking (Pay Later)
+// 1. STANDARD BOOKING (Pay Later)
 app.post('/api/bookings', async (req, res) => {
   try {
     const { name, email, service, date, time, notes, address } = req.body;
@@ -148,7 +146,7 @@ app.post('/api/bookings', async (req, res) => {
       data: { name, email, service, date: new Date(date), time, notes: notes || "", address: address || "" }
     });
     
-    await sendAdminNotification(email, name, service, date, time, address, notes, false);
+    await sendAdminNotification(email, name, service, date, time, address, notes, 'Pay Later');
     res.json(booking);
   } catch (error) {
     console.error("Booking Error:", error);
@@ -156,84 +154,64 @@ app.post('/api/bookings', async (req, res) => {
   }
 });
 
-// Create Stripe Session (COMPLIANT ITEMIZATION)
+// 2. STRIPE CHECKOUT (Pay Now)
 app.post('/api/create-checkout-session', async (req, res) => {
   if (!stripe) return res.status(500).json({ error: "Online payment not configured" });
 
   const { name, email, service, date, time, notes, address } = req.body;
   
-  // Define Line Items based on Service Type
-  let line_items = [];
-
-  if (service.includes('Loan')) {
-    // Loan Signing ($150 Total)
-    line_items = [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: { name: 'Loan Signing Service', description: 'Notarization & Handling' },
-          unit_amount: 10000, // $100.00
-        },
-        quantity: 1,
-      },
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: { name: 'Travel & Convenience Fee', description: 'Mobile Service, Printing & Courier' },
-          unit_amount: 5000, // $50.00
-        },
-        quantity: 1,
+  // A. SAVE BOOKING TO DB FIRST (So we don't lose the lead)
+  try {
+    await prisma.booking.create({
+      data: { 
+        name, 
+        email, 
+        service, 
+        date: new Date(date), 
+        time, 
+        notes: `${notes || ''} (Online Payment Initiated)`, 
+        address: address || "" 
       }
+    });
+    
+    // Send email letting you know a payment attempt started
+    await sendAdminNotification(email, name, service, date, time, address, notes, 'Payment Initiated');
+
+  } catch (dbError) {
+    console.error("DB Save Error:", dbError);
+    return res.status(500).json({ error: "Could not save booking before payment" });
+  }
+
+  // B. CREATE STRIPE SESSION
+  let line_items = [];
+  if (service.includes('Loan')) {
+    line_items = [
+      { price_data: { currency: 'usd', product_data: { name: 'Loan Signing Service' }, unit_amount: 10000 }, quantity: 1 },
+      { price_data: { currency: 'usd', product_data: { name: 'Travel & Convenience Fee' }, unit_amount: 5000 }, quantity: 1 }
     ];
   } else {
-    // Mobile Notary ($40 Total)
-    // We break this down to protect against "overcharging for notary act" claims
     line_items = [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: { name: 'Mobile Travel Fee', description: 'Travel to your location (Base Radius)' },
-          unit_amount: 2500, // $25.00
-        },
-        quantity: 1,
-      },
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: { name: 'Administrative Service Fee', description: 'Appointment scheduling & preparation' },
-          unit_amount: 1500, // $15.00
-        },
-        quantity: 1,
-      }
+      { price_data: { currency: 'usd', product_data: { name: 'Mobile Travel Fee' }, unit_amount: 2500 }, quantity: 1 },
+      { price_data: { currency: 'usd', product_data: { name: 'Administrative Service Fee' }, unit_amount: 1500 }, quantity: 1 }
     ];
   }
   
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: line_items, // Use our compliant breakdown
+      line_items: line_items,
       mode: 'payment',
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
       customer_email: email,
-      metadata: {
-        customer_name: name,
-        service,
-        appointment_date: date,
-        appointment_time: time,
-        address: address || '',
-        notes: notes || ''
-      },
     });
-
     res.json({ url: session.url });
   } catch (e) {
-    console.error("Stripe Error:", e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// Get Bookings
+// GET BOOKINGS (Paginated)
 app.get('/api/bookings', authenticateToken, async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 1;
@@ -251,24 +229,22 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
     }
 });
 
-// Delete Booking (Standard)
+// DELETE
 app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params;
   try {
-    await prisma.booking.delete({ where: { id: parseInt(id) } });
-    res.json({ message: "Deleted successfully" });
+    await prisma.booking.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ message: "Deleted" });
   } catch (err) {
     if (err.code === 'P2025') return res.json({ message: "Already deleted" });
     res.status(500).json({ error: err.message });
   }
 });
 
-// Delete Booking (Fallback)
+// DELETE FALLBACK
 app.post('/api/bookings/delete/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params;
   try {
-    await prisma.booking.delete({ where: { id: parseInt(id) } });
-    res.json({ message: "Deleted successfully via POST" });
+    await prisma.booking.delete({ where: { id: parseInt(req.params.id) } });
+    res.json({ message: "Deleted via POST" });
   } catch (err) {
     if (err.code === 'P2025') return res.json({ message: "Already deleted" });
     res.status(500).json({ error: err.message });
