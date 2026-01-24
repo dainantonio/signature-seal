@@ -9,15 +9,44 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  const hostname = window.location.hostname;
-  if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
-    if (hostname.includes('-5173')) return `https://${hostname.replace('-5173', '-3001')}`;
+  let url = 'http://localhost:3001'; // Default fallback
+
+  // 1. Production (Vercel Env Var)
+  if (import.meta.env.VITE_API_URL) {
+    url = import.meta.env.VITE_API_URL;
+  } 
+  // 2. Codespaces / Gitpod Auto-Detection
+  else {
+    const hostname = window.location.hostname;
+    if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
+      if (hostname.includes('-5173')) {
+        url = `https://${hostname.replace('-5173', '-3001')}`;
+      }
+    }
   }
-  return 'http://localhost:3001';
+  
+  // Clean trailing slash if present
+  return url.replace(/\/$/, "");
 };
 
 const API_URL = getBackendUrl();
+console.log("🔗 Connecting to Backend API at:", API_URL); // DEBUG LOG
+
+// --- HELPER: SAFE FETCH ---
+// Handles the "Unexpected token <" error by checking content-type
+const safeFetch = async (url, options) => {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get("content-type");
+  
+  if (contentType && contentType.indexOf("application/json") === -1) {
+    // We got HTML or Text instead of JSON
+    const text = await res.text();
+    console.error("❌ API Error: Received HTML instead of JSON.", text.substring(0, 200));
+    throw new Error("API Configuration Error: Backend returned HTML. Check VITE_API_URL.");
+  }
+  
+  return res;
+};
 
 // --- ANIMATION VARIANTS ---
 const fadeInUp = {
@@ -48,20 +77,16 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
       
-      {/* --- DESKTOP VIEW (Standard Flex: Logo Left, Nav Right) --- */}
+      {/* --- DESKTOP VIEW --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
-        
-        {/* Logo Area - Left Aligned */}
         <div 
           className="flex items-center gap-4 cursor-pointer group select-none" 
           onClick={() => onViewChange('home')}
         >
-          {/* Icon Box */}
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
           
-          {/* Text Stack - Left Aligned relative to Icon */}
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
@@ -72,7 +97,6 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           </div>
         </div>
         
-        {/* Right: Navigation + CTA */}
         <div className="flex items-center space-x-10">
           {currentView === 'home' && ['Services', 'Why Us', 'Pricing'].map((item) => (
             <a 
@@ -96,23 +120,16 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
         </div>
       </div>
 
-      {/* --- MOBILE VIEW (Strict 3-Column Grid for Perfect Center) --- */}
+      {/* --- MOBILE VIEW --- */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
-        
-        {/* Col 1: Empty Spacer (Left) */}
         <div className="justify-self-start w-10"></div>
-
-        {/* Col 2: Logo (Dead Center - Icon Left of Words, LARGER) */}
         <div 
           className="justify-self-center flex flex-row items-center gap-3 cursor-pointer w-full justify-center" 
           onClick={() => onViewChange('home')}
         >
-           {/* Icon Box - Large (w-14) */}
            <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
-          
-          {/* Text Stack - Large (text-2xl) */}
           <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-xl sm:text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
@@ -122,8 +139,6 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
             </span>
           </div>
         </div>
-
-        {/* Col 3: Menu Toggle (Right) */}
         <div className="justify-self-end">
           <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
@@ -175,7 +190,7 @@ const AIChatWidget = ({ onRecommend }) => {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/recommend`, {
+      const res = await safeFetch(`${API_URL}/api/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userMsg })
@@ -299,7 +314,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
     try {
       console.log("Submitting to:", endpoint);
-      const res = await fetch(endpoint, {
+      const res = await safeFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -347,7 +362,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-50">
               <h2 className="text-xl font-bold text-brand-navy-dark font-serif">{step === 1 ? 'Select Service' : step === 2 ? 'Your Details' : 'Review & Pay'}</h2>
               
-              {/* EXIT BUTTON - High Z-Index */}
+              {/* EXIT BUTTON */}
               <button onClick={onClose} className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors z-50 cursor-pointer">
                 <X size={24}/>
               </button>
@@ -443,8 +458,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
             <div className="p-6 border-t border-gray-100 flex justify-between bg-white">
               <div className="flex gap-2 w-full md:w-auto">
-                {/* BACKUP CANCEL BUTTON */}
-                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm">Cancel</button>
+                {/* CANCEL BUTTON */}
+                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm whitespace-nowrap">Cancel</button>
                 <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               </div>
               <button 
@@ -475,7 +490,7 @@ const LoginScreen = ({ onLogin }) => {
     setError('');
 
     try {
-      const res = await fetch(`${API_URL}/api/login`, {
+      const res = await safeFetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -550,7 +565,7 @@ const AdminDashboard = ({ token, onLogout }) => {
     setBookings(prev => prev.filter(b => b.id !== id));
 
     const deleteAttempt = async (method, url) => {
-      const res = await fetch(url, {
+      const res = await safeFetch(url, {
         method: method,
         headers: { 
             'Authorization': `Bearer ${token}`,
@@ -625,7 +640,7 @@ const AdminDashboard = ({ token, onLogout }) => {
 
   const fetchBookings = (page = 1) => {
     setLoading(true);
-    fetch(`${API_URL}/api/bookings?page=${page}&limit=9`, { headers: { 'Authorization': `Bearer ${token}` } })
+    safeFetch(`${API_URL}/api/bookings?page=${page}&limit=9`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
