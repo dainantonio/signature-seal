@@ -16,9 +16,7 @@ const safeFetch = async (url, options) => {
     const res = await fetch(url, options);
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") === -1) {
-      const text = await res.text();
-      console.error("API Error Response:", text);
-      throw new Error("Server is restarting or configured incorrectly. Please wait 1 minute and try again.");
+      throw new Error("Server is updating. Please try again in a moment.");
     }
     return res;
   } catch (err) {
@@ -58,11 +56,11 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           </div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Notary Service</span>
+            <span className={`text-[10px] leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
           </div>
         </div>
         <div className="flex items-center space-x-10">
-          {currentView === 'home' && ['Services', 'Why Us', 'Pricing'].map((item) => (
+          {currentView === 'home' && ['Services', 'Pricing'].map((item) => (
             <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
           ))}
           <button onClick={() => onBookClick()} className={`font-bold px-10 py-3.5 rounded-full transition-all duration-300 transform hover:-translate-y-0.5 ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
@@ -77,7 +75,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           </div>
           <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-xl font-bold leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Notary Service</span>
+            <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Notary Service</span>
           </div>
         </div>
         <div className="justify-self-end">
@@ -88,7 +86,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="md:hidden fixed top-0 left-0 w-full h-screen bg-white z-40 flex flex-col items-center justify-center space-y-8">
-             {['Services', 'Why Us', 'Pricing'].map((item) => (
+             {['Services', 'Pricing'].map((item) => (
               <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark">{item}</a>
             ))}
             <button onClick={() => { onBookClick(); setIsOpen(false); }} className="bg-brand-teal text-white font-bold px-10 py-4 rounded-full text-xl shadow-xl">Book Now</button>
@@ -101,7 +99,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hello! I'm your scheduling assistant. I currently specialize in West Virginia notary services. How can I help you today?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hello! I'm your scheduling assistant. I am currently focusing on West Virginia (WV) services. Ohio expansion is coming very soon!" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -119,7 +117,7 @@ const AIChatWidget = ({ onRecommend }) => {
       const res = await safeFetch(`${API_URL}/api/recommend`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: userMsg }) });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
-    } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "Connection error. Please book directly below." }]); } finally { setIsLoading(false); }
+    } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "Connection error. Please try booking directly below." }]); } finally { setIsLoading(false); }
   };
   return (
     <div className="fixed bottom-8 right-8 z-40 flex flex-col items-end">
@@ -128,16 +126,16 @@ const AIChatWidget = ({ onRecommend }) => {
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-2xl shadow-2xl mb-6 w-[90vw] md:w-96 border border-gray-100 overflow-hidden flex flex-col h-[500px]">
             <div className="bg-brand-navy-dark p-4 flex items-center gap-3 text-white">
               <MessageSquare size={20} className="text-brand-gold" />
-              <h3 className="font-bold text-sm">Concierge AI</h3>
+              <h3 className="font-bold text-sm">Concierge Assistant</h3>
               <button onClick={() => setIsOpen(false)} className="ml-auto opacity-50 hover:opacity-100"><X size={18} /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 text-sm">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
+                  <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
                     <p>{msg.text}</p>
-                    {msg.recommendation && (
-                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white text-xs py-2 rounded font-bold mt-3">Book {msg.recommendation.service}</button>
+                    {msg.recommendation && msg.recommendation.estimatedPrice !== "Coming Soon" && (
+                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider">Book Now</button>
                     )}
                   </div>
                 </div>
@@ -196,7 +194,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
           <div className="p-20 text-center">
             <Check className="w-16 h-16 text-green-500 mx-auto mb-6" />
             <h3 className="text-3xl font-serif font-bold text-brand-navy-dark mb-4">Confirmed!</h3>
-            <p className="text-gray-500 mb-8">We've received your booking request.</p>
+            <p className="text-gray-500 mb-8">Your appointment request in West Virginia has been received.</p>
             <button onClick={onClose} className="bg-brand-navy-dark text-white px-10 py-3 rounded-xl font-bold">Close</button>
           </div>
         ) : (
@@ -208,17 +206,17 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             <div className="p-8 overflow-y-auto">
               {step === 1 && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {['Mobile Notary', 'Loan Signing', 'Remote Online Notary (WV Only)', 'Estate Planning'].map(svc => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    {['Mobile Notary (WV)', 'Loan Signing (WV)', 'Remote Online Notary (WV Only)', 'Estate Planning (WV)'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
-                        {svc === 'Remote Online Notary (WV Only)' && <span className="absolute top-2 right-2 text-[8px] bg-brand-gold text-white px-1.5 py-0.5 rounded-full uppercase">OH Coming Soon</span>}
+                        {svc.includes('Remote') && <span className="absolute top-2 right-2 text-[7px] bg-brand-gold text-white px-1.5 py-0.5 rounded-full uppercase">OH Coming Soon</span>}
                       </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
                     <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal disabled:opacity-50" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
                       <option value="">Select Time</option>
                       {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -227,21 +225,21 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               )}
               {step === 2 && (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                  <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                  <textarea placeholder="Meeting Address" rows={3} className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                  <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                  <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  <textarea placeholder="Meeting Address (Must be in West Virginia)" rows={3} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                 </div>
               )}
               {step === 3 && (
                 <div className="space-y-6">
                   <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <p className="text-sm text-gray-500 uppercase font-bold mb-2 tracking-wider">Appointment Summary</p>
+                    <p className="text-sm text-gray-500 uppercase font-bold mb-2 tracking-wider">WV Appointment Summary</p>
                     <p className="text-lg font-bold text-brand-navy-dark">{formData.service}</p>
                     <p className="text-gray-600">{new Date(formData.date).toLocaleDateString()} at {formData.time}</p>
                   </div>
                   <label className="flex items-center gap-4 p-5 border-2 border-brand-teal/20 rounded-2xl cursor-pointer hover:bg-teal-50 transition-colors">
                     <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                    <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Online Now</span><p className="text-xs text-gray-500">Secure Checkout via Stripe (Credit Card / Apple Pay)</p></div>
+                    <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Online Now</span><p className="text-xs text-gray-500">Secure Checkout via Stripe (WV Local Rates)</p></div>
                   </label>
                 </div>
               )}
@@ -270,12 +268,12 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-xs font-bold uppercase tracking-widest mb-10 border border-white/10">Premier Mobile Notary Service (WV)</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">West Virginia Licensed (OH coming soon)</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Ohio services coming soon.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, bonded, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book Appointment</button>
-          <a href="#services" className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm">Explore Services</a>
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
+          <a href="#services" className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center">Our Services</a>
         </div>
       </motion.div>
     </div>
@@ -286,19 +284,19 @@ const Services = () => (
   <section id="services" className="py-32 bg-white relative">
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">Our Expertise</h2>
+        <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV Expertise</h2>
         <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia.</p>
       </div>
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
-          { icon: Car, title: "Mobile Notary", desc: "We travel to homes, offices, or hospitals across West Virginia." },
-          { icon: FileSignature, title: "Loan Signings", desc: "Expert handling of closings, refinancing, and HELOC packages." },
-          { icon: ShieldCheck, title: "Estate Planning", desc: "Wills, POAs, and affidavits handled with strict legal compliance." }
+          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV." },
+          { icon: FileSignature, title: "Loan Signings", desc: "Expert handling of WV closings, refinancing, and HELOCs." },
+          { icon: ShieldCheck, title: "Legal Docs", desc: "Wills, POAs, and affidavits handled with strict WV compliance." }
         ].map((s, i) => (
           <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center">
             <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
             <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
-            <p className="text-gray-500 leading-relaxed">{s.desc}</p>
+            <p className="text-gray-500 leading-relaxed text-sm">{s.desc}</p>
           </motion.div>
         ))}
       </motion.div>
@@ -309,30 +307,30 @@ const Services = () => (
 const Pricing = ({ onBookClick }) => (
   <section id="pricing" className="py-32 bg-gray-50">
     <div className="container mx-auto px-6">
-      <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4">Transparent Pricing</h2><p className="text-xl text-gray-500">Professional service. Simple flat rates.</p></div>
+      <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service. Ohio coming soon.</p></div>
       <div className="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
         <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-gray-100 flex flex-col items-center group hover:shadow-xl transition-all">
           <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Local Service (WV)</span>
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-6xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-110 transition-transform">From $40</div>
-          <ul className="space-y-4 mb-12 text-gray-600 w-full">
+          <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
             {['Travel included (10 miles)', '1 Notarial Act included', 'Evening & Weekends', 'State Fee Applied ($10 WV per stamp)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
-          <button onClick={() => onBookClick('Mobile Notary')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Choose Standard</button>
+          <button onClick={() => onBookClick('Mobile Notary')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book WV Standard</button>
         </div>
         <div className="bg-brand-navy-dark p-12 rounded-[3rem] shadow-2xl flex flex-col items-center text-white relative overflow-hidden transform md:-translate-y-4">
           <div className="absolute top-0 w-full h-2 bg-gradient-to-r from-brand-teal to-brand-gold"></div>
-          <span className="text-xs font-bold text-brand-gold uppercase tracking-widest mb-4">All-Inclusive</span>
+          <span className="text-xs font-bold text-brand-gold uppercase tracking-widest mb-4">WV All-Inclusive</span>
           <h3 className="text-3xl font-bold mb-6">Loan Signing</h3>
           <div className="text-6xl font-serif font-bold mb-10">$150</div>
-          <ul className="space-y-4 mb-12 text-gray-300 w-full">
+          <ul className="space-y-4 mb-12 text-gray-300 w-full text-sm">
             {['Full loan package handling', 'Travel up to 20 miles', 'Printing & Scan-backs', 'Courier/FedEx Drop-off'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
-          <button onClick={() => onBookClick('Loan Signing')} className="w-full py-5 rounded-2xl bg-brand-teal text-white font-bold hover:bg-teal-500 transition-all text-lg shadow-lg shadow-brand-teal/30">Choose Premium</button>
+          <button onClick={() => onBookClick('Loan Signing')} className="w-full py-5 rounded-2xl bg-brand-teal text-white font-bold hover:bg-teal-500 transition-all text-lg shadow-lg">Book WV Premium</button>
         </div>
       </div>
     </div>
@@ -343,41 +341,37 @@ const Footer = ({ onViewChange }) => (
   <footer className="bg-white border-t border-gray-100 py-20 text-center">
     <div className="inline-block p-4 bg-gray-50 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
     <h2 className="font-serif text-3xl font-bold text-brand-navy-dark mb-10">Signature Seal Notary</h2>
-    <div className="flex justify-center gap-10 mb-12 text-gray-500 font-bold uppercase text-xs tracking-widest">
+    <div className="flex justify-center gap-10 mb-12 text-gray-500 font-bold uppercase text-[10px] tracking-widest">
       <a href="#services" className="hover:text-brand-teal">Services</a>
       <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
-      <a href="#why-us" className="hover:text-brand-teal">About</a>
     </div>
-    <p className="text-gray-400 text-sm font-medium">© {new Date().getFullYear()} Signature Seal Notaries. All rights reserved.</p>
-    <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-300 hover:text-brand-navy-dark flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin Portal</button>
+    <p className="text-gray-400 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
+    <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-200 hover:text-brand-navy-dark flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin</button>
   </footer>
 );
 
-// --- ADMIN LOGIN & DASHBOARD ---
+// --- ADMIN DASHBOARD ---
 
 const LoginScreen = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const res = await safeFetch(`${API_URL}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
       const data = await res.json();
-      if (res.ok) onLogin(data.token); else setError("Incorrect password.");
-    } catch (err) { setError("Could not connect to server."); } finally { setLoading(false); }
+      if (res.ok) onLogin(data.token); else setError("Incorrect.");
+    } catch (err) { setError("Offline."); } finally { setLoading(false); }
   };
   return (
     <div className="min-h-screen bg-brand-navy-dark flex items-center justify-center p-6">
-      <div className="bg-white p-12 rounded-[2.5rem] shadow-2xl max-w-md w-full text-center">
-        <Lock size={48} className="mx-auto text-brand-navy-dark mb-6" />
-        <h2 className="text-2xl font-bold mb-8">Admin Access</h2>
+      <div className="bg-white p-12 rounded-3xl max-w-sm w-full text-center shadow-2xl">
+        <Lock size={40} className="mx-auto mb-6 text-brand-navy-dark" />
         <form onSubmit={handleLogin} className="space-y-4">
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" className="w-full p-4 border-2 rounded-xl outline-none focus:border-brand-teal" />
-          {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full bg-brand-navy-dark text-white font-bold py-4 rounded-xl shadow-lg">{loading ? 'Unlocking...' : 'Login'}</button>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Admin Pass" className="w-full p-4 border rounded-xl outline-none" />
+          <button type="submit" disabled={loading} className="w-full bg-brand-navy-dark text-white font-bold py-4 rounded-xl">{loading ? '...' : 'Unlock'}</button>
         </form>
       </div>
     </div>
@@ -387,45 +381,26 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete booking?")) return;
-    setBookings(prev => prev.filter(b => b.id !== id));
-    try {
-      const res = await fetch(`${API_URL}/api/bookings/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      if (!res.ok) await fetch(`${API_URL}/api/bookings/delete/${id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-    } catch (err) { alert("Server error during deletion."); }
-  };
-
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
-      .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
+      .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
   }, [token]);
-
   return (
-    <div className="container mx-auto px-6 py-32 min-h-screen bg-gray-50">
+    <div className="container mx-auto px-6 py-32 min-h-screen">
       <div className="flex justify-between items-center mb-12">
-        <h2 className="text-4xl font-serif font-bold text-brand-navy-dark tracking-tight">Active Bookings</h2>
-        <button onClick={onLogout} className="bg-red-50 text-red-500 px-6 py-2 rounded-full font-bold hover:bg-red-100 flex items-center gap-2"><LogOut size={18}/> Logout</button>
+        <h2 className="text-3xl font-bold">Bookings</h2>
+        <button onClick={onLogout} className="text-red-500 font-bold">Logout</button>
       </div>
-      {loading ? <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-teal" size={48}/></div> : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {bookings.map(b => (
-            <div key={b.id} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 relative group hover:shadow-md transition-all">
-              <button onClick={() => handleDelete(b.id)} className="absolute top-6 right-6 text-gray-300 hover:text-red-500"><Trash2 size={20}/></button>
-              <span className="text-xs font-bold text-brand-teal uppercase tracking-widest">{b.service}</span>
-              <h3 className="text-2xl font-bold text-brand-navy-dark mt-2 mb-1">{b.name}</h3>
-              <p className="text-gray-400 text-sm mb-6">{b.email}</p>
-              <div className="space-y-2 text-sm font-medium text-gray-600 pt-6 border-t border-gray-50">
-                <p className="flex items-center gap-2"><Calendar size={16} className="text-brand-gold"/> {new Date(b.date).toLocaleDateString()}</p>
-                <p className="flex items-center gap-2"><Clock size={16} className="text-brand-gold"/> {b.time}</p>
-                <p className="flex items-center gap-2"><MapPin size={16} className="text-brand-gold"/> {b.address || 'Direct Contact'}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="grid md:grid-cols-3 gap-6">
+        {bookings.map(b => (
+          <div key={b.id} className="bg-white p-6 rounded-2xl shadow-sm border">
+            <span className="text-[10px] font-bold text-brand-teal uppercase">{b.service}</span>
+            <h3 className="font-bold text-lg mt-1">{b.name}</h3>
+            <p className="text-gray-600 text-sm mt-4">📅 {new Date(b.date).toLocaleDateString()} - {b.time}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -437,15 +412,9 @@ function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
-
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
-
-  useEffect(() => {
-    if (window.location.search.includes('success=true')) { alert("Payment Successful! Thank you for choosing Signature Seal."); window.history.replaceState({}, document.title, "/"); }
-    if (window.location.search.includes('canceled=true')) { alert("Payment Canceled."); window.history.replaceState({}, document.title, "/"); }
-  }, []);
 
   return (
     <div className="font-sans min-h-screen bg-white">
@@ -458,9 +427,7 @@ function App() {
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
             <AIChatWidget onRecommend={(service) => handleBookingOpen(service)} />
           </>
-        ) : (
-          !adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />
-        )}
+        ) : (!adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />)}
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
