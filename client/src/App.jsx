@@ -7,32 +7,29 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- BULLETPROOF CONFIG ---
+// --- NUCLEAR CONFIGURATION ---
 const getBackendUrl = () => {
-  // 1. If Vercel Environment Variable is set, use it (and strip trailing slash)
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/$/, "");
-  }
-  
-  // 2. Production Fallback (Direct Render URL - Bypasses DNS issues)
-  if (import.meta.env.PROD) {
-    return 'https://signature-seal.onrender.com';
-  }
-  
-  // 3. Development / Codespaces Fallback
+  // 1. Local Development
   const hostname = window.location.hostname;
+  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+    return 'http://localhost:3001';
+  }
+
+  // 2. Codespaces / Gitpod
   if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
     if (hostname.includes('-5173')) {
       return `https://${hostname.replace('-5173', '-3001')}`;
     }
   }
 
-  // 4. Localhost
-  return 'http://localhost:3001';
+  // 3. PRODUCTION (The Fix)
+  // We force this to the direct Render URL to bypass DNS issues.
+  // Verify this matches your Render Service URL exactly!
+  return 'https://signature-seal-backend.onrender.com';
 };
 
 const API_URL = getBackendUrl();
-console.log("🔗 Frontend connecting to:", API_URL);
+console.log("🔗 Frontend connecting strictly to:", API_URL);
 
 // --- HELPER: SAFE FETCH ---
 const safeFetch = async (url, options) => {
@@ -42,9 +39,8 @@ const safeFetch = async (url, options) => {
     // Check for HTML response (The "Smoking Gun" error)
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.includes("text/html")) {
-      const text = await res.text();
       console.error(`❌ API Error: Expected JSON, got HTML from ${url}`);
-      throw new Error(`Connection Error: The website tried to talk to the server at ${url}, but got a webpage instead. Check VITE_API_URL in Vercel settings.`);
+      throw new Error(`Connection Error: The website tried to talk to the server at ${url}, but got a webpage instead. This usually means the URL is pointing to the wrong place.`);
     }
     
     return res;
@@ -951,7 +947,8 @@ const Footer = ({ onViewChange }) => (
   </footer>
 );
 
-// Main App
+// --- APP COMPONENT ---
+
 function App() {
   const [view, setView] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
