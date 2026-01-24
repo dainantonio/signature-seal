@@ -15,14 +15,6 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
 
-// --- DIAGNOSTIC LOGGING ---
-console.log("🛠️  BOOT: Checking environment variables...");
-if (process.env.STRIPE_SECRET_KEY) {
-    console.log("✅ BOOT: STRIPE_SECRET_KEY detected (Length: " + process.env.STRIPE_SECRET_KEY.length + ")");
-} else {
-    console.log("❌ BOOT: STRIPE_SECRET_KEY is MISSING in process.env");
-}
-
 // --- INITIALIZE STRIPE ---
 let stripe = null;
 const initStripe = () => {
@@ -44,34 +36,63 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
+// --- AI LOGIC (WV FOCUS) ---
+const recommendService = (query) => {
+  const q = query.toLowerCase();
+  
+  if (q.includes('ohio') || q.includes('oh')) {
+    return {
+      service: "Waiting List",
+      reasoning: "We are currently West Virginia (WV) only. Ohio services are coming very soon! Would you like to schedule for WV instead?",
+      estimatedPrice: "Expansion in progress",
+      action: "book_general"
+    };
+  }
+
+  if (q.includes('loan') || q.includes('mortgage')) {
+    return {
+      service: "Loan Signing",
+      reasoning: "West Virginia real estate transactions require a certified Loan Signing Agent. Our WV flat rate is $150.",
+      estimatedPrice: "$150 flat rate",
+      action: "book_loan"
+    };
+  }
+
+  return {
+    service: "Mobile Notary",
+    reasoning: "Standard mobile appointment in West Virginia.",
+    estimatedPrice: "$40 Base + $10 WV State Fee",
+    action: "book_general"
+  };
+};
+
 // --- ROUTES ---
 
-// 1. DIAGNOSTIC ROUTE (Check this in your browser: https://signature-seal.onrender.com/api/debug)
 app.get('/api/debug', (req, res) => {
     res.json({
         stripe_initialized: !!stripe,
         env_key_exists: !!process.env.STRIPE_SECRET_KEY,
-        env_key_length: process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.length : 0,
-        node_version: process.version
+        scope: "WV ONLY (OH COMING SOON)"
     });
 });
 
-app.get('/', (req, res) => res.send('API Online'));
+app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Focus)'));
+
+app.post('/api/recommend', (req, res) => {
+  const { query } = req.body;
+  if (!query) return res.status(400).json({ error: "Query required" });
+  res.json(recommendService(query));
+});
 
 app.post('/api/create-checkout-session', async (req, res) => {
-  // Try to re-initialize if it failed at boot
   const stripeInstance = initStripe();
-  
-  if (!stripeInstance) {
-    return res.status(500).json({ 
-        error: "Server is initializing Stripe. Please try a 'Manual Deploy' > 'Clear Build Cache' in Render Dashboard." 
-    });
-  }
+  if (!stripeInstance) return res.status(500).json({ error: "Server initializing Stripe. Try again in 30 seconds." });
 
   const { name, email, service, date, time } = req.body;
-  let amount = 4000; 
-  if (service.includes('Loan')) amount = 15000;
-  if (service.includes('Remote')) amount = 5000;
+  
+  // Dynamic Pricing Logic (WV Rates)
+  let amount = 5000; // Default $50 ($40 + $10 WV Fee)
+  if (service.includes('Loan')) amount = 15000; // $150
 
   try {
     const session = await stripeInstance.checkout.sessions.create({
@@ -79,7 +100,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: service, description: `Appointment: ${date} at ${time}` },
+          product_data: { name: `${service} (West Virginia)`, description: `Appointment: ${date} at ${time}` },
           unit_amount: amount,
         },
         quantity: 1,
@@ -91,17 +112,27 @@ app.post('/api/create-checkout-session', async (req, res) => {
     });
     res.json({ url: session.url });
   } catch (e) {
-    console.error("Stripe Session Error:", e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// [Rest of your routes: /api/bookings, /api/login, etc.]
 app.post('/api/bookings', async (req, res) => {
     try {
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
         res.json(booking);
     } catch (err) { res.status(500).json({ error: "Booking failed" }); }
+});
+
+app.get('/api/bookings', async (req, res) => {
+    try {
+      const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
+      res.json(bookings);
+    } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
+});
+
+app.delete('/api/bookings/:id', async (req, res) => {
+  try { await prisma.booking.delete({ where: { id: parseInt(req.params.id) } }); res.json({ message: "Deleted" }); }
+  catch (err) { res.json({ message: "Deleted" }); }
 });
 
 app.post('/api/login', (req, res) => {
