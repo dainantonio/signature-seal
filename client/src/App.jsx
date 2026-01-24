@@ -7,48 +7,50 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- NUCLEAR CONFIGURATION ---
+// --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  // 1. Local Development
+  // 1. Prioritize the Vercel Environment Variable
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, "");
+  }
+  
+  // 2. Production Fallback (Your EXACT Render URL)
+  // This bypasses DNS issues by hitting the server directly
+  if (import.meta.env.PROD) {
+    return 'https://signature-seal.onrender.com';
+  }
+  
+  // 3. Codespaces / Gitpod Auto-Detection
   const hostname = window.location.hostname;
-  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-    return 'http://localhost:3001';
-  }
-
-  // 2. Codespaces / Gitpod
   if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
-    if (hostname.includes('-5173')) {
-      return `https://${hostname.replace('-5173', '-3001')}`;
-    }
+    if (hostname.includes('-5173')) return `https://${hostname.replace('-5173', '-3001')}`;
   }
 
-  // 3. PRODUCTION (The Fix)
-  // We force this to the direct Render URL to bypass DNS issues.
-  // Verify this matches your Render Service URL exactly!
-  return 'https://signature-seal-backend.onrender.com';
+  // 4. Localhost Fallback
+  return 'http://localhost:3001';
 };
 
 const API_URL = getBackendUrl();
-console.log("🔗 Frontend connecting strictly to:", API_URL);
+console.log("🔗 Frontend connecting to:", API_URL);
 
 // --- HELPER: SAFE FETCH ---
 const safeFetch = async (url, options) => {
   try {
     const res = await fetch(url, options);
     
-    // Check for HTML response (The "Smoking Gun" error)
     const contentType = res.headers.get("content-type");
+    
+    // Check if we got HTML instead of JSON (The "Smoking Gun" error)
     if (contentType && contentType.includes("text/html")) {
+      const text = await res.text();
       console.error(`❌ API Error: Expected JSON, got HTML from ${url}`);
-      throw new Error(`Connection Error: The website tried to talk to the server at ${url}, but got a webpage instead. This usually means the URL is pointing to the wrong place.`);
+      throw new Error(`Connection Error: The website tried to talk to the server at ${url}, but got a webpage instead. Please check VITE_API_URL in Vercel settings.`);
     }
     
     return res;
   } catch (err) {
-    console.error("Fetch Error:", err);
-    throw new Error(err.message === "Failed to fetch" 
-      ? "Server unreachable. It may be sleeping (Render Free Tier) or the URL is wrong." 
-      : err.message);
+    console.error("Network Request Failed:", err);
+    throw err;
   }
 };
 
