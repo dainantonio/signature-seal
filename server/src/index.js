@@ -19,15 +19,21 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 const CLIENT_URL = process.env.CLIENT_URL || 'https://signaturesealnotaries.com';
 
-// --- STRIPE INITIALIZATION ---
+// --- STRIPE INITIALIZATION (With Enhanced Debugging) ---
 let stripe = null;
-if (process.env.STRIPE_SECRET_KEY) {
+const rawStripeKey = process.env.STRIPE_SECRET_KEY;
+
+if (rawStripeKey) {
   try {
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY.trim());
-    console.log("✅ Stripe successfully initialized.");
+    // We trim the key to ensure no accidental spaces or newlines break the SDK
+    const sanitizedKey = rawStripeKey.trim();
+    stripe = require('stripe')(sanitizedKey);
+    console.log("✅ STRIPE STATUS: System detected the secret key and initialized correctly.");
   } catch (err) {
-    console.error("❌ Stripe Init Failed:", err.message);
+    console.error("❌ STRIPE STATUS: Detected key but initialization failed:", err.message);
   }
+} else {
+  console.error("⚠️ STRIPE STATUS: No STRIPE_SECRET_KEY found in Environment Variables.");
 }
 
 // --- CORS (PERMISSIVE FOR CONNECTION FIX) ---
@@ -83,7 +89,10 @@ app.post('/api/bookings', async (req, res) => {
 // 3. STRIPE CHECKOUT (PAY NOW)
 app.post('/api/create-checkout-session', async (req, res) => {
   if (!stripe) {
-    return res.status(500).json({ error: "Stripe not configured on Render. Please check Environment Variables." });
+    console.error("❌ Blocked Payment Attempt: Stripe is not initialized on the server.");
+    return res.status(500).json({ 
+      error: "Stripe not configured. Ensure STRIPE_SECRET_KEY is set in Render Environment Variables and the service has restarted." 
+    });
   }
 
   const { name, email, service, date, time, address } = req.body;
@@ -106,7 +115,10 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: productName, description: `${service} - ${date} @ ${time}` },
+          product_data: { 
+            name: productName, 
+            description: `${service} - Scheduled for ${date} at ${time}` 
+          },
           unit_amount: amount,
         },
         quantity: 1,
@@ -120,6 +132,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
     res.json({ url: session.url });
   } catch (e) {
+    console.error("❌ Stripe API Error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
@@ -148,5 +161,5 @@ app.delete('/api/bookings/:id', async (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
