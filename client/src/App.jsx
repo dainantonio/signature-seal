@@ -9,22 +9,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  // 1. Prioritize the Vercel Environment Variable
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/$/, "");
-  }
-  
-  // 2. Codespaces / Gitpod Auto-Detection
-  const hostname = window.location.hostname;
-  if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
-    if (hostname.includes('-5173')) return `https://${hostname.replace('-5173', '-3001')}`;
-  }
-
-  // 3. Localhost Fallback
-  return 'http://localhost:3001';
+  // 1. Direct Render URL (The "Nuclear Option" to fix DNS issues)
+  // This bypasses api.signaturesealnotaries.com and goes straight to the server
+  return 'https://signature-seal-backend.onrender.com';
 };
 
 const API_URL = getBackendUrl();
+console.log("🔗 Connecting directly to Render Backend:", API_URL);
 
 // --- HELPER: SAFE FETCH ---
 const safeFetch = async (url, options) => {
@@ -32,11 +23,10 @@ const safeFetch = async (url, options) => {
     const res = await fetch(url, options);
     const contentType = res.headers.get("content-type");
     
-    // Check if we got HTML instead of JSON (The "Smoking Gun" error)
     if (contentType && contentType.indexOf("application/json") === -1) {
       const text = await res.text();
       console.error(`❌ API Error: Expected JSON, got HTML from ${url}`);
-      throw new Error(`Connection Error: The website tried to talk to the server at ${url}, but got a webpage instead. Please check VITE_API_URL in Vercel settings.`);
+      throw new Error(`Connection Error: Server returned HTML. Please verify your Render URL is correct in App.jsx.`);
     }
     
     return res;
