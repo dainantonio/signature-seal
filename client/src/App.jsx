@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -48,15 +48,20 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
       
-      {/* --- DESKTOP VIEW --- */}
+      {/* --- DESKTOP VIEW (Standard Flex: Logo Left, Nav Right) --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
+        
+        {/* Logo Area - Left Aligned */}
         <div 
           className="flex items-center gap-4 cursor-pointer group select-none" 
           onClick={() => onViewChange('home')}
         >
+          {/* Icon Box */}
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 shrink-0 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
+          
+          {/* Text Stack - Left Aligned relative to Icon */}
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
@@ -67,6 +72,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
           </div>
         </div>
         
+        {/* Right: Navigation + CTA */}
         <div className="flex items-center space-x-10">
           {currentView === 'home' && ['Services', 'Why Us', 'Pricing'].map((item) => (
             <a 
@@ -90,16 +96,23 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
         </div>
       </div>
 
-      {/* --- MOBILE VIEW --- */}
+      {/* --- MOBILE VIEW (Strict 3-Column Grid for Perfect Center) --- */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
+        
+        {/* Col 1: Empty Spacer (Left) */}
         <div className="justify-self-start w-10"></div>
+
+        {/* Col 2: Logo (Dead Center - Icon Left of Words, LARGER) */}
         <div 
           className="justify-self-center flex flex-row items-center gap-3 cursor-pointer w-full justify-center" 
           onClick={() => onViewChange('home')}
         >
+           {/* Icon Box - Large (w-14) */}
            <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
+          
+          {/* Text Stack - Large (text-2xl) */}
           <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-xl sm:text-2xl font-bold leading-none whitespace-nowrap text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
               Signature Seal
@@ -109,6 +122,8 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
             </span>
           </div>
         </div>
+
+        {/* Col 3: Menu Toggle (Right) */}
         <div className="justify-self-end">
           <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
@@ -283,6 +298,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     const endpoint = payNow ? `${API_URL}/api/create-checkout-session` : `${API_URL}/api/bookings`;
 
     try {
+      console.log("Submitting to:", endpoint);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -301,9 +317,14 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
           setTimeout(() => { onClose(); setSuccess(false); setStep(1); setFormData({ service: '', date: '', time: '', name: '', email: '', address: '', notes: '' }); }, 2000);
         }
       } else {
-        alert("Request failed: " + (data.error || "Unknown Error"));
+        alert(`Request failed: ${data.error || "Unknown Server Error"}`);
       }
-    } catch (err) { alert("Network Error"); } finally { setIsSubmitting(false); }
+    } catch (err) { 
+      console.error("Network Catch:", err);
+      alert(`Network Error: ${err.message}. Check console/Render logs.`); 
+    } finally { 
+      setIsSubmitting(false); 
+    }
   };
 
   return (
@@ -325,7 +346,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
           <>
             <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-50">
               <h2 className="text-xl font-bold text-brand-navy-dark font-serif">{step === 1 ? 'Select Service' : step === 2 ? 'Your Details' : 'Review & Pay'}</h2>
-              <button onClick={onClose} className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors z-50 cursor-pointer"><X size={24}/></button>
+              
+              {/* EXIT BUTTON - High Z-Index */}
+              <button onClick={onClose} className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors z-50 cursor-pointer">
+                <X size={24}/>
+              </button>
             </div>
 
             <div className="p-8 overflow-y-auto bg-gray-50/30">
@@ -418,7 +443,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
             <div className="p-6 border-t border-gray-100 flex justify-between bg-white">
               <div className="flex gap-2 w-full md:w-auto">
-                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm whitespace-nowrap">Cancel</button>
+                {/* BACKUP CANCEL BUTTON */}
+                <button onClick={onClose} className="text-red-400 font-bold hover:text-red-600 px-4 text-sm">Cancel</button>
                 <button onClick={() => setStep(s => Math.max(1, s - 1))} className={`text-gray-400 font-bold hover:text-brand-navy px-6 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               </div>
               <button 
@@ -623,7 +649,7 @@ const AdminDashboard = ({ token, onLogout }) => {
   }, [token]);
 
   return (
-    <div className="container mx-auto px-6 py-24 pt-32 min-h-screen bg-gray-50">
+    <div className="container mx-auto px-6 py-24 min-h-screen bg-gray-50 pt-32">
       <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-4">
         <h2 className="text-4xl font-serif text-brand-navy-dark font-bold flex items-center gap-4">
           <div className="p-3 bg-white shadow-sm rounded-xl"><Lock className="w-8 h-8 text-brand-gold" /></div>
@@ -655,7 +681,7 @@ const AdminDashboard = ({ token, onLogout }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {bookings.map((booking) => (
             <div key={booking.id} className="bg-white p-8 rounded-3xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] border border-gray-100 hover:-translate-y-1 transition-transform duration-300 relative group">
-              {/* DELETE BUTTON */}
+              {/* DELETE BUTTON - MOVED TO FOOTER FOR EASIER ACCESS */}
               <button 
                 onClick={() => handleDelete(booking.id)}
                 className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors"
@@ -731,7 +757,7 @@ const Hero = ({ onBookClick }) => (
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal via-white to-brand-gold">Signature.</span>
         </h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
-          Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule. Appointments available outside listed hours by request.
+          Professional, certified mobile notary services delivered to your doorstep. Accuracy you can rely on, on your schedule.
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center gap-6">
