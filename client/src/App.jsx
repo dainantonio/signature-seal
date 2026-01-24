@@ -9,30 +9,50 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  // 1. Direct Render URL (The "Nuclear Option" to fix DNS issues)
-  // This bypasses api.signaturesealnotaries.com and goes straight to the server
-  return 'https://signature-seal-backend.onrender.com';
+  // 1. If Vercel Environment Variable is set, use it (and strip trailing slash)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, "");
+  }
+  
+  // 2. Production Fallback (Direct Render URL - Bypasses DNS issues)
+  if (import.meta.env.PROD) {
+    return 'https://signature-seal.onrender.com';
+  }
+  
+  // 3. Development / Codespaces Fallback
+  const hostname = window.location.hostname;
+  if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
+    if (hostname.includes('-5173')) {
+      return `https://${hostname.replace('-5173', '-3001')}`;
+    }
+  }
+
+  // 4. Localhost
+  return 'http://localhost:3001';
 };
 
 const API_URL = getBackendUrl();
-console.log("🔗 Connecting directly to Render Backend:", API_URL);
+console.log("🔗 Frontend connecting to:", API_URL);
 
 // --- HELPER: SAFE FETCH ---
 const safeFetch = async (url, options) => {
   try {
     const res = await fetch(url, options);
-    const contentType = res.headers.get("content-type");
     
-    if (contentType && contentType.indexOf("application/json") === -1) {
+    // Check for HTML response (The "Smoking Gun" error)
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("text/html")) {
       const text = await res.text();
       console.error(`❌ API Error: Expected JSON, got HTML from ${url}`);
-      throw new Error(`Connection Error: Server returned HTML. Please verify your Render URL is correct in App.jsx.`);
+      throw new Error(`Connection Error: The website tried to talk to the server at ${url}, but got a webpage instead. Check VITE_API_URL in Vercel settings.`);
     }
     
     return res;
   } catch (err) {
-    console.error("Network Request Failed:", err);
-    throw err;
+    console.error("Fetch Error:", err);
+    throw new Error(err.message === "Failed to fetch" 
+      ? "Server unreachable. It may be sleeping (Render Free Tier) or the URL is wrong." 
+      : err.message);
   }
 };
 
@@ -931,8 +951,7 @@ const Footer = ({ onViewChange }) => (
   </footer>
 );
 
-// --- APP COMPONENT ---
-
+// Main App
 function App() {
   const [view, setView] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
