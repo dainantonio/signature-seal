@@ -36,30 +36,31 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV FOCUS) ---
+// --- AI LOGIC (WV ONLY - OH COMING SOON) ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('ohio') || q.includes('oh')) {
+  // Explicitly block/redirect Ohio queries
+  if (q.includes('ohio') || q.includes(' oh ')) {
     return {
-      service: "Waiting List",
-      reasoning: "We are currently West Virginia (WV) only. Ohio services are coming very soon! Would you like to schedule for WV instead?",
-      estimatedPrice: "Expansion in progress",
-      action: "book_general"
+      service: "Expansion Waiting List",
+      reasoning: "We are currently West Virginia (WV) only. Our Ohio commission is in progress and will be active very soon! Please check back in a few weeks for OH services.",
+      estimatedPrice: "Coming Soon",
+      action: "read_more"
     };
   }
 
   if (q.includes('loan') || q.includes('mortgage')) {
     return {
-      service: "Loan Signing",
-      reasoning: "West Virginia real estate transactions require a certified Loan Signing Agent. Our WV flat rate is $150.",
+      service: "Loan Signing (WV)",
+      reasoning: "West Virginia real estate closings require a certified Loan Signing Agent. We serve all of WV.",
       estimatedPrice: "$150 flat rate",
       action: "book_loan"
     };
   }
 
   return {
-    service: "Mobile Notary",
+    service: "Mobile Notary (WV)",
     reasoning: "Standard mobile appointment in West Virginia.",
     estimatedPrice: "$40 Base + $10 WV State Fee",
     action: "book_general"
@@ -72,11 +73,12 @@ app.get('/api/debug', (req, res) => {
     res.json({
         stripe_initialized: !!stripe,
         env_key_exists: !!process.env.STRIPE_SECRET_KEY,
-        scope: "WV ONLY (OH COMING SOON)"
+        market_scope: "WV_ONLY",
+        ohio_status: "COMING_SOON"
     });
 });
 
-app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Focus)'));
+app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Only Mode)'));
 
 app.post('/api/recommend', (req, res) => {
   const { query } = req.body;
@@ -90,8 +92,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const { name, email, service, date, time } = req.body;
   
-  // Dynamic Pricing Logic (WV Rates)
-  let amount = 5000; // Default $50 ($40 + $10 WV Fee)
+  // Dynamic Pricing Logic (WV Standard Rates)
+  let amount = 5000; // $50 ($40 + $10 WV Fee)
   if (service.includes('Loan')) amount = 15000; // $150
 
   try {
@@ -100,7 +102,10 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: `${service} (West Virginia)`, description: `Appointment: ${date} at ${time}` },
+          product_data: { 
+            name: `${service} (West Virginia Only)`, 
+            description: `Scheduled for ${date} at ${time}` 
+          },
           unit_amount: amount,
         },
         quantity: 1,
@@ -140,4 +145,4 @@ app.post('/api/login', (req, res) => {
     else res.status(401).json({ error: "Invalid password" });
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV Scope)`));
