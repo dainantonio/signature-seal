@@ -8,6 +8,7 @@ const { Resend } = require('resend');
 const app = express();
 const prisma = new PrismaClient();
 
+// Use system port (required for deployment) or fallback to 3001
 const PORT = process.env.PORT || 3001;
 
 // --- CONFIG ---
@@ -16,18 +17,31 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
-const CLIENT_URL = process.env.CLIENT_URL || 'https://signaturesealnotaries.com';
 
 // --- STRIPE CONFIG ---
-const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  try {
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  } catch (err) {
+    console.error("Stripe Init Failed:", err.message);
+  }
+}
+const CLIENT_URL = process.env.CLIENT_URL || 'https://signaturesealnotaries.com';
 
-// --- CORS CONFIGURATION ---
-app.use(cors({
-  origin: true, 
+// --- ROBUST CORS CONFIGURATION ---
+const corsOptions = {
+  origin: true, // Allow any origin while respecting credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
-}));
+};
+
+// 1. Apply Standard CORS
+app.use(cors(corsOptions));
+
+// 2. Force Handle Preflight (OPTIONS) requests - CRITICAL FOR PAYMENT/DELETE
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
@@ -43,8 +57,9 @@ const sendAdminNotification = async (email, name, service, date, time, address, 
       subject: `New Booking: ${name} - ${service} [${status}]`,
       html: `
         <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-          <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Appointment Request</h2>
-          <p><strong>Status:</strong> ${status}</p>
+          <h2 style="color: #2c3e50; border-bottom: 2px solid ${status.includes('Payment') ? '#27ae60' : '#3498db'}; padding-bottom: 10px;">
+            ${status.includes('Payment') ? '✅ Payment Initiated' : '📅 New Appointment Request'}
+          </h2>
           <p><strong>Customer Name:</strong> ${name}</p>
           <p><strong>Service:</strong> ${service}</p>
           <p><strong>Date:</strong> ${date}</p>
@@ -156,11 +171,14 @@ app.post('/api/bookings', async (req, res) => {
 
 // 2. STRIPE CHECKOUT (Pay Now)
 app.post('/api/create-checkout-session', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: "Online payment not configured" });
+  if (!stripe) {
+    console.error("Stripe key missing in env");
+    return res.status(500).json({ error: "Online payment setup incomplete" });
+  }
 
   const { name, email, service, date, time, notes, address } = req.body;
   
-  // A. SAVE BOOKING TO DB FIRST (So we don't lose the lead)
+  // A. SAVE BOOKING FIRST
   try {
     await prisma.booking.create({
       data: { 
@@ -174,12 +192,12 @@ app.post('/api/create-checkout-session', async (req, res) => {
       }
     });
     
-    // Send email letting you know a payment attempt started
-    await sendAdminNotification(email, name, service, date, time, address, notes, 'Payment Initiated');
+    // Notify admin that payment is starting
+    sendAdminNotification(email, name, service, date, time, address, notes, 'Payment Initiated');
 
   } catch (dbError) {
     console.error("DB Save Error:", dbError);
-    return res.status(500).json({ error: "Could not save booking before payment" });
+    // We continue even if DB save fails to let them pay, but ideally we warn
   }
 
   // B. CREATE STRIPE SESSION
@@ -190,6 +208,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
       { price_data: { currency: 'usd', product_data: { name: 'Travel & Convenience Fee' }, unit_amount: 5000 }, quantity: 1 }
     ];
   } else {
+    // Mobile Notary ($40 breakdown)
     line_items = [
       { price_data: { currency: 'usd', product_data: { name: 'Mobile Travel Fee' }, unit_amount: 2500 }, quantity: 1 },
       { price_data: { currency: 'usd', product_data: { name: 'Administrative Service Fee' }, unit_amount: 1500 }, quantity: 1 }
@@ -204,9 +223,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
       customer_email: email,
+      metadata: { customer_name: name, service, date, time }
     });
     res.json({ url: session.url });
   } catch (e) {
+    console.error("Stripe Error:", e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -229,22 +250,24 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE
+// DELETE ROUTE (Standard)
 app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
   try {
-    await prisma.booking.delete({ where: { id: parseInt(req.params.id) } });
-    res.json({ message: "Deleted" });
+    await prisma.booking.delete({ where: { id: parseInt(id) } });
+    res.json({ message: "Deleted successfully" });
   } catch (err) {
     if (err.code === 'P2025') return res.json({ message: "Already deleted" });
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE FALLBACK
+// DELETE ROUTE (Fallback POST)
 app.post('/api/bookings/delete/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
   try {
-    await prisma.booking.delete({ where: { id: parseInt(req.params.id) } });
-    res.json({ message: "Deleted via POST" });
+    await prisma.booking.delete({ where: { id: parseInt(id) } });
+    res.json({ message: "Deleted successfully via POST" });
   } catch (err) {
     if (err.code === 'P2025') return res.json({ message: "Already deleted" });
     res.status(500).json({ error: err.message });
