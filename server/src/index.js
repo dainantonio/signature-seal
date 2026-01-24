@@ -18,29 +18,31 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
 
-// --- STRIPE CONFIG ---
+// --- STRIPE SETUP ---
+// We use a try/catch here so the whole server doesn't crash if the key is bad/missing
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
   try {
     stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
   } catch (err) {
-    console.error("Stripe Init Failed:", err.message);
+    console.error("⚠️ Stripe failed to initialize:", err.message);
   }
 }
 const CLIENT_URL = process.env.CLIENT_URL || 'https://signaturesealnotaries.com';
 
 // --- ROBUST CORS CONFIGURATION ---
 const corsOptions = {
-  origin: true, // Allow any origin while respecting credentials
+  origin: true, // Allow any origin that sends credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 };
 
-// 1. Apply Standard CORS
+// 1. Apply CORS to all requests
 app.use(cors(corsOptions));
 
-// 2. Force Handle Preflight (OPTIONS) requests - CRITICAL FOR PAYMENT/DELETE
+// 2. FORCE HANDLE PREFLIGHT (OPTIONS) REQUESTS
+// This fixes the "Network Error" on Delete/Payment
 app.options('*', cors(corsOptions));
 
 app.use(express.json());
@@ -93,45 +95,6 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- AI LOGIC ---
-const recommendService = (query) => {
-  const q = query.toLowerCase();
-  
-  if (q.includes('pay') || q.includes('cost') || q.includes('price')) {
-    return {
-      service: "Payment Options",
-      reasoning: "We accept Stripe (Online) & Square (In-Person).",
-      estimatedPrice: "Service Fee + State Notary Fees",
-      action: "read_policy"
-    };
-  }
-
-  if (q.includes('loan') || q.includes('mortgage') || q.includes('closing')) {
-    return {
-      service: "Loan Signing",
-      reasoning: "Real estate transactions require a certified Loan Signing Agent.",
-      estimatedPrice: "$150 flat rate",
-      action: "book_loan"
-    };
-  }
-  
-  if (q.includes('remote') || q.includes('online')) {
-     return {
-      service: "Remote Online Notary (OH & WV)",
-      reasoning: "Authorized for RON in OH & WV.",
-      estimatedPrice: "$25 Platform Fee + Notary Fees",
-      action: "book_general"
-    };
-  }
-
-  return {
-    service: "Mobile Notary",
-    reasoning: "Standard mobile appointment.",
-    estimatedPrice: "$40 Base + State Fees",
-    action: "book_general"
-  };
-};
-
 // --- ROUTES ---
 
 app.get('/', (req, res) => res.send('Signature Seal API - Online'));
@@ -139,7 +102,13 @@ app.get('/', (req, res) => res.send('Signature Seal API - Online'));
 app.post('/api/recommend', (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ error: "Query required" });
-  res.json(recommendService(query));
+  
+  // Simple AI logic to prevent complexity
+  const q = query.toLowerCase();
+  if (q.includes('loan') || q.includes('mortgage')) {
+    return res.json({ service: "Loan Signing", estimatedPrice: "$150 flat rate", action: "book_loan" });
+  }
+  res.json({ service: "Mobile Notary", estimatedPrice: "Travel + Notary Fees", action: "book_general" });
 });
 
 app.post('/api/login', (req, res) => {
@@ -172,13 +141,13 @@ app.post('/api/bookings', async (req, res) => {
 // 2. STRIPE CHECKOUT (Pay Now)
 app.post('/api/create-checkout-session', async (req, res) => {
   if (!stripe) {
-    console.error("Stripe key missing in env");
-    return res.status(500).json({ error: "Online payment setup incomplete" });
+    console.error("Stripe Error: API Key missing or invalid.");
+    return res.status(500).json({ error: "Online payment is currently unavailable." });
   }
 
   const { name, email, service, date, time, notes, address } = req.body;
   
-  // A. SAVE BOOKING FIRST
+  // A. SAVE BOOKING FIRST (Prevent data loss)
   try {
     await prisma.booking.create({
       data: { 
@@ -192,12 +161,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
       }
     });
     
-    // Notify admin that payment is starting
-    sendAdminNotification(email, name, service, date, time, address, notes, 'Payment Initiated');
+    await sendAdminNotification(email, name, service, date, time, address, notes, 'Payment Initiated');
 
   } catch (dbError) {
-    console.error("DB Save Error:", dbError);
-    // We continue even if DB save fails to let them pay, but ideally we warn
+    console.error("DB Save Error during payment:", dbError);
+    // Continue to payment even if DB save fails, but log it
   }
 
   // B. CREATE STRIPE SESSION
@@ -227,12 +195,12 @@ app.post('/api/create-checkout-session', async (req, res) => {
     });
     res.json({ url: session.url });
   } catch (e) {
-    console.error("Stripe Error:", e);
+    console.error("Stripe Session Error:", e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// GET BOOKINGS (Paginated)
+// GET BOOKINGS
 app.get('/api/bookings', authenticateToken, async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 1;
