@@ -9,34 +9,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  let url = 'http://localhost:3001'; // Default local fallback
-
-  // 1. Check for Environment Variable
+  // 1. If Vercel Env Var is set, use it (Highest Priority)
   if (import.meta.env.VITE_API_URL) {
-    url = import.meta.env.VITE_API_URL;
-  } 
-  // 2. Production Fallback (Hardcoded Safety Net)
-  else if (import.meta.env.PROD) {
-    url = 'https://api.signaturesealnotaries.com';
+    return import.meta.env.VITE_API_URL.replace(/\/$/, "");
   }
   
-  // 3. Codespaces / Gitpod Auto-Detection
+  // 2. Production Fallback (If Env Var is missing)
+  if (import.meta.env.PROD) {
+    return 'https://api.signaturesealnotaries.com';
+  }
+  
+  // 3. Codespaces / Gitpod Auto-Detection (Development)
   const hostname = window.location.hostname;
   if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
     if (hostname.includes('-5173')) {
-      url = `https://${hostname.replace('-5173', '-3001')}`;
+      return `https://${hostname.replace('-5173', '-3001')}`;
     }
   }
 
-  // SAFETY CHECK: If URL matches current window, we are calling ourselves (Infinite Loop / HTML Error)
-  // Force switch to the API subdomain if that happens
-  if (url.includes(window.location.host) && !url.includes('api.') && !url.includes('localhost') && !url.includes('-3001')) {
-     console.warn("⚠️ API URL points to Frontend. Switching to api. subdomain.");
-     url = 'https://api.signaturesealnotaries.com';
-  }
-  
-  // Clean trailing slash if present
-  return url.replace(/\/$/, "");
+  // 4. Localhost Fallback
+  return 'http://localhost:3001';
 };
 
 const API_URL = getBackendUrl();
@@ -48,15 +40,18 @@ const safeFetch = async (url, options) => {
     const res = await fetch(url, options);
     const contentType = res.headers.get("content-type");
     
-    if (contentType && contentType.indexOf("application/json") === -1) {
+    if (!contentType || contentType.indexOf("application/json") === -1) {
+      // We got HTML or Text instead of JSON. This usually means we hit a 404 page or the wrong server.
       const text = await res.text();
-      console.error("❌ API Error: Received HTML instead of JSON.", text.substring(0, 100));
-      throw new Error(`API Configuration Error. Expected JSON, got HTML from ${url}`);
+      const preview = text.substring(0, 150).replace(/</g, "&lt;"); // Safe preview
+      console.error(`❌ API Error: Expected JSON, got ${contentType || 'unknown'} from ${url}`);
+      console.error("Response Preview:", text.substring(0, 500));
+      throw new Error(`API Configuration Error. The server returned HTML instead of JSON. (Did you point 'api.signaturesealnotaries.com' to Render?)`);
     }
     
     return res;
   } catch (err) {
-    console.error("Fetch failed:", err);
+    console.error("Fetch Request Failed:", err);
     throw err;
   }
 };
@@ -349,7 +344,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
       }
     } catch (err) { 
       console.error("Network Catch:", err);
-      alert(`Network Error: ${err.message}. Check console for details.`); 
+      // Fallback message handled by safeFetch console logs, user sees alert
+      if (err.message.includes("API Configuration Error")) {
+        alert(err.message);
+      } else {
+        alert(`Network Error: ${err.message}. Check console for details.`); 
+      }
     } finally { 
       setIsSubmitting(false); 
     }
@@ -385,7 +385,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-8">
                   <div className="grid md:grid-cols-2 gap-4">
-                    {/* UPDATED SERVICE LIST TO INCLUDE WV RON */}
+                    {/* UPDATED SERVICE LIST */}
                     {['Mobile Notary', 'Loan Signing', 'Estate Planning', 'Vehicle Title', 'Remote Online Notary (OH & WV)'].map(svc => (
                       <button
                         key={svc}
