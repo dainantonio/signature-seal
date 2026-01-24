@@ -101,7 +101,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hello! I'm your scheduling assistant. What service are you looking for today?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hello! I'm your scheduling assistant. I currently specialize in West Virginia notary services. How can I help you today?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -209,8 +209,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {['Mobile Notary', 'Loan Signing', 'Remote Online Notary (OH & WV)', 'Estate Planning'].map(svc => (
-                      <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>{svc}</button>
+                    {['Mobile Notary', 'Loan Signing', 'Remote Online Notary (WV Only)', 'Estate Planning'].map(svc => (
+                      <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
+                        {svc}
+                        {svc === 'Remote Online Notary (WV Only)' && <span className="absolute top-2 right-2 text-[8px] bg-brand-gold text-white px-1.5 py-0.5 rounded-full uppercase">OH Coming Soon</span>}
+                      </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
@@ -267,9 +270,9 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-xs font-bold uppercase tracking-widest mb-10 border border-white/10">Premier Mobile Notary Service</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-xs font-bold uppercase tracking-widest mb-10 border border-white/10">Premier Mobile Notary Service (WV)</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep. Accurate, bonded, and ready on your schedule.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Ohio services coming soon.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book Appointment</button>
           <a href="#services" className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm">Explore Services</a>
@@ -284,11 +287,11 @@ const Services = () => (
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
         <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">Our Expertise</h2>
-        <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule.</p>
+        <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia.</p>
       </div>
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
-          { icon: Car, title: "Mobile Notary", desc: "We travel to homes, offices, or hospitals—wherever you need us." },
+          { icon: Car, title: "Mobile Notary", desc: "We travel to homes, offices, or hospitals across West Virginia." },
           { icon: FileSignature, title: "Loan Signings", desc: "Expert handling of closings, refinancing, and HELOC packages." },
           { icon: ShieldCheck, title: "Estate Planning", desc: "Wills, POAs, and affidavits handled with strict legal compliance." }
         ].map((s, i) => (
@@ -309,11 +312,11 @@ const Pricing = ({ onBookClick }) => (
       <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4">Transparent Pricing</h2><p className="text-xl text-gray-500">Professional service. Simple flat rates.</p></div>
       <div className="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
         <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-gray-100 flex flex-col items-center group hover:shadow-xl transition-all">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Local Service</span>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Local Service (WV)</span>
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-6xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-110 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full">
-            {['Travel included (10 miles)', '1 Notarial Act included', 'Evening & Weekends', 'State Fees Apply ($5 OH / $10 WV)'].map(item => (
+            {['Travel included (10 miles)', '1 Notarial Act included', 'Evening & Weekends', 'State Fee Applied ($10 WV per stamp)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
