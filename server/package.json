@@ -4,7 +4,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
+    "start": "npx prisma db push && node src/index.js",
     "db:push": "npx prisma db push",
     "postinstall": "npx prisma generate"
   },
@@ -14,7 +14,8 @@
     "jsonwebtoken": "^9.0.2",
     "prisma": "^5.1.1",
     "@prisma/client": "^5.1.1",
-    "resend": "^3.2.0"
+    "resend": "^3.2.0",
+    "stripe": "^14.14.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
