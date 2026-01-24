@@ -9,20 +9,30 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BULLETPROOF CONFIG ---
 const getBackendUrl = () => {
-  let url = 'http://localhost:3001'; // Default fallback
+  let url = 'http://localhost:3001'; // Default local fallback
 
-  // 1. Production (Vercel Env Var)
+  // 1. Check for Environment Variable
   if (import.meta.env.VITE_API_URL) {
     url = import.meta.env.VITE_API_URL;
   } 
-  // 2. Codespaces / Gitpod Auto-Detection
-  else {
-    const hostname = window.location.hostname;
-    if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
-      if (hostname.includes('-5173')) {
-        url = `https://${hostname.replace('-5173', '-3001')}`;
-      }
+  // 2. Production Fallback (Hardcoded Safety Net)
+  else if (import.meta.env.PROD) {
+    url = 'https://api.signaturesealnotaries.com';
+  }
+  
+  // 3. Codespaces / Gitpod Auto-Detection
+  const hostname = window.location.hostname;
+  if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
+    if (hostname.includes('-5173')) {
+      url = `https://${hostname.replace('-5173', '-3001')}`;
     }
+  }
+
+  // SAFETY CHECK: If URL matches current window, we are calling ourselves (Infinite Loop / HTML Error)
+  // Force switch to the API subdomain if that happens
+  if (url.includes(window.location.host) && !url.includes('api.') && !url.includes('localhost') && !url.includes('-3001')) {
+     console.warn("⚠️ API URL points to Frontend. Switching to api. subdomain.");
+     url = 'https://api.signaturesealnotaries.com';
   }
   
   // Clean trailing slash if present
@@ -30,22 +40,25 @@ const getBackendUrl = () => {
 };
 
 const API_URL = getBackendUrl();
-console.log("🔗 Connecting to Backend API at:", API_URL); // DEBUG LOG
+console.log("🔗 Connecting to Backend API at:", API_URL);
 
 // --- HELPER: SAFE FETCH ---
-// Handles the "Unexpected token <" error by checking content-type
 const safeFetch = async (url, options) => {
-  const res = await fetch(url, options);
-  const contentType = res.headers.get("content-type");
-  
-  if (contentType && contentType.indexOf("application/json") === -1) {
-    // We got HTML or Text instead of JSON
-    const text = await res.text();
-    console.error("❌ API Error: Received HTML instead of JSON.", text.substring(0, 200));
-    throw new Error("API Configuration Error: Backend returned HTML. Check VITE_API_URL.");
+  try {
+    const res = await fetch(url, options);
+    const contentType = res.headers.get("content-type");
+    
+    if (contentType && contentType.indexOf("application/json") === -1) {
+      const text = await res.text();
+      console.error("❌ API Error: Received HTML instead of JSON.", text.substring(0, 100));
+      throw new Error(`API Configuration Error. Expected JSON, got HTML from ${url}`);
+    }
+    
+    return res;
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    throw err;
   }
-  
-  return res;
 };
 
 // --- ANIMATION VARIANTS ---
@@ -75,7 +88,7 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
   }, []);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-6'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       
       {/* --- DESKTOP VIEW --- */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
@@ -336,7 +349,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
       }
     } catch (err) { 
       console.error("Network Catch:", err);
-      alert(`Network Error: ${err.message}. Check console/Render logs.`); 
+      alert(`Network Error: ${err.message}. Check console for details.`); 
     } finally { 
       setIsSubmitting(false); 
     }
