@@ -13,7 +13,6 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
 
-// --- INITIALIZE STRIPE ---
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
   try { stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim()); } catch(e) {}
@@ -26,89 +25,59 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV ONLY) ---
+// --- AI LOGIC (WV MILEAGE RULE) ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('loan') || q.includes('mortgage')) {
+  if (q.includes('price') || q.includes('cost') || q.includes('travel')) {
     return {
-      service: "Loan Signing",
-      reasoning: "Loan packages require specialized agents.",
-      estimatedPrice: "Call for Quote",
-      action: "book_general"
+      service: "Pricing Policy",
+      reasoning: "Our base rate is $40 (covers travel up to 10 miles). Travel beyond 10 miles is billed at $2.00/mile. State notary fees ($10/stamp) are separate.",
+      estimatedPrice: "Base $40 + Mileage",
+      action: "read_faq"
     };
   }
 
   return {
     service: "Mobile Notary",
-    reasoning: "We travel to you in Huntington/Tri-State.",
-    estimatedPrice: "$10/stamp (State Fee) + Travel Fee (Starts at $40)",
+    reasoning: "We travel to you in Huntington/Tri-State (WV). Surcharge applies for travel > 10 miles.",
+    estimatedPrice: "$40 Base + $10/stamp (WV State Fee)",
     action: "book_general"
   };
 };
 
-// --- ROUTES ---
-
-app.get('/', (req, res) => res.send('Signature Seal API - Online'));
-
-app.post('/api/recommend', (req, res) => {
-  const { query } = req.body;
-  if (!query) return res.status(400).json({ error: "Query required" });
-  res.json(recommendService(query));
-});
+app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
 
 app.post('/api/create-checkout-session', async (req, res) => {
   if (!stripe) return res.status(500).json({ error: "Stripe not ready" });
-
-  const { name, email, service, date, time } = req.body;
-  
-  // COMPLIANT PRICING BREAKDOWN
-  // Total: $50 ($10 Notary + $40 Travel Base)
-  const line_items = [
-    {
-      price_data: { currency: 'usd', product_data: { name: 'WV State Notary Fee (Per Act)' }, unit_amount: 1000 }, // $10.00
-      quantity: 1,
-    },
-    {
-      price_data: { currency: 'usd', product_data: { name: 'Mobile Travel & Service Fee' }, unit_amount: 4000 }, // $40.00
-      quantity: 1,
-    }
-  ];
-
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: line_items,
+      line_items: [{
+        price_data: { currency: 'usd', product_data: { name: 'Mobile Travel & Service Fee (Base)' }, unit_amount: 4000 },
+        quantity: 1,
+      }],
       mode: 'payment',
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
-      customer_email: email,
-      metadata: { name, service, date, time }
+      customer_email: req.body.email,
     });
     res.json({ url: session.url });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/bookings', async (req, res) => {
     try {
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
-        if (resend) await resend.emails.send({ 
-            from: 'onboarding@resend.dev', 
-            to: ADMIN_EMAIL, 
-            reply_to: req.body.email,
-            subject: 'New Booking', 
-            html: `<p>New booking: ${req.body.name}</p><p>Service: ${req.body.service}</p><p>Note: Check Admin Portal for details.</p>` 
-        });
+        if (resend) await resend.emails.send({ from: 'onboarding@resend.dev', to: ADMIN_EMAIL, subject: 'New Booking', html: `<p>New booking: ${req.body.name}</p>` });
         res.json(booking);
     } catch (err) { res.status(500).json({ error: "Booking failed" }); }
 });
 
 app.get('/api/bookings', async (req, res) => {
     try {
-      const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
-      res.json({ data: bookings });
+        const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
+        res.json({ data: bookings });
     } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
 });
 
