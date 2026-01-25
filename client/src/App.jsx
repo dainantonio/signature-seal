@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -53,10 +53,14 @@ const Navbar = ({ onBookClick, onViewChange }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
-        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={() => onViewChange('home')}>
+        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
@@ -77,7 +81,7 @@ const Navbar = ({ onBookClick, onViewChange }) => {
       {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10"></div>
-        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={() => onViewChange('home')}>
+        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
             <Award className="w-6 h-6" />
           </div>
@@ -105,6 +109,41 @@ const Navbar = ({ onBookClick, onViewChange }) => {
   );
 };
 
+// --- BACK TO TOP BUTTON ---
+const BackToTop = () => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) setVisible(true);
+      else setVisible(false);
+    };
+    window.addEventListener("scroll", toggleVisibility);
+    return () => window.removeEventListener("scroll", toggleVisibility);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
+          title="Back to Top"
+        >
+          <ArrowUp size={24} />
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+};
+
 // --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -112,7 +151,7 @@ const FAQ = () => {
   const faqs = [
     { q: "Where does the notarization take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. This covers the first 10 miles. **Travel beyond 10 miles incurs a surcharge of $2.00 per mile.** The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment." },
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. This is paid at booking. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment." },
     { q: "Do you offer legal advice?", a: "No. As notaries, we verify identity and witness signatures. We cannot explain legal documents or provide legal advice." },
     { q: "What if I need to meet at a hospital?", a: "We specialize in hospital and care home visits. Please select 'My Location' when booking and provide the room number/ward details in the notes." }
   ];
@@ -255,14 +294,28 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date]);
+  
+  // --- STRICT STEP VALIDATION ---
+  const isStepValid = () => {
+    if (step === 1) {
+        return formData.service && formData.date && formData.time;
+    }
+    if (step === 2) {
+        // Must have Name, Email, and Address (unless public, then address is handled by buttons but still populated)
+        return formData.name && formData.email && formData.address;
+    }
+    if (step === 3) {
+        // Must accept terms AND agree to pay travel fee
+        return termsAccepted && payNow;
+    }
+    return false;
+  };
 
   if (!isOpen) return null;
 
   const submitBooking = async () => {
-    if (!termsAccepted || !payNow) {
-        alert("Please accept the terms and agree to pay the travel fee online.");
-        return;
-    }
+    if (!isStepValid()) return; // Extra guard
+    
     setIsSubmitting(true);
     const payload = { ...formData };
     const endpoint = `${API_URL}/api/create-checkout-session`;
@@ -329,7 +382,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   {formData.locationType === 'public' && (
                     <div className="flex flex-wrap gap-2 text-xs">
                         {['Cabell County Library (Main)', 'Starbucks (3rd Ave)', 'Panera Bread (Rt 60)', 'Barboursville Library'].map(spot => (
-                            <button key={spot} onClick={() => setFormData({...formData, address: spot})} className="px-3 py-1 bg-gray-100 rounded-full hover:bg-brand-teal hover:text-white transition-colors">{spot}</button>
+                            <button key={spot} onClick={() => setFormData({...formData, address: spot})} className={`px-3 py-1 rounded-full hover:bg-brand-teal hover:text-white transition-colors ${formData.address === spot ? 'bg-brand-teal text-white' : 'bg-gray-100'}`}>{spot}</button>
                         ))}
                     </div>
                   )}
@@ -417,8 +470,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
-                disabled={step === 3 && (!termsAccepted || !payNow)} 
-                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${step === 3 && (!termsAccepted || !payNow) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
+                disabled={!isStepValid()} // LOCK BUTTON UNTIL VALID
+                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${!isStepValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
               >
                 {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
               </button>
@@ -487,7 +540,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['$10 per notarized signature (State Fee)', 'Travel included up to 10 miles', 'Surcharge: $2.00 per extra mile (10+ miles)', 'Evening & Weekends Available'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -581,6 +634,7 @@ function App() {
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
+            <BackToTop />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
