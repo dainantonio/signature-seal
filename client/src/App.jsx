@@ -17,7 +17,7 @@ const getBackendUrl = () => {
 
 const API_URL = getBackendUrl();
 // UPDATE THIS: The email where "Contact Us" clicks will go
-const CONTACT_EMAIL = "bookings@signaturesealnotaries.com"; 
+const CONTACT_EMAIL = "sseal.notary@gmail.com"; 
 
 // --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
