@@ -4,21 +4,18 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle
+  ChevronDown, FileText, HelpCircle, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- CONFIGURATION ---
 const getBackendUrl = () => {
-  // 1. Prioritize Vercel Env Var
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/$/, "");
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL.replace(/\/$/, "");
+  if (import.meta.env.PROD) return 'https://signature-seal.onrender.com';
+  const hostname = window.location.hostname;
+  if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
+    if (hostname.includes('-5173')) return `https://${hostname.replace('-5173', '-3001')}`;
   }
-  // 2. Production Fallback (Direct Render)
-  if (import.meta.env.PROD) {
-    return 'https://signature-seal.onrender.com';
-  }
-  // 3. Dev Fallback
   return 'http://localhost:3001';
 };
 
@@ -113,10 +110,10 @@ const Navbar = ({ onBookClick, onViewChange, currentView }) => {
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   const faqs = [
-    { q: "Where do you travel?", a: "We serve Huntington, WV and the surrounding tri-state areas (West Virginia side). We come to your home, office, hospital, or coffee shop." },
-    { q: "What documents can you notarize?", a: "We handle Affidavits, Power of Attorney (POA), Wills, Vehicle Titles, Sworn Statements, and Oaths." },
+    { q: "Where do you travel?", a: "We serve Huntington, WV and surrounding areas (10-mile radius included). We travel further for a standard mileage fee." },
+    { q: "What is the travel fee?", a: "Our base rate starts at $40, which includes travel up to 10 miles from Huntington. Travel beyond 10 miles is billed at $2.00 per additional mile." },
     { q: "What should I bring?", a: "You must bring a valid, unexpired government photo ID (Driver's License or Passport). Do NOT sign the document until the notary is present." },
-    { q: "How much does it cost?", a: "We charge a standard travel fee (starting at $40) plus the West Virginia state-regulated stamp fee ($10 per stamp)." }
+    { q: "How much is the notary stamp?", a: "The State of West Virginia sets the maximum fee at $10.00 per notarial act (stamp). This is separate from the travel fee." }
   ];
   return (
     <section id="faq" className="py-24 bg-gray-50">
@@ -146,13 +143,11 @@ const FAQ = () => {
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I can help you book a Mobile Notary for Huntington, WV. What do you need notarized?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I can help you schedule a notary in West Virginia. What do you need help with?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
-
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isOpen]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -166,7 +161,6 @@ const AIChatWidget = ({ onRecommend }) => {
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
     } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "Connection issue. Please use the 'Book Now' button." }]); } finally { setIsLoading(false); }
   };
-
   return (
     <div className="fixed bottom-8 right-8 z-40 flex flex-col items-end font-sans">
       <AnimatePresence>
@@ -219,6 +213,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date]);
 
+  if (!isOpen) return null;
+
   const submitBooking = async () => {
     setIsSubmitting(true);
     const endpoint = payNow ? `${API_URL}/api/create-checkout-session` : `${API_URL}/api/bookings`;
@@ -231,8 +227,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
       } else { alert(data.error || "Submission failed."); }
     } catch (err) { alert(err.message); } finally { setIsSubmitting(false); }
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-navy-dark/60 backdrop-blur-md">
@@ -273,8 +267,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                 <div className="space-y-4">
                   <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                  <textarea placeholder="Meeting Address (Huntington/Tri-State area)" rows={3} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
-                  <textarea placeholder="Additional Notes (Optional)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
+                  <textarea placeholder="Meeting Address (10-mile radius of Huntington)" rows={3} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                 </div>
               )}
               {step === 3 && (
@@ -283,10 +276,15 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <p className="text-sm text-gray-500 uppercase font-bold mb-2 tracking-wider">Summary</p>
                     <p className="text-lg font-bold text-brand-navy-dark">{formData.service}</p>
                     <p className="text-gray-600">{new Date(formData.date).toLocaleDateString()} at {formData.time}</p>
+                    {/* TRAVEL POLICY ALERT */}
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex gap-3 text-xs text-brand-navy-dark">
+                      <AlertTriangle className="text-brand-gold shrink-0" size={16} />
+                      <p><strong>Travel Policy:</strong> Price includes 10 miles of travel. Locations beyond 10 miles are billed at $2.00/mile via separate invoice.</p>
+                    </div>
                   </div>
                   <label className="flex items-center gap-4 p-5 border-2 border-brand-teal/20 rounded-2xl cursor-pointer hover:bg-teal-50 transition-colors">
                     <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                    <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Deposit Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                    <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Base Rate Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
                   </label>
                 </div>
               )}
@@ -303,6 +301,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     </div>
   );
 };
+
+// --- MAIN PAGE SECTIONS ---
 
 const Hero = ({ onBookClick }) => (
   <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
@@ -359,11 +359,12 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['$10 per notarized signature (State Fee)', 'Travel included up to 10 miles', '$2.00/mile surcharge over 10 miles', 'Evening & Weekends Available'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
           <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book WV Standard</button>
+          <p className="text-[10px] text-gray-400 mt-6 text-center italic">*Mileage calculated from 25701.</p>
         </div>
       </div>
     </div>
