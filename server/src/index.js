@@ -15,10 +15,20 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
 
+// --- INITIALIZE STRIPE ---
 let stripe = null;
-if (process.env.STRIPE_SECRET_KEY) {
-  try { stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim()); } catch(e) {}
-}
+const initStripe = () => {
+    if (!stripe && process.env.STRIPE_SECRET_KEY) {
+        try {
+            stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim());
+            console.log("✅ STRIPE: Initialized successfully.");
+        } catch (e) {
+            console.error("❌ STRIPE: Failed to initialize:", e.message);
+        }
+    }
+    return stripe;
+};
+initStripe();
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
@@ -27,52 +37,109 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV ONLY) ---
+// --- KNOWLEDGE BASE (THE BRAIN) ---
+const KNOWLEDGE_BASE = [
+  {
+    keywords: ["price", "cost", "fee", "much"],
+    response: {
+      service: "Pricing",
+      reasoning: "Our Base Travel Fee is $40 (covers 10 miles). Mileage surcharge applies after 10 miles ($2.00/mile). State Notary Fees ($10/stamp) are separate and paid at the table.",
+      action: "book_general"
+    }
+  },
+  {
+    keywords: ["id", "driver", "passport", "bring"],
+    response: {
+      service: "ID Requirements",
+      reasoning: "You MUST bring a valid, unexpired government photo ID (Driver's License, Passport, or State ID). No ID = No Notarization.",
+      action: "read_faq"
+    }
+  },
+  {
+    keywords: ["ohio", "oh"],
+    response: {
+      service: "Service Area",
+      reasoning: "We currently serve West Virginia (Huntington/Tri-State) only. Ohio expansion is coming soon!",
+      action: "read_faq"
+    }
+  },
+  {
+    keywords: ["hospital", "jail", "prison", "nursing"],
+    response: {
+      service: "Special Request",
+      reasoning: "We do perform hospital and jail signings. These require special coordination. Please click 'Email Us' to discuss details.",
+      action: "contact_us"
+    }
+  },
+  {
+    keywords: ["loan", "mortgage", "closing", "refinance"],
+    response: {
+      service: "Loan Signing",
+      reasoning: "Loan packages require a certified Loan Signing Agent. We are not currently accepting loan appointments online. Please email us.",
+      action: "contact_us"
+    }
+  }
+];
+
+// --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('ohio') || q.includes(' oh ')) {
-    return {
-      service: "Expansion Waiting List",
-      reasoning: "We are currently West Virginia (WV) only. OH services coming soon.",
-      estimatedPrice: "Coming Soon",
-      action: "read_faq"
-    };
+  // 1. Check Knowledge Base
+  for (const entry of KNOWLEDGE_BASE) {
+    if (entry.keywords.some(keyword => q.includes(keyword))) {
+      return entry.response;
+    }
   }
 
+  // 2. Default Fallback
   return {
     service: "Mobile Notary",
-    reasoning: "We travel to you in Huntington/Tri-State (WV). Surcharge applies for travel > 10 miles.",
-    estimatedPrice: "$40 Base + $10/stamp (WV State Fee)",
+    reasoning: "I can help you book a standard Mobile Notary appointment. We come to you!",
     action: "book_general"
   };
 };
 
 // --- ROUTES ---
 
+app.get('/api/debug', (req, res) => {
+    res.json({
+        stripe_initialized: !!stripe,
+        env_key_exists: !!process.env.STRIPE_SECRET_KEY,
+        market_scope: "WV_ONLY",
+        ohio_status: "COMING_SOON"
+    });
+});
+
 app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Only Mode)'));
 
-app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
+app.post('/api/recommend', (req, res) => {
+  const { query } = req.body;
+  if (!query) return res.status(400).json({ error: "Query required" });
+  res.json(recommendService(query));
+});
 
 app.post('/api/create-checkout-session', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: "Stripe not ready" });
+  const stripeInstance = initStripe();
+  if (!stripeInstance) return res.status(500).json({ error: "Server initializing Stripe. Try again in 30 seconds." });
 
   const { name, email, service, date, time, mileage } = req.body;
   
   // Dynamic Pricing Logic (WV Standard Rates)
-  let baseAmount = 4000; // $40.00
-  let productName = "Mobile Travel & Convenience Fee";
-  
+  let amount = 4000; // $40.00 Base
+  if (service.includes('Loan')) amount = 15000; 
+
+  // Mileage Surcharge Logic
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
-  const surchargeAmount = extraMiles * 200; 
+  const surchargeAmount = extraMiles * 200; // $2.00 per mile (cents)
 
   const line_items = [
     {
       price_data: { 
           currency: 'usd', 
-          product_data: { name: productName }, 
-          unit_amount: baseAmount,
+          product_data: { name: `${service} (Base Travel Fee)` }, 
+          unit_amount: amount,
       },
       quantity: 1,
     }
@@ -82,7 +149,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items.push({
         price_data: { 
             currency: 'usd', 
-            product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, 
+            product_data: { name: `Mileage Surcharge (${extraMiles} extra miles)` }, 
             unit_amount: surchargeAmount,
         },
         quantity: 1,
@@ -94,12 +161,12 @@ app.post('/api/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
-      automatic_tax: { enabled: false }, // TAX DISABLED FOR WV NOTARY
+      automatic_tax: { enabled: false }, // TAX DISABLED
       invoice_creation: { 
         enabled: true,
         invoice_data: {
           description: "Notary services are not subject to sales tax.",
-          footer: "West Virginia notary fees ($10/stamp) are collected separately at appointment."
+          footer: "State notary fees ($10/stamp) are collected separately at appointment."
         }
       },
       success_url: `${CLIENT_URL}?success=true`,
@@ -116,13 +183,6 @@ app.post('/api/create-checkout-session', async (req, res) => {
 app.post('/api/bookings', async (req, res) => {
     try {
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
-        if (resend) await resend.emails.send({ 
-            from: 'onboarding@resend.dev', 
-            to: ADMIN_EMAIL, 
-            reply_to: req.body.email,
-            subject: 'New Booking', 
-            html: `<p>New booking: ${req.body.name}</p><p>Service: ${req.body.service}</p><p>Mileage: ${req.body.mileage || 0} miles</p>` 
-        });
         res.json(booking);
     } catch (err) { res.status(500).json({ error: "Booking failed" }); }
 });
@@ -144,4 +204,4 @@ app.post('/api/login', (req, res) => {
     else res.status(401).json({ error: "Invalid password" });
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV Scope)`));
