@@ -27,7 +27,7 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC ---
+// --- AI LOGIC (WV ONLY) ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
@@ -72,18 +72,13 @@ app.post('/api/create-checkout-session', async (req, res) => {
   const extraMiles = Math.max(0, miles - 10);
   const surchargeAmount = extraMiles * 200; 
 
-  // LINE ITEMS (With Tax Codes)
+  // LINE ITEMS (Tax Removed)
   const line_items = [
     {
       price_data: { 
           currency: 'usd', 
-          product_data: { 
-              name: productName, 
-              // 'txcd_10000000' = General Services (Correct for Travel/Admin fees)
-              tax_code: 'txcd_10000000' 
-          }, 
+          product_data: { name: productName }, 
           unit_amount: baseAmount,
-          tax_behavior: 'exclusive', 
       },
       quantity: 1,
     }
@@ -93,13 +88,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items.push({
         price_data: { 
             currency: 'usd', 
-            product_data: { 
-                name: `Mileage Surcharge (${extraMiles} miles x $2)`,
-                // Also categorized as a Service
-                tax_code: 'txcd_10000000'
-            }, 
+            product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, 
             unit_amount: surchargeAmount,
-            tax_behavior: 'exclusive',
         },
         quantity: 1,
       });
@@ -108,11 +98,17 @@ app.post('/api/create-checkout-session', async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      billing_address_collection: 'required', 
+      billing_address_collection: 'auto', 
       line_items: line_items,
       mode: 'payment',
-      automatic_tax: { enabled: true }, 
-      invoice_creation: { enabled: true },
+      automatic_tax: { enabled: false }, // <--- TAX DISABLED (WV Notary Exemption)
+      invoice_creation: { 
+        enabled: true,
+        invoice_data: {
+          description: "Notary services are not subject to sales tax.", // <--- COMPLIANCE NOTE
+          footer: "Thank you for choosing Signature Seal Notaries."
+        }
+      },
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
       customer_email: email,
