@@ -122,7 +122,7 @@ const FAQ = () => {
   return (
     <section id="faq" className="py-24 bg-gray-50">
       <div className="container mx-auto px-6 max-w-3xl">
-        <h2 className="text-3xl font-serif font-bold text-brand-navy-dark text-center mb-12">Common Questions</h2>
+        <h2 className="text-3xl font-serif font-bold text-brand-navy-dark text-center mb-12">Frequently Asked Questions</h2>
         <div className="space-y-4">
           {faqs.map((faq, i) => (
             <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -302,6 +302,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                 <div className="space-y-4">
                   <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
@@ -318,10 +319,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         <div className="flex items-center gap-2 mt-2">
                             <PenTool size={18} className="text-brand-teal" />
                             <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
-                            <span className="text-sm text-gray-600">($10 ea)</span>
+                            <span className="text-sm text-gray-600">($10 ea - at table)</span>
                         </div>
                     </div>
                   </div>
+
                   <textarea placeholder="Meeting Address (Huntington area)" rows={3} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                   <textarea placeholder="Additional Notes (Optional)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                 </div>
@@ -359,7 +361,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
             </div>
             <div className="p-6 border-t flex justify-between bg-white">
               <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
-              <button onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} disabled={step === 3 && !termsAccepted} className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${step === 3 && !termsAccepted ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}>
+              <button 
+                onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
+                disabled={step === 3 && !termsAccepted} // DISABLE IF NOT CHECKED
+                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${step === 3 && !termsAccepted ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
+              >
                 {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
               </button>
             </div>
@@ -381,7 +387,7 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Tri-State</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, bonded, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
@@ -432,7 +438,9 @@ const Pricing = ({ onBookClick }) => (
             ))}
           </ul>
           <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book WV Standard</button>
-          <p className="text-[10px] text-gray-400 mt-6 text-center italic">*Mileage calculated from 25701.</p>
+          <div className="text-[10px] text-gray-400 mt-6 text-center italic border-t pt-4 w-full">
+            Travel fees are disclosed at booking. Notary fees are regulated by West Virginia law at $10 per notarized signature and are collected after the notarization is completed.
+          </div>
         </div>
       </div>
     </div>
