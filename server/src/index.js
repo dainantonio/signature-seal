@@ -9,6 +9,8 @@ const stripeLib = require('stripe');
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
+
+// --- CONFIG ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
@@ -58,12 +60,13 @@ app.post('/api/create-checkout-session', async (req, res) => {
   const { name, email, service, date, time, mileage } = req.body;
   
   // Dynamic Pricing Logic (WV Standard Rates)
+  // NOTE: This covers Travel & Admin only. State fees collected at table.
   let baseAmount = 4000; // $40.00
-  let productName = "Mobile Service Base Fee (Covers 10 miles)";
+  let productName = "Mobile Travel & Convenience Fee";
   
   if (service.includes('Loan')) {
       baseAmount = 15000;
-      productName = "Loan Signing Service";
+      productName = "Loan Signing Service Deposit";
   }
 
   // Mileage Calculation
@@ -73,14 +76,27 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const line_items = [
     {
-      price_data: { currency: 'usd', product_data: { name: productName }, unit_amount: baseAmount },
+      price_data: { 
+          currency: 'usd', 
+          product_data: { 
+              name: productName,
+              tax_code: 'txcd_99999999' // Generic Service (Stripe Auto Tax will refine this if configured)
+          }, 
+          unit_amount: baseAmount,
+          tax_behavior: 'exclusive', // Add tax ON TOP of the price
+      },
       quantity: 1,
     }
   ];
 
   if (surchargeAmount > 0) {
       line_items.push({
-        price_data: { currency: 'usd', product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, unit_amount: surchargeAmount },
+        price_data: { 
+            currency: 'usd', 
+            product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, 
+            unit_amount: surchargeAmount,
+            tax_behavior: 'exclusive',
+        },
         quantity: 1,
       });
   }
@@ -90,6 +106,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
+      automatic_tax: { enabled: true }, // <--- ENABLE AUTO TAX
+      invoice_creation: { enabled: true }, // <--- SEND INVOICE AUTOMATICALLY
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
       customer_email: email,
@@ -132,4 +150,4 @@ app.post('/api/login', (req, res) => {
     else res.status(401).json({ error: "Invalid password" });
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV Scope)`));
