@@ -169,7 +169,12 @@ const FAQ = () => {
               </button>
               <AnimatePresence>
                 {activeIndex === i && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: "auto", opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
                     <p className="p-6 pt-0 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                   </motion.div>
                 )}
@@ -301,8 +306,15 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         return formData.service && formData.date && formData.time;
     }
     if (step === 2) {
-        // Must have Name, Email, and Address (unless public, then address is handled by buttons but still populated)
-        return formData.name && formData.email && formData.address;
+        // Validation for Details Step
+        const basicFields = formData.name && formData.email && formData.signatures > 0;
+        if (formData.locationType === 'my_location') {
+            // My Location requires address AND mileage (even if 0)
+            return basicFields && formData.address && formData.mileage !== '' && !isNaN(formData.mileage);
+        } else {
+            // Public Spot requires address (selected spot) but ignores mileage
+            return basicFields && formData.address;
+        }
     }
     if (step === 3) {
         // Must accept terms AND agree to pay travel fee
@@ -401,7 +413,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                                 className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
                                 value={formData.mileage} 
                                 disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
-                                onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
+                                onChange={(e) => setFormData({...formData, mileage: e.target.value === '' ? '' : parseInt(e.target.value)})} 
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
@@ -540,7 +552,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['$10 per notarized signature (State Fee)', 'Travel included up to 10 miles', 'Surcharge: $2.00 per extra mile (10+ miles)', 'Evening & Weekends Available'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
