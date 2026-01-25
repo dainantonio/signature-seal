@@ -27,30 +27,35 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV ONLY) ---
+// --- AI LOGIC (COMPLIANT) ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('ohio') || q.includes(' oh ')) {
+  if (q.includes('hospital') || q.includes('jail') || q.includes('nursing')) {
     return {
-      service: "Expansion Waiting List",
-      reasoning: "We are currently West Virginia (WV) only. OH services coming soon.",
-      estimatedPrice: "Coming Soon",
+      service: "Special Request",
+      reasoning: "Hospital and jail signings require special coordination. Please contact us directly.",
+      estimatedPrice: "Custom Quote",
+      action: "contact_us"
+    };
+  }
+
+  if (q.includes('loan') || q.includes('mortgage')) {
+    return {
+      service: "Loan Signing",
+      reasoning: "We are currently focusing on General Notary Work. Please check back later for Loan services.",
+      estimatedPrice: "Service Unavailable",
       action: "read_faq"
     };
   }
 
   return {
     service: "Mobile Notary",
-    reasoning: "We travel to you in Huntington/Tri-State (WV). Surcharge applies for travel > 10 miles.",
-    estimatedPrice: "$40 Base + $10/stamp (WV State Fee)",
+    reasoning: "Standard mobile appointment.",
+    estimatedPrice: "$40 Travel Fee (Notary fees separate)",
     action: "book_general"
   };
 };
-
-// --- ROUTES ---
-
-app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Only Mode)'));
 
 app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
 
@@ -59,26 +64,16 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // Dynamic Pricing Logic (WV Standard Rates)
-  let baseAmount = 4000; // $40.00
-  let productName = "Mobile Travel & Convenience Fee";
-  
-  if (service.includes('Loan')) {
-      baseAmount = 15000;
-      productName = "Loan Signing Service Deposit";
-  }
-
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
   const surchargeAmount = extraMiles * 200; 
 
-  // LINE ITEMS (Tax Removed)
   const line_items = [
     {
       price_data: { 
           currency: 'usd', 
-          product_data: { name: productName }, 
-          unit_amount: baseAmount,
+          product_data: { name: 'Mobile Travel & Booking Fee' }, 
+          unit_amount: 4000,
       },
       quantity: 1,
     }
@@ -88,7 +83,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items.push({
         price_data: { 
             currency: 'usd', 
-            product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, 
+            product_data: { name: `Mileage Surcharge (${extraMiles} miles)` }, 
             unit_amount: surchargeAmount,
         },
         quantity: 1,
@@ -98,21 +93,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      billing_address_collection: 'auto', 
       line_items: line_items,
       mode: 'payment',
-      automatic_tax: { enabled: false }, // <--- TAX DISABLED (WV Notary Exemption)
-      invoice_creation: { 
-        enabled: true,
-        invoice_data: {
-          description: "Notary services are not subject to sales tax.", // <--- COMPLIANCE NOTE
-          footer: "Thank you for choosing Signature Seal Notaries."
-        }
-      },
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
       customer_email: email,
-      metadata: { name, service, date, time, mileage }
     });
     res.json({ url: session.url });
   } catch (e) {
