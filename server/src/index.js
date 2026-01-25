@@ -27,7 +27,7 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV ONLY) ---
+// --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
@@ -59,8 +59,6 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // Dynamic Pricing Logic (WV Standard Rates)
-  // NOTE: This covers Travel & Admin only. State fees collected at table.
   let baseAmount = 4000; // $40.00
   let productName = "Mobile Travel & Convenience Fee";
   
@@ -69,21 +67,17 @@ app.post('/api/create-checkout-session', async (req, res) => {
       productName = "Loan Signing Service Deposit";
   }
 
-  // Mileage Calculation
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
-  const surchargeAmount = extraMiles * 200; // $2.00 per mile in cents
+  const surchargeAmount = extraMiles * 200; 
 
   const line_items = [
     {
       price_data: { 
           currency: 'usd', 
-          product_data: { 
-              name: productName,
-              tax_code: 'txcd_99999999' // Generic Service (Stripe Auto Tax will refine this if configured)
-          }, 
+          product_data: { name: productName, tax_code: 'txcd_99999999' }, 
           unit_amount: baseAmount,
-          tax_behavior: 'exclusive', // Add tax ON TOP of the price
+          tax_behavior: 'exclusive', 
       },
       quantity: 1,
     }
@@ -104,10 +98,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      billing_address_collection: 'required', // <--- CRITICAL FIX: Forces tax calculation based on customer location
       line_items: line_items,
       mode: 'payment',
-      automatic_tax: { enabled: true }, // <--- ENABLE AUTO TAX
-      invoice_creation: { enabled: true }, // <--- SEND INVOICE AUTOMATICALLY
+      automatic_tax: { enabled: true }, 
+      invoice_creation: { enabled: true },
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
       customer_email: email,
@@ -150,4 +145,4 @@ app.post('/api/login', (req, res) => {
     else res.status(401).json({ error: "Invalid password" });
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV Scope)`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT}`));
