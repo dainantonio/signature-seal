@@ -112,7 +112,7 @@ const FAQ = () => {
   const faqs = [
     { q: "Where does the notarization take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. This is paid at booking. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment." },
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. This covers the first 10 miles. **Travel beyond 10 miles incurs a surcharge of $2.00 per mile.** The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment." },
     { q: "Do you offer legal advice?", a: "No. As notaries, we verify identity and witness signatures. We cannot explain legal documents or provide legal advice." },
     { q: "What if I need to meet at a hospital?", a: "We specialize in hospital and care home visits. Please select 'My Location' when booking and provide the room number/ward details in the notes." }
   ];
@@ -255,14 +255,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date]);
-  
-  // Validation for Step Logic
-  const isStepValid = () => {
-    if (step === 1) return formData.service && formData.date && formData.time;
-    if (step === 2) return formData.name && formData.email && formData.address;
-    if (step === 3) return termsAccepted && payNow;
-    return false;
-  };
 
   if (!isOpen) return null;
 
@@ -360,6 +352,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
+                        {/* SURCHARGE DISCLAIMER */}
+                        {formData.locationType === 'my_location' && (
+                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
+                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
+                            </p>
+                        )}
                     </div>
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label className="text-xs font-bold text-gray-500 uppercase">Signatures Needed</label>
@@ -419,8 +417,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
-                disabled={!isStepValid()} // DISABLE IF STEP NOT VALID
-                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${!isStepValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
+                disabled={step === 3 && (!termsAccepted || !payNow)} 
+                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${step === 3 && (!termsAccepted || !payNow) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
               >
                 {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
               </button>
@@ -489,7 +487,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['$10 per notarized signature (State Fee)', 'Travel included up to 10 miles', 'Surcharge: $2.00 per extra mile (10+ miles)', 'Evening & Weekends Available'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
