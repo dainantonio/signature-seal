@@ -59,6 +59,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const { name, email, service, date, time, mileage } = req.body;
   
+  // Dynamic Pricing Logic (WV Standard Rates)
   let baseAmount = 4000; // $40.00
   let productName = "Mobile Travel & Convenience Fee";
   
@@ -71,11 +72,16 @@ app.post('/api/create-checkout-session', async (req, res) => {
   const extraMiles = Math.max(0, miles - 10);
   const surchargeAmount = extraMiles * 200; 
 
+  // LINE ITEMS (With Tax Codes)
   const line_items = [
     {
       price_data: { 
           currency: 'usd', 
-          product_data: { name: productName, tax_code: 'txcd_99999999' }, 
+          product_data: { 
+              name: productName, 
+              // 'txcd_10000000' = General Services (Correct for Travel/Admin fees)
+              tax_code: 'txcd_10000000' 
+          }, 
           unit_amount: baseAmount,
           tax_behavior: 'exclusive', 
       },
@@ -87,7 +93,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items.push({
         price_data: { 
             currency: 'usd', 
-            product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, 
+            product_data: { 
+                name: `Mileage Surcharge (${extraMiles} miles x $2)`,
+                // Also categorized as a Service
+                tax_code: 'txcd_10000000'
+            }, 
             unit_amount: surchargeAmount,
             tax_behavior: 'exclusive',
         },
@@ -98,7 +108,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      billing_address_collection: 'required', // <--- CRITICAL FIX: Forces tax calculation based on customer location
+      billing_address_collection: 'required', 
       line_items: line_items,
       mode: 'payment',
       automatic_tax: { enabled: true }, 
