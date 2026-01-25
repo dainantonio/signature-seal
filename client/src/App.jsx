@@ -4,24 +4,34 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- HARD-WIRED CONFIG ---
-const API_URL = 'https://signature-seal.onrender.com';
+// --- CONFIGURATION ---
+const getBackendUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL.replace(/\/$/, "");
+  if (import.meta.env.PROD) return 'https://signature-seal.onrender.com';
+  const hostname = window.location.hostname;
+  if (hostname.includes('github.dev') || hostname.includes('gitpod.io')) {
+    if (hostname.includes('-5173')) return `https://${hostname.replace('-5173', '-3001')}`;
+  }
+  return 'http://localhost:3001';
+};
 
-// --- HELPER: SAFE FETCH ---
+const API_URL = getBackendUrl();
+
+// --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
   try {
     const res = await fetch(url, options);
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") === -1) {
-      throw new Error("Server is updating. Please wait 1 minute and try again.");
+      throw new Error("Server is restarting or configured incorrectly. Please wait 1 minute and try again.");
     }
     return res;
   } catch (err) {
-    throw new Error(err.message === "Failed to fetch" ? "Server unreachable. Ensure Render is Live." : err.message);
+    throw new Error(err.message === "Failed to fetch" ? "Server unreachable. Ensure your Render service is 'Live'." : err.message);
   }
 };
 
@@ -199,27 +209,35 @@ const AIChatWidget = ({ onRecommend }) => {
   );
 };
 
+// --- BOOKING MODAL WITH SIGNATURE COUNTER ---
 const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', address: '', notes: '', 
-    mileage: 0 
+    mileage: 0, signatures: 1 // Default to 1 signature
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [payNow, setPayNow] = useState(false);
 
-  // Price Calculation Logic with Mileage
+  // Price Calculation Logic
   const price = useMemo(() => {
     let base = 40;
     if (formData.service.includes('Loan')) base = 150;
     
-    // Surcharge Logic: First 10 miles included, then $2/mile
+    // Surcharge: $2/mile over 10 miles
     const extraMiles = Math.max(0, formData.mileage - 10);
     const surcharge = extraMiles * 2;
     
-    return { base, surcharge, total: base + surcharge };
-  }, [formData.service, formData.mileage]);
+    // Notary Fee: $10 per signature (WV)
+    const notaryFee = (formData.signatures || 0) * 10;
+    
+    return { 
+        travelTotal: base + surcharge, // This is what they pay online
+        notaryFee, // This is paid at the table
+        grandTotal: base + surcharge + notaryFee 
+    };
+  }, [formData.service, formData.mileage, formData.signatures]);
 
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
 
@@ -236,14 +254,10 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   const submitBooking = async () => {
     setIsSubmitting(true);
-    
-    // Pass mileage data to backend
-    const payload = {
-        ...formData,
-        mileage: formData.mileage
-    };
-
+    // Payload includes signature count for admin reference
+    const payload = { ...formData };
     const endpoint = payNow ? `${API_URL}/api/create-checkout-session` : `${API_URL}/api/bookings`;
+    
     try {
       const res = await safeFetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
@@ -293,50 +307,84 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                 <div className="space-y-4">
                   <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                  <textarea placeholder="Meeting Address (Huntington area)" rows={3} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                   
-                  {/* MILEAGE CALCULATOR */}
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
-                        <span>Distance from Huntington (25701)</span>
-                        <a href={`https://www.google.com/maps/dir/25701/${encodeURIComponent(formData.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline flex items-center gap-1"><Navigation size={12}/> Check Map</a>
-                    </label>
-                    <div className="flex items-center gap-3 mt-2">
-                        <input 
-                            type="number" 
-                            min="0"
-                            placeholder="0" 
-                            className="w-20 p-3 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" 
-                            value={formData.mileage} 
-                            onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
-                        />
-                        <span className="text-gray-500">miles</span>
-                        {price.surcharge > 0 && <span className="ml-auto text-sm text-brand-gold font-bold">+{price.surcharge.toFixed(2)} Travel Fee</span>}
+                  {/* TWO COLUMNS: ADDRESS & DETAILS */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
+                            <span>Travel Distance</span>
+                            <a href={`https://www.google.com/maps/dir/25701/${encodeURIComponent(formData.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline flex items-center gap-1"><Navigation size={12}/> Check Map</a>
+                        </label>
+                        <div className="flex items-center gap-2 mt-2">
+                            <input 
+                                type="number" min="0" placeholder="0" 
+                                className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" 
+                                value={formData.mileage} 
+                                onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
+                            />
+                            <span className="text-sm text-gray-600">miles from 25701</span>
+                        </div>
+                    </div>
+
+                    {/* NEW SIGNATURE COUNTER */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Signatures Needed</label>
+                        <div className="flex items-center gap-2 mt-2">
+                            <PenTool size={18} className="text-brand-teal" />
+                            <input 
+                                type="number" min="1" placeholder="1" 
+                                className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" 
+                                value={formData.signatures} 
+                                onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} 
+                            />
+                            <span className="text-sm text-gray-600">($10 ea)</span>
+                        </div>
                     </div>
                   </div>
+
+                  <textarea placeholder="Meeting Address (Huntington area)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                  <textarea placeholder="Notes (Optional)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                 </div>
               )}
               {step === 3 && (
                 <div className="space-y-6">
                   <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex justify-between items-end mb-4">
+                    <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-4">
                         <div>
-                            <p className="text-sm text-gray-500 uppercase font-bold mb-2 tracking-wider">Total Estimate</p>
-                            <p className="text-3xl font-bold text-brand-navy-dark">${price.total}</p>
+                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Estimated Total</p>
+                            <p className="text-3xl font-bold text-brand-navy-dark">${price.grandTotal}</p>
                         </div>
-                        <div className="text-right text-xs text-gray-400">
-                            <p>Base: ${price.base}</p>
-                            {price.surcharge > 0 && <p>Mileage: ${price.surcharge}</p>}
+                        <div className="text-right text-xs text-gray-500">
+                            <p>Travel: ${price.travelTotal}</p>
+                            <p>Notary Acts: ${price.notaryFee}</p>
                         </div>
                     </div>
-                    <p className="text-sm text-gray-600 border-t border-gray-200 pt-3 mt-3">
-                        <span className="font-bold">Includes:</span> Travel to {formData.mileage} miles, Service Fee.
-                        <br/><span className="italic text-xs">+ State Notary Fees ($10/stamp) due at signing.</span>
-                    </p>
+                    
+                    {/* PAYMENT BREAKDOWN */}
+                    <div className="space-y-2 text-sm text-gray-700">
+                        <div className="flex justify-between">
+                            <span>Travel & Service (Due Now):</span>
+                            <span className="font-bold text-brand-teal">${price.travelTotal}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>State Notary Fees (Due at Table):</span>
+                            <span className="font-bold">${price.notaryFee}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500 italic">
+                        *State fees are collected in-person to ensure accurate count.
+                    </div>
                   </div>
+                  
                   <label className="flex items-center gap-4 p-5 border-2 border-brand-teal/20 rounded-2xl cursor-pointer hover:bg-teal-50 transition-colors">
                     <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                    <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Online Now</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                    <div className="flex-1">
+                        <span className="font-bold text-brand-navy-dark flex items-center gap-2">
+                            <CreditCard size={18}/> Pay Travel Deposit (${price.travelTotal})
+                        </span>
+                        <p className="text-xs text-gray-500">Secure Checkout via Stripe</p>
+                    </div>
                   </label>
                 </div>
               )}
@@ -437,7 +485,7 @@ const Footer = ({ onViewChange }) => (
   </footer>
 );
 
-// ADMIN DASHBOARD & LOGIN
+// ADMIN
 const LoginScreen = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const handleLogin = async (e) => {
