@@ -246,19 +246,25 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   if (!isOpen) return null;
 
   const submitBooking = async () => {
-    if (!termsAccepted) {
-        alert("Please accept the pricing terms to proceed.");
+    // ENFORCE BOTH CHECKBOXES
+    if (!termsAccepted || !payNow) {
+        alert("Please accept the terms and agree to pay the travel fee online.");
         return;
     }
     setIsSubmitting(true);
     const payload = { ...formData };
-    const endpoint = payNow ? `${API_URL}/api/create-checkout-session` : `${API_URL}/api/bookings`;
+    // Always use checkout session now since payment is mandatory
+    const endpoint = `${API_URL}/api/create-checkout-session`;
     try {
       const res = await safeFetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
       if (res.ok) {
-        if (payNow && data.url) window.location.href = data.url;
-        else setSuccess(true);
+        if (data.url) window.location.href = data.url;
+        else {
+           // Should not happen if endpoint is correct, but safe fallback
+           setSuccess(true);
+           setTimeout(() => { onClose(); setSuccess(false); setStep(1); setFormData({ service: '', date: '', time: '', name: '', email: '', address: '', notes: '' }); }, 2000);
+        }
       } else { alert(data.error || "Submission failed."); }
     } catch (err) { alert(err.message); } finally { setIsSubmitting(false); }
   };
@@ -344,18 +350,23 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> Travel to {formData.mileage} miles & Service Fee.</p>
                   </div>
                   
-                  {/* MANDATORY COMPLIANCE CHECKBOX */}
-                  <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
-                    <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
-                    <span className="text-xs text-gray-700 leading-relaxed">
-                        I understand that the <strong>Travel Fee (${price.travelTotal})</strong> is due now to secure the appointment. The <strong>Notary Fee ($10 per signature)</strong> is regulated by WV law and will be collected separately after the notarization is completed.
-                    </span>
-                  </label>
+                  {/* MANDATORY COMPLIANCE CHECKBOXES */}
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
+                        <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
+                        <span className="text-xs text-gray-700 leading-relaxed">
+                            I understand that the <strong>Travel Fee (${price.travelTotal})</strong> is due now to secure the appointment. The <strong>Notary Fee ($10 per signature)</strong> is regulated by WV law and will be collected separately after the notarization is completed.
+                        </span>
+                    </label>
 
-                  <label className="flex items-center gap-4 p-5 border-2 border-brand-teal/20 rounded-2xl cursor-pointer hover:bg-teal-50 transition-colors">
-                    <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                    <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Travel Fee Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
-                  </label>
+                    <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-colors ${payNow ? 'border-brand-teal bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                        <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
+                        <div className="flex-1">
+                            <span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Travel Fee Online</span>
+                            <p className="text-xs text-gray-500">I agree to pay the ${price.travelTotal} travel/service fee now via Stripe.</p>
+                        </div>
+                    </label>
+                  </div>
                 </div>
               )}
             </div>
@@ -363,10 +374,10 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
-                disabled={step === 3 && !termsAccepted} // DISABLE IF NOT CHECKED
-                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${step === 3 && !termsAccepted ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
+                disabled={step === 3 && (!termsAccepted || !payNow)} // REQUIRE BOTH
+                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${step === 3 && (!termsAccepted || !payNow) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
               >
-                {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
+                {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? 'Proceed to Payment' : 'Continue'}
               </button>
             </div>
           </>
