@@ -187,27 +187,41 @@ const FAQ = () => {
   );
 };
 
+// --- INTELLIGENT CONCIERGE ---
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with pricing, service areas, and scheduling. How can I assist?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Notary Concierge. I can answer questions about pricing, ID requirements, and service areas. How can I help?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // Quick Questions for Intuitive UI
+  const quickPrompts = [
+    "💰 What is the price?",
+    "📍 Do you go to Ohio?",
+    "🆔 What ID do I need?",
+    "🏦 Do you go to hospitals?"
+  ];
+
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isOpen]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    const userMsg = input;
+  const sendMessage = async (text) => {
+    const userMsg = text || input;
+    if (!userMsg.trim()) return;
+
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setInput('');
     setIsLoading(true);
+    
     try {
       const res = await safeFetch(`${API_URL}/api/recommend`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: userMsg }) });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
-    } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting. Please use the 'Book Now' button." }]); } finally { setIsLoading(false); }
+    } catch (err) { 
+        setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting to the brain. Please try the 'Book Now' button above." }]); 
+    } finally { 
+        setIsLoading(false); 
+    }
   };
 
   return (
@@ -219,25 +233,36 @@ const AIChatWidget = ({ onRecommend }) => {
               <h3 className="font-bold text-sm">Notary Concierge</h3>
               <button onClick={() => setIsOpen(false)} className="ml-auto hover:bg-white/10 p-1 rounded transition"><X size={18} /></button>
             </div>
+            
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 text-sm">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
+                  <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none shadow-sm'}`}>
                     <p>{msg.text}</p>
                     {msg.recommendation && msg.recommendation.action === 'book_general' && (
-                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider">Book Now</button>
+                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider hover:bg-black transition-colors">Book Now</button>
                     )}
                      {msg.recommendation && msg.recommendation.action === 'contact_us' && (
-                        <a href={`mailto:${CONTACT_EMAIL}`} className="block text-center w-full bg-brand-gold text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider">Email Us</a>
+                        <a href={`mailto:${CONTACT_EMAIL}`} className="block text-center w-full bg-brand-gold text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider hover:bg-yellow-600 transition-colors">Email Us</a>
                     )}
                   </div>
                 </div>
               ))}
               <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-gray-100 flex gap-2">
-              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 bg-gray-50 rounded-lg px-4 py-2 text-sm outline-none" />
-              <button type="submit" disabled={isLoading} className="p-2 bg-brand-navy-dark text-white rounded-lg"><Send size={18} /></button>
+
+            {/* QUICK PROMPTS AREA */}
+            <div className="p-2 bg-white border-t border-gray-100 overflow-x-auto whitespace-nowrap flex gap-2">
+                {quickPrompts.map((prompt, i) => (
+                    <button key={i} onClick={() => sendMessage(prompt)} className="px-3 py-1.5 bg-gray-100 hover:bg-brand-teal hover:text-white rounded-full text-xs font-medium transition-colors border border-gray-200">
+                        {prompt}
+                    </button>
+                ))}
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="p-3 bg-white border-t border-gray-100 flex gap-2">
+              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 bg-gray-50 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-teal/20" />
+              <button type="submit" disabled={isLoading} className="p-2 bg-brand-navy-dark text-white rounded-lg hover:bg-brand-teal transition-colors"><Send size={18} /></button>
             </form>
           </motion.div>
         )}
@@ -552,7 +577,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['$10 per notarized signature (State Fee)', 'Travel included up to 10 miles', 'Surcharge: $2.00 per extra mile (10+ miles)', 'Evening & Weekends Available'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -646,7 +671,6 @@ function App() {
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
-            <BackToTop />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
