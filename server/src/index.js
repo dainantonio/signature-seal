@@ -37,65 +37,32 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- KNOWLEDGE BASE (THE BRAIN) ---
-const KNOWLEDGE_BASE = [
-  {
-    keywords: ["price", "cost", "fee", "much"],
-    response: {
-      service: "Pricing",
-      reasoning: "Our Base Travel Fee is $40 (covers 10 miles). Mileage surcharge applies after 10 miles ($2.00/mile). State Notary Fees ($10/stamp) are separate and paid at the table.",
-      action: "book_general"
-    }
-  },
-  {
-    keywords: ["id", "driver", "passport", "bring"],
-    response: {
-      service: "ID Requirements",
-      reasoning: "You MUST bring a valid, unexpired government photo ID (Driver's License, Passport, or State ID). No ID = No Notarization.",
-      action: "read_faq"
-    }
-  },
-  {
-    keywords: ["ohio", "oh"],
-    response: {
-      service: "Service Area",
-      reasoning: "We currently serve West Virginia (Huntington/Tri-State) only. Ohio expansion is coming soon!",
-      action: "read_faq"
-    }
-  },
-  {
-    keywords: ["hospital", "jail", "prison", "nursing"],
-    response: {
-      service: "Special Request",
-      reasoning: "We do perform hospital and jail signings. These require special coordination. Please click 'Email Us' to discuss details.",
-      action: "contact_us"
-    }
-  },
-  {
-    keywords: ["loan", "mortgage", "closing", "refinance"],
-    response: {
-      service: "Loan Signing",
-      reasoning: "Loan packages require a certified Loan Signing Agent. We are not currently accepting loan appointments online. Please email us.",
-      action: "contact_us"
-    }
-  }
-];
-
 // --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  // 1. Check Knowledge Base
-  for (const entry of KNOWLEDGE_BASE) {
-    if (entry.keywords.some(keyword => q.includes(keyword))) {
-      return entry.response;
-    }
+  if (q.includes('ohio') || q.includes(' oh ')) {
+    return {
+      service: "Expansion Waiting List",
+      reasoning: "We are currently West Virginia (WV) only. Ohio expansion is coming soon!",
+      estimatedPrice: "Coming Soon",
+      action: "read_faq"
+    };
   }
 
-  // 2. Default Fallback
+  if (q.includes('loan') || q.includes('mortgage')) {
+    return {
+      service: "Loan Signing (WV)",
+      reasoning: "West Virginia real estate closings require a certified Loan Signing Agent.",
+      estimatedPrice: "$150 flat rate",
+      action: "book_loan"
+    };
+  }
+
   return {
-    service: "Mobile Notary",
-    reasoning: "I can help you book a standard Mobile Notary appointment. We come to you!",
+    service: "Mobile Notary (WV)",
+    reasoning: "Standard mobile appointment in West Virginia.",
+    estimatedPrice: "$40 Base + $10 WV State Fee",
     action: "book_general"
   };
 };
@@ -106,12 +73,11 @@ app.get('/api/debug', (req, res) => {
     res.json({
         stripe_initialized: !!stripe,
         env_key_exists: !!process.env.STRIPE_SECRET_KEY,
-        market_scope: "WV_ONLY",
-        ohio_status: "COMING_SOON"
+        market_scope: "WV_ONLY"
     });
 });
 
-app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Only Mode)'));
+app.get('/', (req, res) => res.send('Signature Seal API - Online'));
 
 app.post('/api/recommend', (req, res) => {
   const { query } = req.body;
@@ -119,20 +85,19 @@ app.post('/api/recommend', (req, res) => {
   res.json(recommendService(query));
 });
 
+// 1. TRAVEL FEE CHECKOUT (Pre-Appointment)
 app.post('/api/create-checkout-session', async (req, res) => {
   const stripeInstance = initStripe();
-  if (!stripeInstance) return res.status(500).json({ error: "Server initializing Stripe. Try again in 30 seconds." });
+  if (!stripeInstance) return res.status(500).json({ error: "Stripe not ready." });
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // Dynamic Pricing Logic (WV Standard Rates)
   let amount = 4000; // $40.00 Base
   if (service.includes('Loan')) amount = 15000; 
 
-  // Mileage Surcharge Logic
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
-  const surchargeAmount = extraMiles * 200; // $2.00 per mile (cents)
+  const surchargeAmount = extraMiles * 200; 
 
   const line_items = [
     {
@@ -157,11 +122,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 
   try {
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
-      automatic_tax: { enabled: false }, // TAX DISABLED
+      automatic_tax: { enabled: false }, 
       invoice_creation: { 
         enabled: true,
         invoice_data: {
@@ -180,9 +145,77 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 });
 
+// 2. NOTARY FEE INVOICE (Post-Appointment)
+app.post('/api/create-invoice', async (req, res) => {
+  const stripeInstance = initStripe();
+  if (!stripeInstance) return res.status(500).json({ error: "Stripe not ready." });
+
+  // Admin sends: id (booking), signatures (count)
+  const { id, signatures } = req.body;
+  
+  try {
+    // Fetch booking to get email
+    const booking = await prisma.booking.findUnique({ where: { id: parseInt(id) } });
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+    const count = parseInt(signatures) || 1;
+    const amount = count * 1000; // $10.00 per stamp (in cents)
+
+    // Create a Payment Link
+    const session = await stripeInstance.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: 'West Virginia Notary Fee', description: 'Regulated Fee ($10.00 per stamp)' },
+          unit_amount: 1000, // $10.00 unit price
+        },
+        quantity: count,
+      }],
+      mode: 'payment',
+      success_url: `${CLIENT_URL}?paid=true`,
+      cancel_url: `${CLIENT_URL}`,
+      customer_email: booking.email,
+    });
+
+    // Email the link to the customer
+    if (resend) {
+        await resend.emails.send({
+            from: 'onboarding@resend.dev',
+            to: booking.email,
+            reply_to: ADMIN_EMAIL,
+            subject: 'Invoice: Signature Seal Notary Fees',
+            html: `
+                <div style="font-family: sans-serif; padding: 20px;">
+                    <h2>Notary Fee Invoice</h2>
+                    <p>Thank you for choosing Signature Seal Notary.</p>
+                    <p><strong>Signatures Notarized:</strong> ${count}</p>
+                    <p><strong>Total Due:</strong> $${count * 10}.00</p>
+                    <br/>
+                    <a href="${session.url}" style="background: #2c3e50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Pay Securely Online</a>
+                    <p style="margin-top: 20px; font-size: 12px; color: #666;">This fee is regulated by the State of West Virginia.</p>
+                </div>
+            `
+        });
+    }
+
+    res.json({ message: "Invoice sent successfully!" });
+  } catch (e) {
+    console.error("Invoice Error:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/bookings', async (req, res) => {
     try {
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
+        if (resend) await resend.emails.send({ 
+            from: 'onboarding@resend.dev', 
+            to: ADMIN_EMAIL, 
+            reply_to: req.body.email,
+            subject: 'New Booking', 
+            html: `<p>New booking: ${req.body.name}</p><p>Service: ${req.body.service}</p><p>Mileage: ${req.body.mileage || 0} miles</p>` 
+        });
         res.json(booking);
     } catch (err) { res.status(500).json({ error: "Booking failed" }); }
 });
