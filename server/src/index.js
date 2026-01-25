@@ -25,15 +25,15 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV MILEAGE RULE) ---
+// --- AI LOGIC (WV ONLY) ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('price') || q.includes('cost') || q.includes('travel')) {
+  if (q.includes('ohio') || q.includes(' oh ')) {
     return {
-      service: "Pricing Policy",
-      reasoning: "Our base rate is $40 (covers travel up to 10 miles). Travel beyond 10 miles is billed at $2.00/mile. State notary fees ($10/stamp) are separate.",
-      estimatedPrice: "Base $40 + Mileage",
+      service: "Expansion Waiting List",
+      reasoning: "We are currently West Virginia (WV) only. OH services coming soon.",
+      estimatedPrice: "Coming Soon",
       action: "read_faq"
     };
   }
@@ -46,44 +46,85 @@ const recommendService = (query) => {
   };
 };
 
+// --- ROUTES ---
+
+app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Only Mode)'));
+
 app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
 
 app.post('/api/create-checkout-session', async (req, res) => {
   if (!stripe) return res.status(500).json({ error: "Stripe not ready" });
+
+  const { name, email, service, date, time, mileage } = req.body;
+  
+  // Dynamic Pricing Logic (WV Standard Rates)
+  let baseAmount = 4000; // $40.00
+  let productName = "Mobile Service Base Fee (Covers 10 miles)";
+  
+  if (service.includes('Loan')) {
+      baseAmount = 15000;
+      productName = "Loan Signing Service";
+  }
+
+  // Mileage Calculation
+  const miles = parseInt(mileage) || 0;
+  const extraMiles = Math.max(0, miles - 10);
+  const surchargeAmount = extraMiles * 200; // $2.00 per mile in cents
+
+  const line_items = [
+    {
+      price_data: { currency: 'usd', product_data: { name: productName }, unit_amount: baseAmount },
+      quantity: 1,
+    }
+  ];
+
+  if (surchargeAmount > 0) {
+      line_items.push({
+        price_data: { currency: 'usd', product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, unit_amount: surchargeAmount },
+        quantity: 1,
+      });
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [{
-        price_data: { currency: 'usd', product_data: { name: 'Mobile Travel & Service Fee (Base)' }, unit_amount: 4000 },
-        quantity: 1,
-      }],
+      line_items: line_items,
       mode: 'payment',
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
-      customer_email: req.body.email,
+      customer_email: email,
+      metadata: { name, service, date, time, mileage }
     });
     res.json({ url: session.url });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/api/bookings', async (req, res) => {
     try {
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
-        if (resend) await resend.emails.send({ from: 'onboarding@resend.dev', to: ADMIN_EMAIL, subject: 'New Booking', html: `<p>New booking: ${req.body.name}</p>` });
+        if (resend) await resend.emails.send({ 
+            from: 'onboarding@resend.dev', 
+            to: ADMIN_EMAIL, 
+            reply_to: req.body.email,
+            subject: 'New Booking', 
+            html: `<p>New booking: ${req.body.name}</p><p>Service: ${req.body.service}</p><p>Mileage: ${req.body.mileage || 0} miles</p>` 
+        });
         res.json(booking);
     } catch (err) { res.status(500).json({ error: "Booking failed" }); }
 });
 
 app.get('/api/bookings', async (req, res) => {
     try {
-        const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
-        res.json({ data: bookings });
+      const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
+      res.json({ data: bookings });
     } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
 });
 
 app.post('/api/bookings/delete/:id', async (req, res) => {
-    try { await prisma.booking.delete({ where: { id: parseInt(req.params.id) } }); res.json({ message: "Deleted" }); }
-    catch (err) { res.json({ message: "Deleted" }); }
+  try { await prisma.booking.delete({ where: { id: parseInt(req.params.id) } }); res.json({ message: "Deleted" }); }
+  catch (err) { res.json({ message: "Deleted" }); }
 });
 
 app.post('/api/login', (req, res) => {
