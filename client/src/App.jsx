@@ -113,7 +113,7 @@ const FAQ = () => {
   
   const faqs = [
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports." },
-    { q: "Where do you travel?", a: "We serve Huntington, WV and surrounding areas. We can meet you at your home, office, a hospital, or a local coffee shop." },
+    { q: "Where do you travel?", a: "We serve Huntington, WV and the surrounding tri-state areas (West Virginia side). We can meet you at your home, office, a hospital, or a local coffee shop." },
     { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp) is separate and collected at the appointment." },
     { q: "Do you offer legal advice?", a: "No. As notaries, we verify identity and witness signatures. We cannot explain legal documents or provide legal advice." },
     { q: "How do I pay?", a: "You can pay the Travel Fee online via credit card to secure your booking. The remaining Notary Fees are paid in-person (Cash, Card, or Check)." }
@@ -389,7 +389,7 @@ const Hero = ({ onBookClick }) => (
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
         <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, bonded, and ready.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
