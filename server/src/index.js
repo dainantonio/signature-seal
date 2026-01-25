@@ -27,64 +27,64 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (CONCIERGE) ---
+// --- AI LOGIC (WV ONLY) ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('price') || q.includes('cost') || q.includes('fee')) {
+  if (q.includes('ohio') || q.includes(' oh ')) {
     return {
-      service: "Pricing Question",
-      reasoning: "Our travel fee starts at $40. State notary fees ($10/signature) are separate and paid at the time of service.",
+      service: "Expansion Waiting List",
+      reasoning: "We are currently West Virginia (WV) only. OH services coming soon.",
+      estimatedPrice: "Coming Soon",
       action: "read_faq"
-    };
-  }
-
-  if (q.includes('id') || q.includes('driver')) {
-    return {
-      service: "ID Requirement",
-      reasoning: "You must have a valid, unexpired government photo ID. If you don't, we cannot perform the notarization.",
-      action: "read_faq"
-    };
-  }
-
-  if (q.includes('location') || q.includes('where') || q.includes('travel')) {
-    return {
-      service: "Service Area",
-      reasoning: "We serve Huntington, WV and the surrounding Tri-State area (WV side).",
-      action: "book_general"
     };
   }
 
   return {
     service: "Mobile Notary",
-    reasoning: "Ready to book? We can come to you today.",
-    estimatedPrice: "$40 Travel Base + $10/sig",
+    reasoning: "We travel to you in Huntington/Tri-State (WV). Surcharge applies for travel > 10 miles.",
+    estimatedPrice: "$40 Base + $10/stamp (WV State Fee)",
     action: "book_general"
   };
 };
 
-app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
+// --- ROUTES ---
 
-// ... [Rest of the file stays the same as previous: create-checkout, bookings, login] ...
-// I'll provide the full file if you need to be sure, but the logic below is standard.
+app.get('/', (req, res) => res.send('Signature Seal API - Online (WV Only Mode)'));
+
+app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
 
 app.post('/api/create-checkout-session', async (req, res) => {
   if (!stripe) return res.status(500).json({ error: "Stripe not ready" });
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  let baseAmount = 4000;
+  // Dynamic Pricing Logic (WV Standard Rates)
+  let baseAmount = 4000; // $40.00
+  let productName = "Mobile Travel & Convenience Fee";
+  
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
   const surchargeAmount = extraMiles * 200; 
 
   const line_items = [
-    { price_data: { currency: 'usd', product_data: { name: 'Mobile Travel Fee' }, unit_amount: 4000 }, quantity: 1 }
+    {
+      price_data: { 
+          currency: 'usd', 
+          product_data: { name: productName }, 
+          unit_amount: baseAmount,
+      },
+      quantity: 1,
+    }
   ];
 
   if (surchargeAmount > 0) {
       line_items.push({
-        price_data: { currency: 'usd', product_data: { name: `Mileage Surcharge (${extraMiles} miles)` }, unit_amount: surchargeAmount },
+        price_data: { 
+            currency: 'usd', 
+            product_data: { name: `Mileage Surcharge (${extraMiles} miles x $2)` }, 
+            unit_amount: surchargeAmount,
+        },
         quantity: 1,
       });
   }
@@ -94,9 +94,18 @@ app.post('/api/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
+      automatic_tax: { enabled: false }, // TAX DISABLED FOR WV NOTARY
+      invoice_creation: { 
+        enabled: true,
+        invoice_data: {
+          description: "Notary services are not subject to sales tax.",
+          footer: "West Virginia notary fees ($10/stamp) are collected separately at appointment."
+        }
+      },
       success_url: `${CLIENT_URL}?success=true`,
       cancel_url: `${CLIENT_URL}?canceled=true`,
       customer_email: email,
+      metadata: { name, service, date, time, mileage }
     });
     res.json({ url: session.url });
   } catch (e) {
@@ -107,21 +116,27 @@ app.post('/api/create-checkout-session', async (req, res) => {
 app.post('/api/bookings', async (req, res) => {
     try {
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
-        if (resend) await resend.emails.send({ from: 'onboarding@resend.dev', to: ADMIN_EMAIL, subject: 'New Booking', html: `<p>New booking: ${req.body.name}</p>` });
+        if (resend) await resend.emails.send({ 
+            from: 'onboarding@resend.dev', 
+            to: ADMIN_EMAIL, 
+            reply_to: req.body.email,
+            subject: 'New Booking', 
+            html: `<p>New booking: ${req.body.name}</p><p>Service: ${req.body.service}</p><p>Mileage: ${req.body.mileage || 0} miles</p>` 
+        });
         res.json(booking);
     } catch (err) { res.status(500).json({ error: "Booking failed" }); }
 });
 
 app.get('/api/bookings', async (req, res) => {
     try {
-        const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
-        res.json({ data: bookings });
+      const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
+      res.json({ data: bookings });
     } catch (err) { res.status(500).json({ error: "Fetch failed" }); }
 });
 
 app.post('/api/bookings/delete/:id', async (req, res) => {
-    try { await prisma.booking.delete({ where: { id: parseInt(req.params.id) } }); res.json({ message: "Deleted" }); }
-    catch (err) { res.json({ message: "Deleted" }); }
+  try { await prisma.booking.delete({ where: { id: parseInt(req.params.id) } }); res.json({ message: "Deleted" }); }
+  catch (err) { res.json({ message: "Deleted" }); }
 });
 
 app.post('/api/login', (req, res) => {
