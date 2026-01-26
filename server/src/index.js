@@ -16,8 +16,12 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
 
-// Update this to your real email to ensure defaults work
+// 1. EMAILS DESTINATION (Where you receive bookings)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'sseal.notary@gmail.com';
+
+// 2. EMAILS SENDER (What clients see)
+// Now that DNS is verified, set this in Render to: bookings@signaturesealnotaries.com
+const SENDER_EMAIL = process.env.SENDER_EMAIL || 'onboarding@resend.dev';
 
 // --- INITIALIZE SERVICES ---
 let stripe = null;
@@ -27,12 +31,12 @@ if (process.env.STRIPE_SECRET_KEY) {
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// --- TWILIO SETUP ---
+// --- TWILIO SETUP (SMS) ---
 let twilioClient = null;
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
     try {
         twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-        console.log("✅ Twilio: Initialized.");
+        console.log("✅ Twilio: Initialized for SMS.");
     } catch (e) {
         console.error("❌ Twilio Init Failed:", e.message);
     }
@@ -44,18 +48,16 @@ app.use(express.json());
 
 // --- HELPER: GENERATE GOOGLE CALENDAR LINK ---
 const generateCalendarLink = (name, service, date, time, address) => {
-    // Basic approximation of start/end times
-    // In a real app, you'd parse the 'time' string carefully. 
-    // This creates a "All Day" link or defaults to the date provided.
+    // Creates a "Click to Add" link for Google Calendar
     const start = new Date(date).toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0,8);
-    const details = `Service: ${service}%0AClient: ${name}%0ALocation: ${address}`;
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Notary:+${encodeURIComponent(service)}&dates=${start}/${start}&details=${details}&location=${encodeURIComponent(address)}`;
+    const details = `Service: ${service}\nClient: ${name}\nLocation: ${address}`;
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Notary:+${encodeURIComponent(service)}&dates=${start}/${start}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(address)}`;
 };
 
 // --- HELPER: SEND SMS (Twilio) ---
 const sendSMS = async (message) => {
     if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER || !process.env.MY_PHONE_NUMBER) {
-        console.log("⚠️ SMS Skipped: Twilio vars missing (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, MY_PHONE_NUMBER)");
+        // Silent fail if not configured yet
         return;
     }
     try {
@@ -75,6 +77,7 @@ const sendSMS = async (message) => {
 app.get('/api/debug', (req, res) => {
     res.json({
         email_target: ADMIN_EMAIL,
+        email_sender: SENDER_EMAIL,
         stripe_active: !!stripe,
         twilio_active: !!twilioClient
     });
@@ -83,10 +86,9 @@ app.get('/api/debug', (req, res) => {
 app.get('/', (req, res) => res.send('Signature Seal API - Online'));
 
 app.post('/api/recommend', (req, res) => {
-    // ... [Keep existing AI Logic] ...
-    // Simplified for brevity in this update, ensure you keep the full logic
     const q = req.body.query.toLowerCase();
-    if (q.includes('ohio')) return res.json({ service: "Waiting List", reasoning: "WV only for now.", action: "read_faq" });
+    // WV Only Logic
+    if (q.includes('ohio') || q.includes(' oh ')) return res.json({ service: "Waiting List", reasoning: "WV only for now.", action: "read_faq" });
     res.json({ service: "Mobile Notary", reasoning: "We travel to you in WV.", estimatedPrice: "$40 Base + Fees", action: "book_general" });
 });
 
@@ -133,13 +135,13 @@ app.post('/api/bookings', async (req, res) => {
         const { name, email, service, date, time, address, notes, mileage } = req.body;
         const booking = await prisma.booking.create({ data: { name, email, service, date: new Date(date), time, notes, address } });
         
-        // 1. Send Email (Now with Calendar Link)
+        // 1. Send Email (From verified domain)
         if (resend) {
             const calLink = generateCalendarLink(name, service, date, time, address);
             await resend.emails.send({ 
-                from: 'onboarding@resend.dev', 
+                from: SENDER_EMAIL, // Now dynamic
                 to: ADMIN_EMAIL, 
-                reply_to: email,
+                reply_to: email, // Reply goes to customer
                 subject: `New Booking: ${name}`, 
                 html: `
                     <h2>New Booking Received</h2>
@@ -155,14 +157,39 @@ app.post('/api/bookings', async (req, res) => {
             });
         }
 
-        // 2. Send SMS (If Twilio Configured)
-        await sendSMS(`🔔 Signature Seal: New booking from ${name} for ${date} at ${time}. Service: ${service}.`);
+        // 2. Send SMS (If configured)
+        await sendSMS(`🔔 New Booking: ${name} for ${date} @ ${time}.`);
 
         res.json(booking);
     } catch (err) { res.status(500).json({ error: "Booking failed" }); }
 });
 
-// [Keep existing GET/DELETE/LOGIN routes]
+// [Keep existing GET/DELETE/LOGIN/INVOICE routes]
+// Including Invoice Route as requested for future use
+app.post('/api/create-invoice', async (req, res) => {
+  if (!stripe) return res.status(500).json({ error: "Stripe not ready." });
+  const { id, signatures } = req.body;
+  try {
+    const booking = await prisma.booking.findUnique({ where: { id: parseInt(id) } });
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+    const count = parseInt(signatures) || 1;
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: { currency: 'usd', product_data: { name: 'West Virginia Notary Fee' }, unit_amount: 1000 },
+        quantity: count,
+      }],
+      mode: 'payment',
+      success_url: `${CLIENT_URL}?paid=true`,
+      cancel_url: `${CLIENT_URL}`,
+      customer_email: booking.email,
+    });
+    // Send invoice link via email
+    if (resend) await resend.emails.send({ from: SENDER_EMAIL, to: booking.email, reply_to: ADMIN_EMAIL, subject: 'Invoice: Notary Fees', html: `<p>Please pay your notary fees here: <a href="${session.url}">Pay Now</a></p>` });
+    res.json({ message: "Invoice sent!" });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/bookings', async (req, res) => {
     try { const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } }); res.json({ data: bookings }); } 
     catch (err) { res.status(500).json({ error: "Error" }); }
