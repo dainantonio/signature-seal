@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, ArrowUp
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, ArrowUp, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -187,41 +187,27 @@ const FAQ = () => {
   );
 };
 
-// --- INTELLIGENT CONCIERGE ---
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Notary Concierge. I can answer questions about pricing, ID requirements, and service areas. How can I help?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with pricing, service areas, and scheduling. How can I assist?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Quick Questions for Intuitive UI
-  const quickPrompts = [
-    "💰 What is the price?",
-    "📍 Do you go to Ohio?",
-    "🆔 What ID do I need?",
-    "🏦 Do you go to hospitals?"
-  ];
-
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isOpen]);
 
-  const sendMessage = async (text) => {
-    const userMsg = text || input;
-    if (!userMsg.trim()) return;
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    const userMsg = input;
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setInput('');
     setIsLoading(true);
-    
     try {
       const res = await safeFetch(`${API_URL}/api/recommend`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: userMsg }) });
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
-    } catch (err) { 
-        setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting to the brain. Please try the 'Book Now' button above." }]); 
-    } finally { 
-        setIsLoading(false); 
-    }
+    } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting. Please use the 'Book Now' button." }]); } finally { setIsLoading(false); }
   };
 
   return (
@@ -233,36 +219,25 @@ const AIChatWidget = ({ onRecommend }) => {
               <h3 className="font-bold text-sm">Notary Concierge</h3>
               <button onClick={() => setIsOpen(false)} className="ml-auto hover:bg-white/10 p-1 rounded transition"><X size={18} /></button>
             </div>
-            
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 text-sm">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none shadow-sm'}`}>
+                  <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
                     <p>{msg.text}</p>
                     {msg.recommendation && msg.recommendation.action === 'book_general' && (
-                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider hover:bg-black transition-colors">Book Now</button>
+                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider">Book Now</button>
                     )}
                      {msg.recommendation && msg.recommendation.action === 'contact_us' && (
-                        <a href={`mailto:${CONTACT_EMAIL}`} className="block text-center w-full bg-brand-gold text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider hover:bg-yellow-600 transition-colors">Email Us</a>
+                        <a href={`mailto:${CONTACT_EMAIL}`} className="block text-center w-full bg-brand-gold text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider">Email Us</a>
                     )}
                   </div>
                 </div>
               ))}
               <div ref={messagesEndRef} />
             </div>
-
-            {/* QUICK PROMPTS AREA */}
-            <div className="p-2 bg-white border-t border-gray-100 overflow-x-auto whitespace-nowrap flex gap-2">
-                {quickPrompts.map((prompt, i) => (
-                    <button key={i} onClick={() => sendMessage(prompt)} className="px-3 py-1.5 bg-gray-100 hover:bg-brand-teal hover:text-white rounded-full text-xs font-medium transition-colors border border-gray-200">
-                        {prompt}
-                    </button>
-                ))}
-            </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="p-3 bg-white border-t border-gray-100 flex gap-2">
-              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 bg-gray-50 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-teal/20" />
-              <button type="submit" disabled={isLoading} className="p-2 bg-brand-navy-dark text-white rounded-lg hover:bg-brand-teal transition-colors"><Send size={18} /></button>
+            <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-gray-100 flex gap-2">
+              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 bg-gray-50 rounded-lg px-4 py-2 text-sm outline-none" />
+              <button type="submit" disabled={isLoading} className="p-2 bg-brand-navy-dark text-white rounded-lg"><Send size={18} /></button>
             </form>
           </motion.div>
         )}
@@ -577,7 +552,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['$10 per notarized signature (State Fee)', 'Travel included up to 10 miles', 'Surcharge: $2.00 per extra mile (10+ miles)', 'Evening & Weekends Available'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -622,6 +597,24 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // --- INVOICE FEATURE (Stripe Integration) ---
+  const handleSendInvoice = async (id) => {
+    const sigs = prompt("How many signatures were notarized?");
+    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
+    
+    try {
+        const res = await fetch(`${API_URL}/api/create-invoice`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, signatures: sigs })
+        });
+        const data = await res.json();
+        if (res.ok) alert("Invoice sent to customer!");
+        else alert("Failed to send invoice: " + data.error);
+    } catch (err) { alert("Error connecting to server."); }
+  };
+
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
@@ -643,7 +636,16 @@ const AdminDashboard = ({ token, onLogout }) => {
     <div className="container mx-auto px-6 py-32 pt-40">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
       <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
-        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative"><button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button><h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p></div>
+        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
+            <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
+            <h3 className="font-bold">{b.name}</h3>
+            <p className="text-sm">{b.service}</p>
+            <p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
+            {/* BILLING BUTTON */}
+            <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
+                <DollarSign size={14}/> Bill Notary Fees
+            </button>
+        </div>
       ))}</div>
     </div>
   );
