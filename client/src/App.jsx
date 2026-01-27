@@ -20,7 +20,6 @@ const API_URL = getBackendUrl();
 const CONTACT_EMAIL = "sseal.notary@gmail.com"; 
 
 // --- GOOGLE ANALYTICS PLACEHOLDER ---
-// To enable: Replace 'G-XXXXXXXXXX' with your actual ID in main.jsx or index.html
 const GA_ID = 'G-XXXXXXXXXX'; 
 
 // --- SEO SCHEMA (JSON-LD) ---
@@ -30,7 +29,7 @@ const SEOSchema = () => {
     "@type": "Notary",
     "name": "Signature Seal Notary",
     "image": "https://signaturesealnotaries.com/logo.png",
-    "description": "Mobile Notary Services for Huntington, WV and Tri-State area.",
+    "description": "Mobile Notary Services for Huntington, WV and surrounding West Virginia areas.",
     "address": {
       "@type": "PostalAddress",
       "addressLocality": "Huntington",
@@ -44,7 +43,7 @@ const SEOSchema = () => {
       "longitude": "-82.4452"
     },
     "url": "https://signaturesealnotaries.com",
-    "telephone": "+13045550199", // Update with real number
+    "telephone": "+13045550199", 
     "priceRange": "$$"
   };
 
@@ -114,7 +113,6 @@ const Navbar = ({ onBookClick, activeSection }) => {
               className={`font-medium text-base transition-all duration-300 relative group ${activeSection === item.toLowerCase() ? 'text-brand-teal' : (scrolled ? 'text-gray-600 hover:text-brand-teal' : 'text-gray-200 hover:text-brand-teal')}`}
             >
               {item}
-              {/* Active Indicator Dot */}
               {activeSection === item.toLowerCase() && (
                 <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-brand-teal rounded-full" />
               )}
@@ -306,7 +304,11 @@ const AIChatWidget = ({ onRecommend }) => {
 
 const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({ service: '', date: '', time: '', name: '', email: '', address: '', notes: '', mileage: 0, signatures: 1, locationType: 'my_location' });
+  const [formData, setFormData] = useState({ 
+    service: '', date: '', time: '', name: '', email: '', 
+    address: '', notes: '', mileage: 0, signatures: 1,
+    locationType: 'my_location' // Default
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [payNow, setPayNow] = useState(false);
@@ -314,17 +316,34 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
 
+  // Handle Location Type Switching
   const handleLocationTypeChange = (type) => {
-    setFormData(prev => ({ ...prev, locationType: type, mileage: type === 'public' ? 0 : prev.mileage, address: '' }));
+    setFormData(prev => ({ 
+        ...prev, 
+        locationType: type,
+        // Reset mileage to 0 if public (assuming base area)
+        mileage: type === 'public' ? 0 : prev.mileage,
+        address: '' // Clear address on switch
+    }));
   };
 
+  // Price Calculation - SAFE (No crash if service is missing)
   const price = useMemo(() => {
     let base = 40;
     if (formData.service && formData.service.includes('Loan')) base = 150;
+    
+    // Surcharge Logic (0 if Public Spot)
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
+    
+    // Notary Fee ($10/sig) - for display only
     const notaryFee = (formData.signatures || 0) * 10;
-    return { travelTotal: base + surcharge, notaryFee, grandTotal: base + surcharge + notaryFee };
+    
+    return { 
+        travelTotal: base + surcharge, 
+        notaryFee, 
+        grandTotal: base + surcharge + notaryFee 
+    };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType]);
 
   const timeSlots = useMemo(() => {
@@ -335,22 +354,35 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date]);
-
+  
+  // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
-    if (step === 1) return formData.service && formData.date && formData.time;
-    if (step === 2) {
-        const basic = formData.name && formData.email && formData.signatures > 0;
-        if (formData.locationType === 'my_location') return basic && formData.address && !isNaN(formData.mileage);
-        else return basic && formData.address;
+    if (step === 1) {
+        return formData.service && formData.date && formData.time;
     }
-    if (step === 3) return termsAccepted && payNow;
+    if (step === 2) {
+        // Validation for Details Step
+        const basicFields = formData.name && formData.email && formData.signatures > 0;
+        if (formData.locationType === 'my_location') {
+            // My Location requires address AND mileage (even if 0)
+            return basicFields && formData.address && !isNaN(formData.mileage);
+        } else {
+            // Public Spot requires address (selected spot) but ignores mileage
+            return basicFields && formData.address;
+        }
+    }
+    if (step === 3) {
+        // Must accept terms AND agree to pay travel fee
+        return termsAccepted && payNow;
+    }
     return false;
   };
 
   if (!isOpen) return null;
 
   const submitBooking = async () => {
-    if (!isStepValid()) return; 
+    if (!isStepValid()) return; // Extra guard
+    
     setIsSubmitting(true);
     const payload = { ...formData };
     const endpoint = `${API_URL}/api/create-checkout-session`;
@@ -391,8 +423,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal transition-all focus:ring-2 focus:ring-brand-teal/20" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal transition-all focus:ring-2 focus:ring-brand-teal/20" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
                       <option value="">Select Time</option>
                       {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -401,10 +433,10 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               )}
               {step === 2 && (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl transition-all focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                  <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl transition-all focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                  <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                  <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   
-                  {/* DYNAMIC LOCATION */}
+                  {/* DYNAMIC LOCATION SELECTOR */}
                   <div className="grid grid-cols-2 gap-4">
                      <button onClick={() => handleLocationTypeChange('my_location')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'my_location' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
                         <Home size={18} /> My Location
@@ -435,11 +467,17 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                                 type="number" min="0" 
                                 className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
                                 value={formData.mileage} 
-                                disabled={formData.locationType === 'public'} 
+                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
                                 onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
+                        {/* SURCHARGE DISCLAIMER */}
+                        {formData.locationType === 'my_location' && (
+                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
+                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
+                            </p>
+                        )}
                     </div>
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label className="text-xs font-bold text-gray-500 uppercase">Signatures Needed</label>
@@ -478,9 +516,9 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`} & Service Fee.</p>
                   </div>
                   
-                  {/* COMPLIANCE CHECKBOXES */}
+                  {/* MANDATORY COMPLIANCE CHECKBOXES */}
                   <div className="space-y-3">
-                    <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer hover:bg-orange-100 transition-colors">
+                    <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
                             I understand that the <strong>$10 notary fee</strong> is charged per notarized signature and will be collected after the notarization is completed.
@@ -499,7 +537,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
-                disabled={!isStepValid()} // LOCK
+                disabled={!isStepValid()} // LOCK BUTTON UNTIL VALID
                 className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${!isStepValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
               >
                 {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
@@ -523,7 +561,7 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
