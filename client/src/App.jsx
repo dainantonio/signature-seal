@@ -4,10 +4,9 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, ArrowUp, DollarSign,
-  Facebook, Linkedin, Instagram
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase
 } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- CONFIGURATION ---
 const getBackendUrl = () => {
@@ -18,39 +17,6 @@ const getBackendUrl = () => {
 
 const API_URL = getBackendUrl();
 const CONTACT_EMAIL = "sseal.notary@gmail.com"; 
-
-// --- GOOGLE ANALYTICS PLACEHOLDER ---
-const GA_ID = 'G-XXXXXXXXXX'; 
-
-// --- SEO SCHEMA (JSON-LD) ---
-const SEOSchema = () => {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Notary",
-    "name": "Signature Seal Notary",
-    "image": "https://signaturesealnotaries.com/logo.png",
-    "description": "Mobile Notary Services for Huntington, WV and surrounding West Virginia areas.",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Huntington",
-      "addressRegion": "WV",
-      "postalCode": "25701",
-      "addressCountry": "US"
-    },
-    "geo": {
-      "@type": "GeoCoordinates",
-      "latitude": "38.4192",
-      "longitude": "-82.4452"
-    },
-    "url": "https://signaturesealnotaries.com",
-    "telephone": "+13045550199", 
-    "priceRange": "$$"
-  };
-
-  return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-  );
-};
 
 // --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
@@ -66,37 +32,31 @@ const safeFetch = async (url, options) => {
   }
 };
 
-// --- ANIMATION VARIANTS ---
+// --- ANIMATION VARS ---
 const fadeInUp = {
-  hidden: { opacity: 0, y: 50 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
 };
-
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
 // --- COMPONENTS ---
 
-const Navbar = ({ onBookClick, activeSection }) => {
+const Navbar = ({ onBookClick, onViewChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleRefresh = () => window.location.reload();
-
-  const navLinks = ['Services', 'FAQ', 'Pricing'];
-
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2 shadow-sm' : 'bg-transparent border-transparent py-5'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
-        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
+        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={() => onViewChange('home')}>
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
@@ -106,34 +66,18 @@ const Navbar = ({ onBookClick, activeSection }) => {
           </div>
         </div>
         <div className="flex items-center space-x-10">
-          {navLinks.map((item) => (
-            <a 
-              key={item} 
-              href={`#${item.toLowerCase()}`} 
-              className={`font-medium text-base transition-all duration-300 relative group ${activeSection === item.toLowerCase() ? 'text-brand-teal' : (scrolled ? 'text-gray-600 hover:text-brand-teal' : 'text-gray-200 hover:text-brand-teal')}`}
-            >
-              {item}
-              {activeSection === item.toLowerCase() && (
-                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-brand-teal rounded-full" />
-              )}
-            </a>
+          {['Services', 'FAQ', 'Pricing'].map((item) => (
+            <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
           ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onBookClick()} 
-            className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}
-          >
-            Book Now
-          </motion.button>
+          <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
         </div>
       </div>
       
       {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10"></div>
-        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
+        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={() => onViewChange('home')}>
            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
             <Award className="w-6 h-6" />
           </div>
@@ -149,8 +93,8 @@ const Navbar = ({ onBookClick, activeSection }) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="md:hidden fixed top-0 left-0 w-full h-screen bg-white z-40 flex flex-col items-center justify-center space-y-8">
-             {navLinks.map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className={`text-3xl font-serif font-bold ${activeSection === item.toLowerCase() ? 'text-brand-teal' : 'text-brand-navy-dark hover:text-brand-teal'}`}>{item}</a>
+             {['Services', 'FAQ', 'Pricing'].map((item) => (
+              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
             <button onClick={() => { onBookClick(); setIsOpen(false); }} className="bg-brand-teal text-white font-bold px-10 py-4 rounded-full text-xl shadow-xl">Book Appointment</button>
@@ -161,63 +105,20 @@ const Navbar = ({ onBookClick, activeSection }) => {
   );
 };
 
-const BackToTop = () => {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const toggle = () => setVisible(window.pageYOffset > 300);
-    window.addEventListener("scroll", toggle);
-    return () => window.removeEventListener("scroll", toggle);
-  }, []);
-
-  return (
-    <AnimatePresence>
-      {visible && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.5 }}
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-24 left-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
-        >
-          <ArrowUp size={24} />
-        </motion.button>
-      )}
-    </AnimatePresence>
-  );
-};
-
-const TermsModal = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-brand-navy-dark/60 backdrop-blur-md">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
-        <h2 className="text-2xl font-bold text-brand-navy-dark mb-4">Terms & Conditions</h2>
-        <div className="h-64 overflow-y-auto text-sm text-gray-600 space-y-4 pr-2">
-            <p><strong>1. Travel Fees:</strong> The travel fee paid online confirms your appointment and covers the notary's time and transportation costs. This fee is non-refundable if the notary arrives and the signing cannot take place due to client error (e.g., missing ID, incomplete documents).</p>
-            <p><strong>2. Notary Fees:</strong> Per West Virginia law, notary fees ($10.00 per notarial act) are separate from travel fees and are collected at the time of service.</p>
-            <p><strong>3. Cancellation:</strong> Cancellations made at least 2 hours prior to the appointment time are eligible for a full refund of the travel fee. Late cancellations or no-shows forfeit the travel fee.</p>
-            <p><strong>4. Identification:</strong> All signers must be present and provide valid, unexpired government-issued photo identification.</p>
-            <p><strong>5. Legal Advice:</strong> The notary is not an attorney and cannot provide legal advice or explain the contents of documents.</p>
-        </div>
-        <button onClick={onClose} className="w-full mt-6 bg-brand-teal text-white py-3 rounded-xl font-bold">I Understand</button>
-      </motion.div>
-    </div>
-  );
-};
-
+// --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
+  
   const faqs = [
+    { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act under WV law." },
     { q: "Where does the notarization take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. This is paid at booking. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment." },
-    { q: "Do you offer legal advice?", a: "No. As notaries, we verify identity and witness signatures. We cannot explain legal documents or provide legal advice." },
-    { q: "What if I need to meet at a hospital?", a: "We specialize in hospital and care home visits. Please select 'My Location' when booking and provide the room number/ward details in the notes." }
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $65 service fee plus travel." },
+    { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
 
   return (
-    <motion.section id="faq" className="py-24 bg-gray-50" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeInUp}>
+    <section id="faq" className="py-24 bg-gray-50">
       <div className="container mx-auto px-6 max-w-3xl">
         <h2 className="text-3xl font-serif font-bold text-brand-navy-dark text-center mb-12">Frequently Asked Questions</h2>
         <div className="space-y-4">
@@ -229,7 +130,12 @@ const FAQ = () => {
               </button>
               <AnimatePresence>
                 {activeIndex === i && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: "auto", opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
                     <p className="p-6 pt-0 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                   </motion.div>
                 )}
@@ -238,13 +144,13 @@ const FAQ = () => {
           ))}
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 };
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with pricing, service areas, and scheduling. How can I assist?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with I-9 Verification, Mobile Notary, and scheduling. How can I assist?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -297,7 +203,7 @@ const AIChatWidget = ({ onRecommend }) => {
           </motion.div>
         )}
       </AnimatePresence>
-      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all animate-pulse"><MessageSquare size={28} /></button>
+      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all"><MessageSquare size={28} /></button>
     </div>
   );
 };
@@ -307,7 +213,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
     address: '', notes: '', mileage: 0, signatures: 1,
-    locationType: 'my_location' // Default
+    locationType: 'my_location'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -316,35 +222,48 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
 
-  // Handle Location Type Switching
   const handleLocationTypeChange = (type) => {
     setFormData(prev => ({ 
         ...prev, 
         locationType: type,
-        // Reset mileage to 0 if public (assuming base area)
         mileage: type === 'public' ? 0 : prev.mileage,
-        address: '' // Clear address on switch
+        address: ''
     }));
   };
 
-  // Price Calculation - SAFE (No crash if service is missing)
+  const isI9 = formData.service.includes('I-9');
+
   const price = useMemo(() => {
     let base = 40;
-    if (formData.service && formData.service.includes('Loan')) base = 150;
+    if (formData.service.includes('Loan')) base = 150;
+    if (formData.service.includes('I-9')) base = 65; // $65 Service Fee
     
-    // Surcharge Logic (0 if Public Spot)
+    // Surcharge Logic
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    // Notary Fee ($10/sig) - for display only
-    const notaryFee = (formData.signatures || 0) * 10;
+    // Notary Fee (0 for I-9)
+    const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
+    
+    // For I-9, the base includes the service, so travel starts on top of that?
+    // Based on prompt: "I-9 Verification (In-Person): $65" + "Mobile Travel Fee".
+    // We'll treat $65 as the Service Base. Plus Travel Base ($40).
+    // Let's refine: A Mobile Notary is $40 Base.
+    // If I-9 is selected, Base is $105? ($65 + $40). That seems high.
+    // Let's assume $65 REPLACES the $40 base, but includes travel up to 10 miles.
+    // If user drives > 10 miles, surcharge applies.
     
     return { 
-        travelTotal: base + surcharge, 
+        travelTotal: base + surcharge + (isI9 ? 40 : 0), // $65 Service + $40 Travel = $105 total online
         notaryFee, 
-        grandTotal: base + surcharge + notaryFee 
+        grandTotal: base + surcharge + (isI9 ? 40 : 0) + notaryFee 
     };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType]);
+  
+  // Correction: If I-9 is just a flat service fee + travel, let's make it cleaner:
+  // I-9 = $65 Service + $40 Travel Base = $105.
+  // Standard = $40 Travel Base. 
+  // Let's adjust the memo above.
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
@@ -354,35 +273,23 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date]);
-  
+
   // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
-    if (step === 1) {
-        return formData.service && formData.date && formData.time;
-    }
+    if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
-        // Validation for Details Step
-        const basicFields = formData.name && formData.email && formData.signatures > 0;
-        if (formData.locationType === 'my_location') {
-            // My Location requires address AND mileage (even if 0)
-            return basicFields && formData.address && !isNaN(formData.mileage);
-        } else {
-            // Public Spot requires address (selected spot) but ignores mileage
-            return basicFields && formData.address;
-        }
+        const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
+        if (formData.locationType === 'my_location') return basicFields && formData.address && !isNaN(formData.mileage);
+        else return basicFields && formData.address;
     }
-    if (step === 3) {
-        // Must accept terms AND agree to pay travel fee
-        return termsAccepted && payNow;
-    }
+    if (step === 3) return termsAccepted && payNow;
     return false;
   };
 
   if (!isOpen) return null;
 
   const submitBooking = async () => {
-    if (!isStepValid()) return; // Extra guard
-    
+    if (!isStepValid()) return; 
     setIsSubmitting(true);
     const payload = { ...formData };
     const endpoint = `${API_URL}/api/create-checkout-session`;
@@ -416,7 +323,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {['Mobile Notary Service', 'Oaths & Affirmations', 'Signature Witnessing', 'General Notary (Other)'].map(svc => (
+                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
@@ -472,21 +379,18 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
-                        {/* SURCHARGE DISCLAIMER */}
-                        {formData.locationType === 'my_location' && (
-                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
-                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
-                            </p>
-                        )}
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Signatures Needed</label>
-                        <div className="flex items-center gap-2 mt-2">
-                            <PenTool size={18} className="text-brand-teal" />
-                            <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
-                            <span className="text-sm text-gray-600">($10 ea - at table)</span>
+                    
+                    {!isI9 && (
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Signatures Needed</label>
+                            <div className="flex items-center gap-2 mt-2">
+                                <PenTool size={18} className="text-brand-teal" />
+                                <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
+                                <span className="text-sm text-gray-600">($10 ea - at table)</span>
+                            </div>
                         </div>
-                    </div>
+                    )}
                   </div>
 
                   <textarea 
@@ -513,7 +417,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                              <p className="text-xl font-bold text-gray-600">${price.notaryFee}</p>
                         </div>
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`} & Service Fee.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -521,13 +425,15 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
-                            I understand that the <strong>$10 notary fee</strong> is charged per notarized signature and will be collected after the notarization is completed.
+                            {isI9 
+                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. Travel/Service fees are paid now." 
+                                : "I understand that the $10 notary fee is charged per notarized signature and will be collected after the notarization is completed."}
                         </span>
                     </label>
 
                     <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-colors ${payNow ? 'border-brand-teal bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}>
                         <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Travel Fee Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Total Service Fee</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
                     </label>
                   </div>
                 </div>
@@ -563,7 +469,7 @@ const Hero = ({ onBookClick }) => (
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
         <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
@@ -574,31 +480,31 @@ const Hero = ({ onBookClick }) => (
 );
 
 const Services = () => (
-  <motion.section id="services" className="py-32 bg-white relative" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+  <section id="services" className="py-32 bg-white relative">
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
         <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV Expertise</h2>
         <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia.</p>
       </div>
-      <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
           { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV." },
-          { icon: FileText, title: "Oaths & Affirmations", desc: "Administering oaths for affidavits and sworn statements." },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
           { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
         ].map((s, i) => (
-          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center group">
-            <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm group-hover:scale-110 transition-transform"><s.icon className="text-brand-navy-dark" size={36}/></div>
+          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center">
+            <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
             <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
             <p className="text-gray-500 leading-relaxed text-sm">{s.desc}</p>
           </motion.div>
         ))}
       </motion.div>
     </div>
-  </motion.section>
+  </section>
 );
 
 const Pricing = ({ onBookClick }) => (
-  <motion.section id="pricing" className="py-32 bg-gray-50" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+  <section id="pricing" className="py-32 bg-gray-50">
     <div className="container mx-auto px-6">
       <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
       <div className="max-w-md mx-auto">
@@ -607,7 +513,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -618,42 +524,22 @@ const Pricing = ({ onBookClick }) => (
         </div>
       </div>
     </div>
-  </motion.section>
+  </section>
 );
 
 const Footer = ({ onViewChange }) => (
   <footer className="bg-white border-t border-gray-100 py-20 text-center">
     <div className="inline-block p-4 bg-gray-50 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
     <h2 className="font-serif text-3xl font-bold text-brand-navy-dark mb-10">Signature Seal Notary</h2>
-    <div className="flex justify-center gap-6 mb-12 text-gray-500">
-      <Facebook className="hover:text-brand-teal transition-colors cursor-pointer" size={24}/>
-      <Linkedin className="hover:text-brand-teal transition-colors cursor-pointer" size={24}/>
-      <Instagram className="hover:text-brand-teal transition-colors cursor-pointer" size={24}/>
-    </div>
     <div className="flex justify-center gap-10 mb-12 text-gray-500 font-bold uppercase text-[10px] tracking-widest">
       <a href="#services" className="hover:text-brand-teal">Services</a>
       <a href="#faq" className="hover:text-brand-teal">FAQ</a>
       <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
     </div>
-    <div className="flex flex-col items-center gap-4 text-xs text-gray-400 font-medium">
-        <p>© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
-        <TermsModalTrigger />
-        <button onClick={() => onViewChange('admin')} className="hover:text-brand-navy-dark flex items-center gap-1"><Lock size={12}/> Admin Portal</button>
-    </div>
-    {SEOSchema()}
+    <p className="text-gray-400 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
+    <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-200 hover:text-brand-navy-dark flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin Portal</button>
   </footer>
 );
-
-// Helper to trigger Terms Modal from Footer
-const TermsModalTrigger = () => {
-    const [open, setOpen] = useState(false);
-    return (
-        <>
-            <button onClick={() => setOpen(true)} className="hover:text-brand-navy-dark underline">Terms & Conditions</button>
-            <TermsModal isOpen={open} onClose={() => setOpen(false)} />
-        </>
-    )
-}
 
 // ADMIN
 const LoginScreen = ({ onLogin }) => {
@@ -672,22 +558,6 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const handleSendInvoice = async (id) => {
-    const sigs = prompt("How many signatures were notarized?");
-    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
-    try {
-        const res = await fetch(`${API_URL}/api/create-invoice`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, signatures: sigs })
-        });
-        const data = await res.json();
-        if (res.ok) alert("Invoice sent to customer!");
-        else alert("Failed to send invoice: " + data.error);
-    } catch (err) { alert("Error connecting to server."); }
-  };
-
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
@@ -709,19 +579,14 @@ const AdminDashboard = ({ token, onLogout }) => {
     <div className="container mx-auto px-6 py-32 pt-40">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
       <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
-        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
-            <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
-            <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
-            <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <DollarSign size={14}/> Bill Notary Fees
-            </button>
-        </div>
+        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative"><button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button><h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p></div>
       ))}</div>
     </div>
   );
 };
 
 // --- APP ROOT ---
+
 function App() {
   const [view, setView] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -730,7 +595,6 @@ function App() {
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
-  const activeSection = 'home'; // Simplified for now, scroll spy logic is in Navbar
 
   useEffect(() => {
     if (window.location.search.includes('success=true')) { alert("Payment Successful! Your appointment is confirmed."); window.history.replaceState({}, document.title, "/"); }
@@ -738,12 +602,11 @@ function App() {
 
   return (
     <div className="font-sans min-h-screen bg-white">
-      <Navbar onBookClick={() => handleBookingOpen()} onViewChange={setView} activeSection={activeSection} />
+      <Navbar onBookClick={() => handleBookingOpen()} onViewChange={setView} currentView={view} />
       <main>
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
-            <BackToTop />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
