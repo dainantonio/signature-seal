@@ -15,10 +15,20 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
 
+// --- INITIALIZE STRIPE ---
 let stripe = null;
-if (process.env.STRIPE_SECRET_KEY) {
-  try { stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim()); } catch(e) {}
-}
+const initStripe = () => {
+    if (!stripe && process.env.STRIPE_SECRET_KEY) {
+        try {
+            stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim());
+            console.log("✅ STRIPE: Initialized successfully.");
+        } catch (e) {
+            console.error("❌ STRIPE: Failed to initialize:", e.message);
+        }
+    }
+    return stripe;
+};
+initStripe();
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
@@ -27,18 +37,16 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV ONLY) ---
+// --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
-  
   if (q.includes('ohio') || q.includes(' oh ')) return { service: "Waiting List", reasoning: "WV only for now.", action: "read_faq" };
 
-  // I-9 Logic
   if (q.includes('i9') || q.includes('employment') || q.includes('authorized')) {
     return {
       service: "I-9 Employment Verification",
-      reasoning: "We act as an Authorized Representative for remote hires.",
-      estimatedPrice: "$60 Service Fee + Travel",
+      reasoning: "Authorized Representative services for remote hires.",
+      estimatedPrice: "$40 Travel Base + $20 Service Fee",
       action: "book_general"
     };
   }
@@ -49,19 +57,14 @@ const recommendService = (query) => {
 app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
 
 app.post('/api/create-checkout-session', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: "Stripe not ready" });
+  const stripeInstance = initStripe();
+  if (!stripeInstance) return res.status(500).json({ error: "Stripe not ready." });
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // Dynamic Pricing Logic (WV Standard Rates)
+  // Dynamic Pricing Logic
   let baseAmount = 4000; // $40.00 Base
   let productName = "Mobile Travel & Convenience Fee";
-
-  // I-9 Specific Pricing - $60 Flat
-  if (service.includes('I-9')) {
-      baseAmount = 6000; // $60 Total Base
-      productName = "I-9 Verification Service & Travel Fee";
-  }
 
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
@@ -90,7 +93,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 
   try {
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
@@ -100,7 +103,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
         invoice_data: {
           description: "Notary services are not subject to sales tax.",
           footer: service.includes('I-9') 
-            ? "I-9 Verification is a professional service, not a notarial act." 
+            ? "I-9 Service Fee ($20) is collected separately at appointment." 
             : "State notary fees ($10/stamp) are collected separately at appointment."
         }
       },
@@ -115,6 +118,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 });
 
+// ... [Rest of bookings/login/delete routes kept identical] ...
 app.post('/api/bookings', async (req, res) => {
     try {
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
@@ -138,4 +142,4 @@ app.post('/api/login', (req, res) => {
     else res.status(401).json({ error: "Invalid password" });
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV Scope)`));
