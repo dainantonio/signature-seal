@@ -150,7 +150,7 @@ const FAQ = () => {
     { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act under WV law." },
     { q: "Where does the appointment take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $65 service fee plus travel." },
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $65 service fee (includes travel up to 10 miles)." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
 
@@ -268,16 +268,17 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     }));
   };
 
-  // CHECK I-9 STATUS - CRITICAL FIX
+  // CHECK I-9 STATUS
   const isI9 = formData.service.includes('I-9');
 
-  // Price Calculation
+  // Price Calculation - COMPETITIVE PRICING UPDATE
   const price = useMemo(() => {
-    let base = 40;
+    let base = 40; // Standard Mobile Notary
+    
     if (formData.service.includes('Loan')) base = 150;
     
-    // I-9 Pricing: Service ($65) + Travel ($40) = $105
-    if (isI9) base = 65 + 40; 
+    // I-9 Pricing: Flat $65 (Includes Travel up to 10 miles)
+    if (isI9) base = 65; 
     
     // Surcharge Logic
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
@@ -319,23 +320,13 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
-    if (step === 1) {
-        return formData.service && formData.date && formData.time;
-    }
+    if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
-        // Validation for Details Step
-        // I-9 does not need signatures count
         const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
-        
-        if (formData.locationType === 'my_location') {
-            return basicFields && formData.address && !isNaN(formData.mileage);
-        } else {
-            return basicFields && formData.address;
-        }
+        if (formData.locationType === 'my_location') return basicFields && formData.address && !isNaN(formData.mileage);
+        else return basicFields && formData.address;
     }
-    if (step === 3) {
-        return termsAccepted && payNow;
-    }
+    if (step === 3) return termsAccepted && payNow;
     return false;
   };
 
@@ -394,7 +385,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
                         <div>
-                            <strong>Flexible Hours:</strong> I-9 Verifications are available by appointment Mon-Sat (9am-7pm). If your preferred time isn't listed, please book the closest slot and add a note, or email us.
+                            <strong>Flexible Hours:</strong> I-9 Verifications are available by appointment Mon-Sat (9am-7pm).
                         </div>
                     </div>
                   )}
@@ -497,7 +488,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
                     <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-colors ${payNow ? 'border-brand-teal bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}>
                         <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Travel Fee Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
                     </label>
                   </div>
                 </div>
@@ -531,7 +522,7 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
@@ -639,7 +630,6 @@ const AdminDashboard = ({ token, onLogout }) => {
     link.download = "bookings.csv";
     link.click();
   };
-  
   // FIX: handleSendInvoice needs specific logic for I-9 vs Notary
   const handleSendInvoice = async (id) => {
     // Basic implementation for now - prompt for type
@@ -661,7 +651,6 @@ const AdminDashboard = ({ token, onLogout }) => {
         else alert("Failed: " + data.error);
     } catch (err) { alert("Error connecting."); }
   };
-
   return (
     <div className="container mx-auto px-6 py-32 pt-40">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
@@ -670,7 +659,7 @@ const AdminDashboard = ({ token, onLogout }) => {
             <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
             <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
             <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <DollarSign size={14}/> Send Invoice
+                <CreditCard size={14}/> Bill Fees
             </button>
         </div>
       ))}</div>
