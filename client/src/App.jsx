@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -104,6 +104,41 @@ const Navbar = ({ onBookClick, onViewChange }) => {
         )}
       </AnimatePresence>
     </nav>
+  );
+};
+
+// --- BACK TO TOP BUTTON ---
+const BackToTop = () => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) setVisible(true);
+      else setVisible(false);
+    };
+    window.addEventListener("scroll", toggleVisibility);
+    return () => window.removeEventListener("scroll", toggleVisibility);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
+          title="Back to Top"
+        >
+          <ArrowUp size={24} />
+        </motion.button>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -233,43 +268,18 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     }));
   };
 
+  // CHECK I-9 STATUS - CRITICAL FIX
   const isI9 = formData.service.includes('I-9');
-
-  // --- SMART TIME SLOT LOGIC ---
-  const timeSlots = useMemo(() => {
-    if (!formData.date) return [];
-    
-    // I-9 = Flexible Hours (9am - 7pm Mon-Sat)
-    if (isI9) {
-        const dateObj = new Date(formData.date + 'T12:00:00');
-        const day = dateObj.getDay(); // 0=Sun
-        if (day === 0) return []; // Closed Sun
-        // Generate hourly slots from 9am to 7pm
-        const slots = [];
-        for (let i = 9; i <= 19; i++) {
-            const hour = i > 12 ? i - 12 : i;
-            const ampm = i >= 12 ? 'PM' : 'AM';
-            slots.push(`${hour}:00 ${ampm}`);
-        }
-        return slots;
-    }
-
-    // Standard Notary = After Hours (Mon-Fri 6-9pm, Sat 10-4)
-    const dateObj = new Date(formData.date + 'T12:00:00');
-    const day = dateObj.getDay(); 
-    if (day === 0) return []; 
-    else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
-    else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
-  }, [formData.date, isI9]);
 
   // Price Calculation
   const price = useMemo(() => {
     let base = 40;
     if (formData.service.includes('Loan')) base = 150;
     
-    // I-9 Pricing: Base $105 ($65 Service + $40 Travel)
+    // I-9 Pricing: Service ($65) + Travel ($40) = $105
     if (isI9) base = 65 + 40; 
     
+    // Surcharge Logic
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
@@ -283,15 +293,49 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
-
-  const isStepValid = () => {
-    if (step === 1) return formData.service && formData.date && formData.time;
-    if (step === 2) {
-        const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
-        if (formData.locationType === 'my_location') return basicFields && formData.address && !isNaN(formData.mileage);
-        else return basicFields && formData.address;
+  const timeSlots = useMemo(() => {
+    if (!formData.date) return [];
+    
+    // I-9 = Flexible Hours (9am - 7pm Mon-Sat)
+    if (isI9) {
+        const dateObj = new Date(formData.date + 'T12:00:00');
+        const day = dateObj.getDay(); 
+        if (day === 0) return []; 
+        const slots = [];
+        for (let i = 9; i <= 19; i++) {
+            const hour = i > 12 ? i - 12 : i;
+            const ampm = i >= 12 ? 'PM' : 'AM';
+            slots.push(`${hour}:00 ${ampm}`);
+        }
+        return slots;
     }
-    if (step === 3) return termsAccepted && payNow;
+
+    const dateObj = new Date(formData.date + 'T12:00:00');
+    const day = dateObj.getDay(); 
+    if (day === 0) return []; 
+    else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+    else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
+  }, [formData.date, isI9]);
+
+  // --- STRICT STEP VALIDATION ---
+  const isStepValid = () => {
+    if (step === 1) {
+        return formData.service && formData.date && formData.time;
+    }
+    if (step === 2) {
+        // Validation for Details Step
+        // I-9 does not need signatures count
+        const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
+        
+        if (formData.locationType === 'my_location') {
+            return basicFields && formData.address && !isNaN(formData.mileage);
+        } else {
+            return basicFields && formData.address;
+        }
+    }
+    if (step === 3) {
+        return termsAccepted && payNow;
+    }
     return false;
   };
 
@@ -392,7 +436,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                                 type="number" min="0" 
                                 className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
                                 value={formData.mileage} 
-                                disabled={formData.locationType === 'public'} 
+                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
                                 onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
@@ -487,9 +531,9 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
@@ -578,22 +622,6 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const handleSendInvoice = async (id) => {
-    const sigs = prompt("How many signatures were notarized?");
-    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
-    try {
-        const res = await fetch(`${API_URL}/api/create-invoice`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, signatures: sigs })
-        });
-        const data = await res.json();
-        if (res.ok) alert("Invoice sent to customer!");
-        else alert("Failed to send invoice: " + data.error);
-    } catch (err) { alert("Error connecting to server."); }
-  };
-
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
@@ -611,6 +639,29 @@ const AdminDashboard = ({ token, onLogout }) => {
     link.download = "bookings.csv";
     link.click();
   };
+  
+  // FIX: handleSendInvoice needs specific logic for I-9 vs Notary
+  const handleSendInvoice = async (id) => {
+    // Basic implementation for now - prompt for type
+    const isNotary = window.confirm("Is this for Notary Fees? (Click Cancel for Custom/Other)");
+    let sigs = 1;
+    if (isNotary) {
+         sigs = prompt("How many signatures were notarized?");
+         if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Invalid number.");
+    }
+    
+    try {
+        const res = await fetch(`${API_URL}/api/create-invoice`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, signatures: sigs, type: isNotary ? 'notary' : 'custom' })
+        });
+        const data = await res.json();
+        if (res.ok) alert("Invoice sent!");
+        else alert("Failed: " + data.error);
+    } catch (err) { alert("Error connecting."); }
+  };
+
   return (
     <div className="container mx-auto px-6 py-32 pt-40">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
@@ -619,7 +670,7 @@ const AdminDashboard = ({ token, onLogout }) => {
             <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
             <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
             <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <DollarSign size={14}/> Bill Notary Fees
+                <DollarSign size={14}/> Send Invoice
             </button>
         </div>
       ))}</div>
