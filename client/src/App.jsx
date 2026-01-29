@@ -53,10 +53,12 @@ const Navbar = ({ onBookClick, onViewChange }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleRefresh = () => window.location.reload();
+
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
-        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={() => onViewChange('home')}>
+        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
@@ -77,7 +79,7 @@ const Navbar = ({ onBookClick, onViewChange }) => {
       {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10"></div>
-        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={() => onViewChange('home')}>
+        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
             <Award className="w-6 h-6" />
           </div>
@@ -111,7 +113,7 @@ const FAQ = () => {
   
   const faqs = [
     { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act under WV law." },
-    { q: "Where does the notarization take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
+    { q: "Where does the appointment take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
     { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $65 service fee plus travel." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
@@ -233,48 +235,55 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   const isI9 = formData.service.includes('I-9');
 
+  // --- SMART TIME SLOT LOGIC ---
+  const timeSlots = useMemo(() => {
+    if (!formData.date) return [];
+    
+    // I-9 = Flexible Hours (9am - 7pm Mon-Sat)
+    if (isI9) {
+        const dateObj = new Date(formData.date + 'T12:00:00');
+        const day = dateObj.getDay(); // 0=Sun
+        if (day === 0) return []; // Closed Sun
+        // Generate hourly slots from 9am to 7pm
+        const slots = [];
+        for (let i = 9; i <= 19; i++) {
+            const hour = i > 12 ? i - 12 : i;
+            const ampm = i >= 12 ? 'PM' : 'AM';
+            slots.push(`${hour}:00 ${ampm}`);
+        }
+        return slots;
+    }
+
+    // Standard Notary = After Hours (Mon-Fri 6-9pm, Sat 10-4)
+    const dateObj = new Date(formData.date + 'T12:00:00');
+    const day = dateObj.getDay(); 
+    if (day === 0) return []; 
+    else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+    else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
+  }, [formData.date, isI9]);
+
+  // Price Calculation
   const price = useMemo(() => {
     let base = 40;
     if (formData.service.includes('Loan')) base = 150;
-    if (formData.service.includes('I-9')) base = 65; // $65 Service Fee
     
-    // Surcharge Logic
+    // I-9 Pricing: Base $105 ($65 Service + $40 Travel)
+    if (isI9) base = 65 + 40; 
+    
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
     // Notary Fee (0 for I-9)
     const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
     
-    // For I-9, the base includes the service, so travel starts on top of that?
-    // Based on prompt: "I-9 Verification (In-Person): $65" + "Mobile Travel Fee".
-    // We'll treat $65 as the Service Base. Plus Travel Base ($40).
-    // Let's refine: A Mobile Notary is $40 Base.
-    // If I-9 is selected, Base is $105? ($65 + $40). That seems high.
-    // Let's assume $65 REPLACES the $40 base, but includes travel up to 10 miles.
-    // If user drives > 10 miles, surcharge applies.
-    
     return { 
-        travelTotal: base + surcharge + (isI9 ? 40 : 0), // $65 Service + $40 Travel = $105 total online
+        travelTotal: base + surcharge, 
         notaryFee, 
-        grandTotal: base + surcharge + (isI9 ? 40 : 0) + notaryFee 
+        grandTotal: base + surcharge + notaryFee 
     };
-  }, [formData.service, formData.mileage, formData.signatures, formData.locationType]);
-  
-  // Correction: If I-9 is just a flat service fee + travel, let's make it cleaner:
-  // I-9 = $65 Service + $40 Travel Base = $105.
-  // Standard = $40 Travel Base. 
-  // Let's adjust the memo above.
+  }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
-  const timeSlots = useMemo(() => {
-    if (!formData.date) return [];
-    const dateObj = new Date(formData.date + 'T12:00:00');
-    const day = dateObj.getDay(); 
-    if (day === 0) return []; 
-    else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
-    else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
-  }, [formData.date]);
 
-  // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
@@ -336,6 +345,15 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                       {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
+                  {/* I-9 SPECIFIC HOURS NOTE */}
+                  {isI9 && (
+                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
+                        <Info size={16} className="mt-0.5 shrink-0" />
+                        <div>
+                            <strong>Flexible Hours:</strong> I-9 Verifications are available by appointment Mon-Sat (9am-7pm). If your preferred time isn't listed, please book the closest slot and add a note, or email us.
+                        </div>
+                    </div>
+                  )}
                 </div>
               )}
               {step === 2 && (
@@ -374,7 +392,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                                 type="number" min="0" 
                                 className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
                                 value={formData.mileage} 
-                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
+                                disabled={formData.locationType === 'public'} 
                                 onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
@@ -412,10 +430,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
                             <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
                         </div>
-                        <div className="text-right">
-                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
-                             <p className="text-xl font-bold text-gray-600">${price.notaryFee}</p>
-                        </div>
+                        {price.notaryFee > 0 && (
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
+                                <p className="text-xl font-bold text-gray-600">${price.notaryFee}</p>
+                            </div>
+                        )}
                     </div>
                     <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
@@ -433,7 +453,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
                     <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-colors ${payNow ? 'border-brand-teal bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}>
                         <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Total Service Fee</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Travel Fee Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
                     </label>
                   </div>
                 </div>
@@ -558,6 +578,22 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const handleSendInvoice = async (id) => {
+    const sigs = prompt("How many signatures were notarized?");
+    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
+    try {
+        const res = await fetch(`${API_URL}/api/create-invoice`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, signatures: sigs })
+        });
+        const data = await res.json();
+        if (res.ok) alert("Invoice sent to customer!");
+        else alert("Failed to send invoice: " + data.error);
+    } catch (err) { alert("Error connecting to server."); }
+  };
+
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
@@ -579,7 +615,13 @@ const AdminDashboard = ({ token, onLogout }) => {
     <div className="container mx-auto px-6 py-32 pt-40">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
       <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
-        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative"><button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button><h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p></div>
+        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
+            <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
+            <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
+            <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
+                <DollarSign size={14}/> Bill Notary Fees
+            </button>
+        </div>
       ))}</div>
     </div>
   );
