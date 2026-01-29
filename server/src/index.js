@@ -9,6 +9,8 @@ const stripeLib = require('stripe');
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
+
+// --- CONFIG ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
@@ -25,6 +27,7 @@ app.use(cors({ origin: '*' }));
 app.options('*', cors());
 app.use(express.json());
 
+// --- AI LOGIC (WV ONLY) ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
@@ -50,30 +53,54 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // Dynamic Pricing Logic 
-  let baseAmount = 4000; // $40.00 Base
-  let productName = "Mobile Travel & Convenience Fee";
+  // --- PRICING BREAKDOWN ---
+  const line_items = [];
 
-  // I-9 Specific Pricing
   if (service.includes('I-9')) {
-      baseAmount = 6500 + 4000; // $65 Service + $40 Travel = $105 Total Base
-      productName = "I-9 Verification Service & Travel Fee";
+    // 1. I-9 Professional Service Fee ($65.00)
+    line_items.push({
+        price_data: { 
+            currency: 'usd', 
+            product_data: { name: 'I-9 Employment Verification Service' }, 
+            unit_amount: 6500 
+        },
+        quantity: 1,
+    });
+    // 2. Mobile Travel Base ($40.00)
+    line_items.push({
+        price_data: { 
+            currency: 'usd', 
+            product_data: { name: 'Mobile Travel Fee (Base)' }, 
+            unit_amount: 4000 
+        },
+        quantity: 1,
+    });
+  } else if (service.includes('Loan')) {
+    // Loan Signing (Flat Rate $150)
+    line_items.push({
+        price_data: { 
+            currency: 'usd', 
+            product_data: { name: 'Loan Signing Service' }, 
+            unit_amount: 15000 
+        },
+        quantity: 1,
+    });
+  } else {
+    // Standard Mobile Notary ($40 Base)
+    line_items.push({
+        price_data: { 
+            currency: 'usd', 
+            product_data: { name: 'Mobile Travel & Convenience Fee' }, 
+            unit_amount: 4000 
+        },
+        quantity: 1,
+    });
   }
 
+  // --- MILEAGE SURCHARGE ---
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
-  const surchargeAmount = extraMiles * 200; 
-
-  const line_items = [
-    {
-      price_data: { 
-          currency: 'usd', 
-          product_data: { name: productName }, 
-          unit_amount: baseAmount,
-      },
-      quantity: 1,
-    }
-  ];
+  const surchargeAmount = extraMiles * 200; // $2.00 per mile (cents)
 
   if (surchargeAmount > 0) {
       line_items.push({
@@ -96,7 +123,9 @@ app.post('/api/create-checkout-session', async (req, res) => {
         enabled: true,
         invoice_data: {
           description: "Notary services are not subject to sales tax.",
-          footer: "State notary fees ($10/stamp) are collected separately at appointment."
+          footer: service.includes('I-9') 
+            ? "I-9 Verification is a professional service, not a notarial act." 
+            : "State notary fees ($10/stamp) are collected separately at appointment."
         }
       },
       success_url: `${CLIENT_URL}?success=true`,
