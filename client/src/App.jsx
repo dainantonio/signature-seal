@@ -52,11 +52,12 @@ const Navbar = ({ onBookClick, onViewChange }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+  const handleRefresh = () => window.location.reload();
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
-        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={() => onViewChange('home')}>
+        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
@@ -73,11 +74,9 @@ const Navbar = ({ onBookClick, onViewChange }) => {
           <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
         </div>
       </div>
-      
-      {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10"></div>
-        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={() => onViewChange('home')}>
+        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
             <Award className="w-6 h-6" />
           </div>
@@ -105,18 +104,15 @@ const Navbar = ({ onBookClick, onViewChange }) => {
   );
 };
 
-// --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
-  
   const faqs = [
-    { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act under WV law." },
+    { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used. The fee is split into a Travel Fee (paid now) and a Service Fee (paid at the appointment)." },
     { q: "Where does the appointment take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
-    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $60 service fee (includes travel up to 10 miles)." },
+    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the service." },
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee ($40 base) to secure the appointment. The remaining fees ($10/stamp for Notary, or $20 for I-9 Service) are collected after the service is completed." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
-
   return (
     <section id="faq" className="py-24 bg-gray-50">
       <div className="container mx-auto px-6 max-w-3xl">
@@ -130,12 +126,7 @@ const FAQ = () => {
               </button>
               <AnimatePresence>
                 {activeIndex === i && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }} 
-                    animate={{ height: "auto", opacity: 1 }} 
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                     <p className="p-6 pt-0 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                   </motion.div>
                 )}
@@ -213,7 +204,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
     address: '', notes: '', mileage: 0, signatures: 1,
-    locationType: 'my_location' // Default
+    locationType: 'my_location'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -234,36 +225,34 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   // CHECK I-9 STATUS
   const isI9 = formData.service.includes('I-9');
 
-  // Price Calculation - COMPETITIVE PRICING UPDATE
+  // Price Calculation - Unified Model
   const price = useMemo(() => {
-    let base = 40; // Standard Mobile Notary
+    let base = 40; // Travel Base
     if (formData.service.includes('Loan')) base = 150;
-    
-    // I-9 Pricing: Flat $60 (Includes Travel up to 10 miles)
-    if (isI9) base = 60; 
     
     // Surcharge Logic
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    // Notary Fee (0 for I-9)
-    const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
+    // Fee Due Later (At Table)
+    // For I-9: $20 Service Fee
+    // For Notary: $10 per stamp
+    const dueLater = isI9 ? 20 : (formData.signatures || 0) * 10;
     
     return { 
-        travelTotal: base + surcharge, 
-        notaryFee, 
-        grandTotal: base + surcharge + notaryFee 
+        travelTotal: base + surcharge, // Pay Online
+        dueLater, // Pay at Table
+        grandTotal: base + surcharge + dueLater 
     };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
-    
-    // I-9 = Flexible Hours (9am - 7pm Mon-Sat)
+    const dateObj = new Date(formData.date + 'T12:00:00');
+    const day = dateObj.getDay(); 
+    if (day === 0) return []; 
+    // I-9 Flexible Hours
     if (isI9) {
-        const dateObj = new Date(formData.date + 'T12:00:00');
-        const day = dateObj.getDay(); 
-        if (day === 0) return []; 
         const slots = [];
         for (let i = 9; i <= 19; i++) {
             const hour = i > 12 ? i - 12 : i;
@@ -272,15 +261,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         }
         return slots;
     }
-
-    const dateObj = new Date(formData.date + 'T12:00:00');
-    const day = dateObj.getDay(); 
-    if (day === 0) return []; 
-    else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+    // Standard Hours
+    if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
-  // --- STRICT STEP VALIDATION ---
+  // Validation
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
@@ -336,25 +322,16 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
-                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
-                        <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
-                        <option value="">Time</option>
-                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
+                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                      <option value="">Select Time</option>
+                      {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
                   </div>
-                  {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
-                        <div>
-                            <strong>Flexible Hours:</strong> I-9 Verifications are available by appointment Mon-Sat (9am-7pm).
-                        </div>
+                        <div><strong>Flexible Hours:</strong> I-9 Verifications are available Mon-Sat (9am-7pm).</div>
                     </div>
                   )}
                 </div>
@@ -364,7 +341,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   
-                  {/* DYNAMIC LOCATION SELECTOR */}
+                  {/* LOCATION SELECTOR */}
                   <div className="grid grid-cols-2 gap-4">
                      <button onClick={() => handleLocationTypeChange('my_location')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'my_location' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
                         <Home size={18} /> My Location
@@ -395,7 +372,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                                 type="number" min="0" 
                                 className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
                                 value={formData.mileage} 
-                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
+                                disabled={formData.locationType === 'public'} 
                                 onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
@@ -433,23 +410,22 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
                             <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
                         </div>
-                        {price.notaryFee > 0 && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
-                                <p className="text-xl font-bold text-gray-600">${price.notaryFee}</p>
-                            </div>
-                        )}
+                        <div className="text-right">
+                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
+                             <p className="text-xl font-bold text-gray-600">${price.dueLater}</p>
+                             <p className="text-xs text-gray-400">{isI9 ? 'Verification Fee' : 'Notary Fee'}</p>
+                        </div>
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`} & Service Fee.</p>
                   </div>
                   
-                  {/* MANDATORY COMPLIANCE CHECKBOXES */}
+                  {/* COMPLIANCE CHECKBOXES */}
                   <div className="space-y-3">
                     <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
-                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. Travel/Service fees are paid now." 
+                                ? "I understand that the $20 Service Fee is paid separately at the time of the appointment. The online payment covers travel." 
                                 : "I understand that the $10 notary fee is charged per notarized signature and will be collected after the notarization is completed."}
                         </span>
                     </label>
@@ -490,7 +466,7 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
@@ -581,6 +557,22 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const handleSendInvoice = async (id) => {
+    const sigs = prompt("How many signatures were notarized?");
+    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
+    try {
+        const res = await fetch(`${API_URL}/api/create-invoice`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, signatures: sigs })
+        });
+        const data = await res.json();
+        if (res.ok) alert("Invoice sent to customer!");
+        else alert("Failed to send invoice: " + data.error);
+    } catch (err) { alert("Error connecting to server."); }
+  };
+
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
@@ -597,27 +589,6 @@ const AdminDashboard = ({ token, onLogout }) => {
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     link.download = "bookings.csv";
     link.click();
-  };
-  // FIX: handleSendInvoice needs specific logic for I-9 vs Notary
-  const handleSendInvoice = async (id) => {
-    // Basic implementation for now - prompt for type
-    const isNotary = window.confirm("Is this for Notary Fees? (Click Cancel for Custom/Other)");
-    let sigs = 1;
-    if (isNotary) {
-         sigs = prompt("How many signatures were notarized?");
-         if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Invalid number.");
-    }
-    
-    try {
-        const res = await fetch(`${API_URL}/api/create-invoice`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, signatures: sigs, type: isNotary ? 'notary' : 'custom' })
-        });
-        const data = await res.json();
-        if (res.ok) alert("Invoice sent!");
-        else alert("Failed: " + data.error);
-    } catch (err) { alert("Error connecting."); }
   };
   return (
     <div className="container mx-auto px-6 py-32 pt-40">
