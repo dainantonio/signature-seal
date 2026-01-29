@@ -52,6 +52,7 @@ const Navbar = ({ onBookClick, onViewChange }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   const handleRefresh = () => window.location.reload();
 
   return (
@@ -74,6 +75,8 @@ const Navbar = ({ onBookClick, onViewChange }) => {
           <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
         </div>
       </div>
+      
+      {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10"></div>
         <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
@@ -104,15 +107,53 @@ const Navbar = ({ onBookClick, onViewChange }) => {
   );
 };
 
+// --- BACK TO TOP BUTTON ---
+const BackToTop = () => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) setVisible(true);
+      else setVisible(false);
+    };
+    window.addEventListener("scroll", toggleVisibility);
+    return () => window.removeEventListener("scroll", toggleVisibility);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
+          title="Back to Top"
+        >
+          <ArrowUp size={24} />
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
+  
   const faqs = [
-    { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used. The fee is split into a Travel Fee (paid now) and a Service Fee (paid at the appointment)." },
+    { q: "Is I-9 Verification a notarized service?", a: "No. Form I-9 does not require notarization. This service is identity verification only, performed as an 'Authorized Representative' of the employer." },
+    { q: "Do you provide immigration advice?", a: "No. We do not offer legal or immigration advice. Documents must be selected by the employee in accordance with USCIS Form I-9 instructions." },
     { q: "Where does the appointment take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the service." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee ($40 base) to secure the appointment. The remaining fees ($10/stamp for Notary, or $20 for I-9 Service) are collected after the service is completed." },
-    { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee ($40 base) to secure the appointment. The remaining fees ($10/stamp for Notary, or $25 for I-9 Service) are collected after the service is completed." },
   ];
+
   return (
     <section id="faq" className="py-24 bg-gray-50">
       <div className="container mx-auto px-6 max-w-3xl">
@@ -126,7 +167,12 @@ const FAQ = () => {
               </button>
               <AnimatePresence>
                 {activeIndex === i && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: "auto", opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
                     <p className="p-6 pt-0 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                   </motion.div>
                 )}
@@ -204,7 +250,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
     address: '', notes: '', mileage: 0, signatures: 1,
-    locationType: 'my_location'
+    locationType: 'my_location' // Default
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -213,6 +259,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
 
+  // Handle Location Type Switching
   const handleLocationTypeChange = (type) => {
     setFormData(prev => ({ 
         ...prev, 
@@ -225,34 +272,34 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   // CHECK I-9 STATUS
   const isI9 = formData.service.includes('I-9');
 
-  // Price Calculation - Unified Model
+  // Price Calculation
   const price = useMemo(() => {
-    let base = 40; // Travel Base
-    if (formData.service.includes('Loan')) base = 150;
+    let base = 40; // Travel Base (Online)
     
     // Surcharge Logic
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    // Fee Due Later (At Table)
-    // For I-9: $20 Service Fee
-    // For Notary: $10 per stamp
-    const dueLater = isI9 ? 20 : (formData.signatures || 0) * 10;
+    // Due Later (At Table)
+    // I-9 = $25 Service Fee (Total $65 = 40+25)
+    // Notary = $10 per stamp
+    const dueLater = isI9 ? 25 : (formData.signatures || 0) * 10;
     
     return { 
-        travelTotal: base + surcharge, // Pay Online
-        dueLater, // Pay at Table
+        travelTotal: base + surcharge, 
+        dueLater, 
         grandTotal: base + surcharge + dueLater 
     };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
-    const dateObj = new Date(formData.date + 'T12:00:00');
-    const day = dateObj.getDay(); 
-    if (day === 0) return []; 
-    // I-9 Flexible Hours
+    
+    // I-9 = Flexible Hours (9am - 7pm Mon-Sat)
     if (isI9) {
+        const dateObj = new Date(formData.date + 'T12:00:00');
+        const day = dateObj.getDay(); 
+        if (day === 0) return []; 
         const slots = [];
         for (let i = 9; i <= 19; i++) {
             const hour = i > 12 ? i - 12 : i;
@@ -261,12 +308,15 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         }
         return slots;
     }
-    // Standard Hours
-    if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+
+    const dateObj = new Date(formData.date + 'T12:00:00');
+    const day = dateObj.getDay(); 
+    if (day === 0) return []; 
+    else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
-  // Validation
+  // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
@@ -328,6 +378,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                       {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
+                  {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
@@ -341,7 +392,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   
-                  {/* LOCATION SELECTOR */}
+                  {/* DYNAMIC LOCATION SELECTOR */}
                   <div className="grid grid-cols-2 gap-4">
                      <button onClick={() => handleLocationTypeChange('my_location')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'my_location' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
                         <Home size={18} /> My Location
@@ -413,19 +464,18 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         <div className="text-right">
                              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
                              <p className="text-xl font-bold text-gray-600">${price.dueLater}</p>
-                             <p className="text-xs text-gray-400">{isI9 ? 'Verification Fee' : 'Notary Fee'}</p>
                         </div>
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`} & Service Fee.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Fee' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
-                  {/* COMPLIANCE CHECKBOXES */}
+                  {/* MANDATORY COMPLIANCE CHECKBOXES */}
                   <div className="space-y-3">
                     <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
-                                ? "I understand that the $20 Service Fee is paid separately at the time of the appointment. The online payment covers travel." 
+                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. A separate service fee is due at the appointment." 
                                 : "I understand that the $10 notary fee is charged per notarized signature and will be collected after the notarization is completed."}
                         </span>
                     </label>
@@ -466,9 +516,9 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
