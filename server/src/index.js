@@ -38,7 +38,7 @@ const recommendService = (query) => {
     return {
       service: "I-9 Employment Verification",
       reasoning: "We act as an Authorized Representative for remote hires.",
-      estimatedPrice: "$65 Service Fee + Travel",
+      estimatedPrice: "$60 Service Fee + Travel",
       action: "book_general"
     };
   }
@@ -53,54 +53,30 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // --- PRICING BREAKDOWN ---
-  const line_items = [];
+  // Dynamic Pricing Logic (WV Standard Rates)
+  let baseAmount = 4000; // $40.00 Base
+  let productName = "Mobile Travel & Convenience Fee";
 
+  // I-9 Specific Pricing - $60 Flat
   if (service.includes('I-9')) {
-    // 1. I-9 Professional Service Fee ($65.00)
-    line_items.push({
-        price_data: { 
-            currency: 'usd', 
-            product_data: { name: 'I-9 Employment Verification Service' }, 
-            unit_amount: 6500 
-        },
-        quantity: 1,
-    });
-    // 2. Mobile Travel Base ($40.00)
-    line_items.push({
-        price_data: { 
-            currency: 'usd', 
-            product_data: { name: 'Mobile Travel Fee (Base)' }, 
-            unit_amount: 4000 
-        },
-        quantity: 1,
-    });
-  } else if (service.includes('Loan')) {
-    // Loan Signing (Flat Rate $150)
-    line_items.push({
-        price_data: { 
-            currency: 'usd', 
-            product_data: { name: 'Loan Signing Service' }, 
-            unit_amount: 15000 
-        },
-        quantity: 1,
-    });
-  } else {
-    // Standard Mobile Notary ($40 Base)
-    line_items.push({
-        price_data: { 
-            currency: 'usd', 
-            product_data: { name: 'Mobile Travel & Convenience Fee' }, 
-            unit_amount: 4000 
-        },
-        quantity: 1,
-    });
+      baseAmount = 6000; // $60 Total Base
+      productName = "I-9 Verification Service & Travel Fee";
   }
 
-  // --- MILEAGE SURCHARGE ---
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
-  const surchargeAmount = extraMiles * 200; // $2.00 per mile (cents)
+  const surchargeAmount = extraMiles * 200; 
+
+  const line_items = [
+    {
+      price_data: { 
+          currency: 'usd', 
+          product_data: { name: productName }, 
+          unit_amount: baseAmount,
+      },
+      quantity: 1,
+    }
+  ];
 
   if (surchargeAmount > 0) {
       line_items.push({
