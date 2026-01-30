@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- CONFIGURATION ---
 const getBackendUrl = () => {
-  // Hardcoded Production URL to bypass DNS/Vercel config issues
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL.replace(/\/$/, "");
   if (import.meta.env.PROD) return 'https://signature-seal.onrender.com';
   return 'http://localhost:3001';
 };
@@ -43,7 +43,9 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-// --- COMPONENT DEFINITIONS ---
+// ==========================================
+// SUB-COMPONENTS (Defined BEFORE App)
+// ==========================================
 
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +63,6 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
-      {/* DESKTOP */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
         <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
@@ -486,6 +487,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
+                        {/* SURCHARGE DISCLAIMER */}
+                        {formData.locationType === 'my_location' && (
+                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
+                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
+                            </p>
+                        )}
                     </div>
                     
                     {!isI9 && (
@@ -721,10 +728,11 @@ function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // MANAGED HERE
+
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // ADDED STATE FOR QR MODAL
 
   useEffect(() => {
     if (window.location.search.includes('success=true')) { alert("Payment Successful! Your appointment is confirmed."); window.history.replaceState({}, document.title, "/"); }
@@ -736,7 +744,7 @@ function App() {
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
         currentView={view} 
-        onQRClick={() => setIsQRModalOpen(true)}
+        onQRClick={() => setIsQRModalOpen(true)} // PASSED TO NAVBAR
       />
       <main>
         {view === 'home' ? (
