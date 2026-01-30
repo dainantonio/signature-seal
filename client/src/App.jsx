@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- CONFIGURATION ---
 const getBackendUrl = () => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL.replace(/\/$/, "");
+  // Hardcoded Production URL to bypass DNS/Vercel config issues
   if (import.meta.env.PROD) return 'https://signature-seal.onrender.com';
   return 'http://localhost:3001';
 };
@@ -43,9 +43,8 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-// --- COMPONENTS ---
+// --- COMPONENT DEFINITIONS ---
 
-// FIXED: Added onQRClick to props destructuring
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -62,6 +61,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
+      {/* DESKTOP */}
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
         <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
@@ -170,7 +170,6 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// --- BACK TO TOP BUTTON ---
 const BackToTop = () => {
   const [visible, setVisible] = useState(false);
 
@@ -205,7 +204,6 @@ const BackToTop = () => {
   );
 };
 
-// --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
@@ -624,7 +622,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -726,6 +724,7 @@ function App() {
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // ADDED STATE FOR QR MODAL
 
   useEffect(() => {
     if (window.location.search.includes('success=true')) { alert("Payment Successful! Your appointment is confirmed."); window.history.replaceState({}, document.title, "/"); }
@@ -737,7 +736,7 @@ function App() {
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
         currentView={view} 
-        onQRClick={() => document.getElementById('qr-modal-trigger')?.click()}
+        onQRClick={() => setIsQRModalOpen(true)}
       />
       <main>
         {view === 'home' ? (
@@ -753,21 +752,9 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
-      {/* Hidden trigger for QR Modal handled by state in Navbar usually, simplified here */}
-      <QRModalController />
+      <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
     </div>
   );
-}
-
-// Separate component to handle QR state cleanly
-const QRModalController = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-        <>
-            <button id="qr-modal-trigger" className="hidden" onClick={() => setIsOpen(true)}></button>
-            <QRModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
-        </>
-    )
 }
 
 export default App;
