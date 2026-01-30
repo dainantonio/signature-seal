@@ -205,6 +205,7 @@ const BackToTop = () => {
   );
 };
 
+// --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
@@ -374,8 +375,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
         const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
-        if (formData.locationType === 'my_location') return basicFields && formData.address && !isNaN(formData.mileage);
-        else return basicFields && formData.address;
+        if (formData.locationType === 'my_location') {
+            return basicFields && formData.address && !isNaN(formData.mileage);
+        } else {
+            return basicFields && formData.address;
+        }
     }
     if (step === 3) return termsAccepted && payNow;
     return false;
@@ -487,12 +491,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
-                        {/* SURCHARGE DISCLAIMER */}
-                        {formData.locationType === 'my_location' && (
-                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
-                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
-                            </p>
-                        )}
                     </div>
                     
                     {!isI9 && (
