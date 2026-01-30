@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -55,9 +55,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleRefresh = () => {
-    window.location.reload();
-  };
+  const handleRefresh = () => window.location.reload();
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
@@ -68,7 +66,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Services</span>
           </div>
         </div>
         <div className="flex items-center space-x-8">
@@ -98,7 +96,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-xl font-bold leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Notary</span>
+            <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Services</span>
           </div>
         </div>
         <div className="justify-self-end">
@@ -210,10 +208,10 @@ const FAQ = () => {
   
   const faqs = [
     { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act under WV law." },
-    { q: "Where does the appointment take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
+    { q: "Do you serve Ohio?", a: "We offer Field Inspection and Courier services in Ohio. Notary services are currently limited to West Virginia until our OH commission is finalized." },
+    { q: "What is a Field Inspection?", a: "We travel to a location to verify property, vehicles, or equipment for banks and insurance companies. This service does not require a notary stamp and is available in OH & WV." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $60 service fee plus travel." },
-    { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 and Inspections are flat rates." },
   ];
 
   return (
@@ -249,7 +247,7 @@ const FAQ = () => {
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with I-9 Verification, Mobile Notary, and scheduling. How can I assist?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with I-9 Verification, Mobile Notary (WV), and Field Inspections. How can I assist?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -331,31 +329,38 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   };
 
   const isI9 = formData.service.includes('I-9');
+  const isInspection = formData.service.includes('Inspection');
+  const isFlatFee = isI9 || isInspection;
 
+  // Price Calculation
   const price = useMemo(() => {
-    let base = 40;
+    let base = 40; // Mobile Notary Base
     if (formData.service.includes('Loan')) base = 150;
     if (isI9) base = 60; 
+    if (isInspection) base = 50; 
     
+    // Surcharge Logic
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
+    // Notary Fee
+    // I-9 and Inspection are flat fees (no per-signature cost)
+    const notaryFee = isFlatFee ? 0 : (formData.signatures || 0) * 10;
     
     return { 
         travelTotal: base + surcharge, 
         notaryFee, 
         grandTotal: base + surcharge + notaryFee 
     };
-  }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
+  }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isFlatFee, isI9, isInspection]);
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
     if (day === 0) return []; 
-    // I-9 Flexible
-    if (isI9) {
+    // Flexible Hours for I-9 & Inspections
+    if (isFlatFee) {
         const slots = [];
         for (let i = 9; i <= 19; i++) {
             const hour = i > 12 ? i - 12 : i;
@@ -364,16 +369,16 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         }
         return slots;
     }
-    // Standard
+    // Standard Notary Hours
     if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
-  }, [formData.date, isI9]);
+  }, [formData.date, isFlatFee]);
 
   // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
-        const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
+        const basicFields = formData.name && formData.email && (isFlatFee || formData.signatures > 0);
         if (formData.locationType === 'my_location') return basicFields && formData.address && !isNaN(formData.mileage);
         else return basicFields && formData.address;
     }
@@ -418,18 +423,25 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing', 'General Notary (Other)'].map(svc => (
+                    {/* NEW SERVICE LIST INCLUDING INSPECTION */}
+                    {['Mobile Notary (WV)', 'I-9 Verification (WV/OH)', 'Field Inspection (OH & WV)', 'Oaths & Affirmations'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
-                      <option value="">Select Time</option>
-                      {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
+                        <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                        <option value="">Select Time</option>
+                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -476,7 +488,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         </div>
                     </div>
                     
-                    {!isI9 && (
+                    {!isFlatFee && (
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                             <label className="text-xs font-bold text-gray-500 uppercase">Signatures Needed</label>
                             <div className="flex items-center gap-2 mt-2">
@@ -514,7 +526,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isFlatFee ? 'Professional Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -523,14 +535,16 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
-                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. Travel/Service fees are paid now." 
-                                : "I understand that the $10 notary fee is charged per notarized signature and will be collected after the notarization is completed."}
+                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. The fee covers service and travel." 
+                                : isInspection 
+                                    ? "I understand this is a Field Inspection/Courier service and is not a notarial act. The fee covers service and travel."
+                                    : "I understand that the $10 notary fee is charged per notarized signature and will be collected after the notarization is completed."}
                         </span>
                     </label>
 
                     <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-colors ${payNow ? 'border-brand-teal bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}>
                         <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Travel Fee Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Total Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
                     </label>
                   </div>
                 </div>
@@ -564,11 +578,11 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary, I-9 verification, and field inspection services delivered to your doorstep. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book Service</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
@@ -580,14 +594,14 @@ const Services = () => (
   <section id="services" className="py-32 bg-white relative">
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV Expertise</h2>
-        <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia.</p>
+        <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">Our Expertise</h2>
+        <p className="text-xl text-gray-500">Comprehensive legal and professional services tailored to your schedule.</p>
       </div>
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
           { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
-          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
+          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees (OH & WV)." },
+          { icon: Camera, title: "Field Inspection", desc: "Property, vehicle, and equipment verification photos (OH & WV)." }
         ].map((s, i) => (
           <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center">
             <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
@@ -603,21 +617,18 @@ const Services = () => (
 const Pricing = ({ onBookClick }) => (
   <section id="pricing" className="py-32 bg-gray-50">
     <div className="container mx-auto px-6">
-      <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
+      <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">Simple flat rates. No hidden fees.</p></div>
       <div className="max-w-md mx-auto">
         <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-gray-100 flex flex-col items-center group hover:shadow-xl transition-all">
-          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Mobile Service (WV)</span>
-          <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
+          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Most Popular</span>
+          <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Service</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
-          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book WV Standard</button>
-          <div className="text-[10px] text-gray-400 mt-6 text-center italic border-t pt-4 w-full">
-            Travel fees are disclosed at booking. Notary fees are regulated by West Virginia law at $10 per notarized signature and are collected after the notarization is completed.
-          </div>
+          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book Appointment</button>
         </div>
       </div>
     </div>
@@ -694,7 +705,7 @@ const AdminDashboard = ({ token, onLogout }) => {
             <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
             <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
             <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <CreditCard size={14}/> Bill Notary Fees
+                <DollarSign size={14}/> Bill Notary Fees
             </button>
         </div>
       ))}</div>
@@ -712,7 +723,6 @@ function App() {
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // ADDED STATE FOR QR MODAL
 
   useEffect(() => {
     if (window.location.search.includes('success=true')) { alert("Payment Successful! Your appointment is confirmed."); window.history.replaceState({}, document.title, "/"); }
@@ -720,12 +730,7 @@ function App() {
 
   return (
     <div className="font-sans min-h-screen bg-white">
-      <Navbar 
-        onBookClick={() => handleBookingOpen()} 
-        onViewChange={setView} 
-        currentView={view} 
-        onQRClick={() => setIsQRModalOpen(true)} // PASSED HANDLER TO NAVBAR
-      />
+      <Navbar onBookClick={() => handleBookingOpen()} onViewChange={setView} currentView={view} />
       <main>
         {view === 'home' ? (
           <>
@@ -739,9 +744,25 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
-      <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
+      <QRModal isOpen={false} onClose={() => {}} /> 
     </div>
   );
 }
+
+// Added QRModal separately to ensure cleaner structure above
+const QRModal = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent("https://signaturesealnotaries.com")}&color=2c3e50`;
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full"><X size={20}/></button>
+                <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
+                <img src={qrUrl} alt="QR Code" className="w-48 h-48 mx-auto my-6" />
+                <a href={qrUrl} download="qr_code.png" className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold"><Download size={18}/> Save Image</a>
+            </div>
+        </div>
+    );
+};
 
 export default App;
