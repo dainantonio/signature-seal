@@ -70,7 +70,6 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
 
   const handleRefresh = (e) => {
     e.preventDefault();
-    // Delay refresh slightly to allow the "Stamp" animation to play
     setTimeout(() => window.location.reload(), 400);
   };
 
@@ -107,11 +106,14 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
              <QrCode size={24} />
           </motion.button>
 
+          {/* PULSING BOOK NOW BUTTON */}
           <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             onClick={() => onBookClick()} 
             className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
           >
             Book Now
           </motion.button>
@@ -148,7 +150,16 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
               <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
-            <button onClick={() => { onBookClick(); setIsOpen(false); }} className="bg-brand-teal text-white font-bold px-10 py-4 rounded-full text-xl shadow-xl">Book Appointment</button>
+            
+            {/* PULSING MOBILE BOOK BUTTON */}
+            <motion.button 
+              onClick={() => { onBookClick(); setIsOpen(false); }} 
+              className="bg-brand-teal text-white font-bold px-10 py-4 rounded-full text-xl shadow-xl"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              Book Appointment
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -229,8 +240,6 @@ const BackToTop = () => {
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
-          whileHover={{ scale: 1.1, y: -2 }}
-          whileTap={{ scale: 0.9 }}
           onClick={scrollToTop}
           className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
           title="Back to Top"
@@ -340,14 +349,7 @@ const AIChatWidget = ({ onRecommend }) => {
           </motion.div>
         )}
       </AnimatePresence>
-      <motion.button 
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(!isOpen)} 
-        className="bg-brand-teal text-white p-4 rounded-full shadow-xl"
-      >
-        <MessageSquare size={28} />
-      </motion.button>
+      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all"><MessageSquare size={28} /></button>
     </div>
   );
 };
@@ -470,12 +472,25 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
-                      <option value="">Select Time</option>
-                      {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
+                        <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                        <option value="">Select Time</option>
+                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
                   </div>
+                  {/* I-9 SPECIFIC HOURS NOTE */}
+                  {isI9 && (
+                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
+                        <Info size={16} className="mt-0.5 shrink-0" />
+                        <div><strong>Flexible Hours:</strong> I-9 Verifications are available Mon-Sat (9am-7pm).</div>
+                    </div>
+                  )}
                 </div>
               )}
               {step === 2 && (
@@ -519,6 +534,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
+                        {/* SURCHARGE DISCLAIMER */}
+                        {formData.locationType === 'my_location' && (
+                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
+                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
+                            </p>
+                        )}
                     </div>
                     
                     {!isI9 && (
@@ -613,7 +634,15 @@ const Hero = ({ onBookClick }) => (
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
+          {/* HERO BOOK BUTTON - NOW PULSING */}
+          <motion.button 
+            onClick={() => onBookClick()} 
+            className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            Book WV Appointment
+          </motion.button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
@@ -622,13 +651,13 @@ const Hero = ({ onBookClick }) => (
 );
 
 const Services = () => (
-  <motion.section id="services" className="py-32 bg-white relative" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+  <section id="services" className="py-32 bg-white relative">
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
         <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV Expertise</h2>
         <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia.</p>
       </div>
-      <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
           { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV.", variants: iconVariants.drive },
           { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees.", variants: iconVariants.nod },
@@ -642,11 +671,11 @@ const Services = () => (
         ))}
       </motion.div>
     </div>
-  </motion.section>
+  </section>
 );
 
 const Pricing = ({ onBookClick }) => (
-  <motion.section id="pricing" className="py-32 bg-gray-50" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+  <section id="pricing" className="py-32 bg-gray-50">
     <div className="container mx-auto px-6">
       <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
       <div className="max-w-md mx-auto">
@@ -655,7 +684,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -666,7 +695,7 @@ const Pricing = ({ onBookClick }) => (
         </div>
       </div>
     </div>
-  </motion.section>
+  </section>
 );
 
 const Footer = ({ onViewChange }) => (
@@ -779,8 +808,6 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
-      {/* QR MODAL ADDED AT END FOR ACCESS */}
-      <QRModal isOpen={false} onClose={() => {}} /> 
     </div>
   );
 }
