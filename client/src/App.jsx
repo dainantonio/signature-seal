@@ -1,5 +1,5 @@
 // filename: client/src/App.jsx
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
@@ -33,21 +33,51 @@ const safeFetch = async (url, options) => {
   }
 };
 
-// --- ANIMATION VARS ---
+// --- ANIMATION VARS (Simplified) ---
 const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
 };
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+
+// ==========================================
+// COMPONENT DEFINITIONS (Ordered for Stability)
+// ==========================================
+
+const QRModal = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(SITE_URL)}&color=2c3e50`;
+
+    const downloadQR = async () => {
+        try {
+            const response = await fetch(qrUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'signature_seal_qr.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            alert("Could not download image automatically. Please screenshot it instead.");
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
+                <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
+                <img src={qrUrl} alt="QR Code" className="w-48 h-48 mx-auto my-6" />
+                <button onClick={downloadQR} className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold hover:bg-brand-teal transition-all">
+                    <Download size={18} /> Download Image
+                </button>
+            </div>
+        </div>
+    );
 };
 
-// ==========================================
-// SUB-COMPONENTS (Defined BEFORE App)
-// ==========================================
-
-const Navbar = ({ onBookClick, onViewChange, onQRClick, activeSection }) => {
+const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -57,16 +87,12 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick, activeSection }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-  
-  const navLinks = ['Services', 'FAQ', 'Pricing'];
+  const handleRefresh = () => window.location.reload();
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
-        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
+        <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh}>
           <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
           </div>
@@ -76,24 +102,11 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick, activeSection }) => {
           </div>
         </div>
         <div className="flex items-center space-x-8">
-          {navLinks.map((item) => (
-            <a 
-              key={item} 
-              href={`#${item.toLowerCase()}`} 
-              className={`font-medium text-base transition-all duration-300 relative group ${activeSection === item.toLowerCase() ? 'text-brand-teal' : (scrolled ? 'text-gray-600 hover:text-brand-teal' : 'text-gray-200 hover:text-brand-teal')}`}
-            >
-              {item}
-              {activeSection === item.toLowerCase() && (
-                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-brand-teal rounded-full" />
-              )}
-            </a>
+          {['Services', 'FAQ', 'Pricing'].map((item) => (
+            <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
           ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
-          
-          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
-             <QrCode size={24} />
-          </button>
-
+          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code"><QrCode size={24} /></button>
           <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
         </div>
       </div>
@@ -101,9 +114,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick, activeSection }) => {
       {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10">
-            <button onClick={onQRClick} className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
-                <QrCode size={24} />
-            </button>
+             <button onClick={onQRClick} className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}><QrCode size={24} /></button>
         </div>
         <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
@@ -133,82 +144,17 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick, activeSection }) => {
   );
 };
 
-const QRModal = ({ isOpen, onClose }) => {
-    if (!isOpen) return null;
-    
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(SITE_URL)}&color=2c3e50`;
-
-    const downloadQR = async () => {
-        try {
-            const response = await fetch(qrUrl);
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'signature_seal_qr.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (err) {
-            alert("Could not download image automatically. Please screenshot it instead.");
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }} 
-                animate={{ opacity: 1, scale: 1 }} 
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative"
-            >
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20}/></button>
-                
-                <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
-                <p className="text-gray-500 text-sm mb-6">Share this code with clients for instant access.</p>
-                
-                <div className="bg-white border-4 border-brand-gold/20 rounded-2xl p-4 inline-block mb-6 shadow-inner">
-                    <img src={qrUrl} alt="Signature Seal QR Code" className="w-48 h-48" />
-                </div>
-                
-                <button 
-                    onClick={downloadQR}
-                    className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold hover:bg-brand-teal transition-all"
-                >
-                    <Download size={18} /> Download Image
-                </button>
-            </motion.div>
-        </div>
-    );
-};
-
 const BackToTop = () => {
   const [visible, setVisible] = useState(false);
-
   useEffect(() => {
-    const toggleVisibility = () => {
-      if (window.pageYOffset > 300) setVisible(true);
-      else setVisible(false);
-    };
-    window.addEventListener("scroll", toggleVisibility);
-    return () => window.removeEventListener("scroll", toggleVisibility);
+    const toggle = () => setVisible(window.pageYOffset > 300);
+    window.addEventListener("scroll", toggle);
+    return () => window.removeEventListener("scroll", toggle);
   }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
     <AnimatePresence>
       {visible && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.5 }}
-          onClick={scrollToTop}
-          className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
-          title="Back to Top"
-        >
+        <motion.button initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors" title="Back to Top">
           <ArrowUp size={24} />
         </motion.button>
       )}
@@ -218,7 +164,6 @@ const BackToTop = () => {
 
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
-  
   const faqs = [
     { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act under WV law." },
     { q: "Where does the appointment take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
@@ -226,7 +171,6 @@ const FAQ = () => {
     { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $60 service fee plus travel." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
-
   return (
     <section id="faq" className="py-24 bg-gray-50">
       <div className="container mx-auto px-6 max-w-3xl">
@@ -240,12 +184,7 @@ const FAQ = () => {
               </button>
               <AnimatePresence>
                 {activeIndex === i && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }} 
-                    animate={{ height: "auto", opacity: 1 }} 
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                     <p className="p-6 pt-0 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                   </motion.div>
                 )}
@@ -264,7 +203,6 @@ const AIChatWidget = ({ onRecommend }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
-
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isOpen]);
 
   const handleSubmit = async (e) => {
@@ -323,7 +261,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
     address: '', notes: '', mileage: 0, signatures: 1,
-    locationType: 'my_location' // Default
+    locationType: 'my_location'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -350,14 +288,9 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
-    
     const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
     
-    return { 
-        travelTotal: base + surcharge, 
-        notaryFee, 
-        grandTotal: base + surcharge + notaryFee 
-    };
+    return { travelTotal: base + surcharge, notaryFee, grandTotal: base + surcharge + notaryFee };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
   const timeSlots = useMemo(() => {
@@ -365,7 +298,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
     if (day === 0) return []; 
-    // I-9 Flexible
     if (isI9) {
         const slots = [];
         for (let i = 9; i <= 19; i++) {
@@ -375,21 +307,16 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         }
         return slots;
     }
-    // Standard
     if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
-  // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
-        const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
-        if (formData.locationType === 'my_location') {
-            return basicFields && formData.address && !isNaN(formData.mileage);
-        } else {
-            return basicFields && formData.address;
-        }
+        const basic = formData.name && formData.email && (isI9 || formData.signatures > 0);
+        if (formData.locationType === 'my_location') return basic && formData.address && !isNaN(formData.mileage);
+        else return basic && formData.address;
     }
     if (step === 3) return termsAccepted && payNow;
     return false;
@@ -445,7 +372,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                       {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
-                  {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
@@ -459,7 +385,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   
-                  {/* DYNAMIC LOCATION SELECTOR */}
                   <div className="grid grid-cols-2 gap-4">
                      <button onClick={() => handleLocationTypeChange('my_location')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'my_location' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
                         <Home size={18} /> My Location
@@ -490,17 +415,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                                 type="number" min="0" 
                                 className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
                                 value={formData.mileage} 
-                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
+                                disabled={formData.locationType === 'public'} 
                                 onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
-                        {/* SURCHARGE DISCLAIMER */}
-                        {formData.locationType === 'my_location' && (
-                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
-                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
-                            </p>
-                        )}
                     </div>
                     
                     {!isI9 && (
@@ -543,8 +462,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     </div>
                     <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
-                  
-                  {/* MANDATORY COMPLIANCE CHECKBOXES */}
                   <div className="space-y-3">
                     <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
@@ -567,7 +484,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
-                disabled={!isStepValid()} // LOCK BUTTON UNTIL VALID
+                disabled={!isStepValid()} 
                 className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${!isStepValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
               >
                 {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
@@ -579,8 +496,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     </div>
   );
 };
-
-// --- MAIN PAGE SECTIONS ---
 
 const Hero = ({ onBookClick }) => (
   <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
@@ -736,7 +651,7 @@ function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // MANAGED HERE
 
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
@@ -752,7 +667,7 @@ function App() {
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
         currentView={view} 
-        onQRClick={() => setIsQRModalOpen(true)}
+        onQRClick={() => setIsQRModalOpen(true)} // PASSED TO NAVBAR
       />
       <main>
         {view === 'home' ? (
