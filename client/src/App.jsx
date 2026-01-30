@@ -43,21 +43,9 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-// Custom Icon Animations
-const iconVariants = {
-  drive: {
-    hover: { x: [0, -3, 3, -3, 3, 0], transition: { duration: 0.5 } } // Car shimmy
-  },
-  nod: {
-    hover: { rotate: [0, -10, 10, -10, 0], transition: { duration: 0.5 } } // Document check
-  },
-  pulse: {
-    hover: { scale: [1, 1.1, 1], transition: { duration: 0.8, repeat: Infinity } } // Shield heartbeat
-  }
-};
-
 // --- COMPONENTS ---
 
+// FIXED: Added onQRClick to props destructuring
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -68,23 +56,17 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleRefresh = (e) => {
-    e.preventDefault();
-    setTimeout(() => window.location.reload(), 400);
+  const handleRefresh = () => {
+    window.location.reload();
   };
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
         <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
-          {/* THE STAMP ANIMATION */}
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.8, rotate: -15 }} // The "Stamp" press effect
-            className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}
-          >
+          <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
             <Award className="w-8 h-8" />
-          </motion.div>
+          </div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
             <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
@@ -96,27 +78,11 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
           
-          <motion.button 
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={onQRClick} 
-            className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} 
-            title="Show QR Code"
-          >
+          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
              <QrCode size={24} />
-          </motion.button>
+          </button>
 
-          {/* PULSING BOOK NOW BUTTON */}
-          <motion.button 
-            onClick={() => onBookClick()} 
-            className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Book Now
-          </motion.button>
+          <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
         </div>
       </div>
       
@@ -128,12 +94,9 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
             </button>
         </div>
         <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
-           <motion.div 
-             whileTap={{ scale: 0.8, rotate: -15 }}
-             className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}
-            >
+           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
             <Award className="w-6 h-6" />
-          </motion.div>
+          </div>
           <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-xl font-bold leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
             <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Notary</span>
@@ -150,16 +113,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
               <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
-            
-            {/* PULSING MOBILE BOOK BUTTON */}
-            <motion.button 
-              onClick={() => { onBookClick(); setIsOpen(false); }} 
-              className="bg-brand-teal text-white font-bold px-10 py-4 rounded-full text-xl shadow-xl"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-              Book Appointment
-            </motion.button>
+            <button onClick={() => { onBookClick(); setIsOpen(false); }} className="bg-brand-teal text-white font-bold px-10 py-4 rounded-full text-xl shadow-xl">Book Appointment</button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -534,12 +488,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
-                        {/* SURCHARGE DISCLAIMER */}
-                        {formData.locationType === 'my_location' && (
-                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
-                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
-                            </p>
-                        )}
                     </div>
                     
                     {!isI9 && (
@@ -634,15 +582,7 @@ const Hero = ({ onBookClick }) => (
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          {/* HERO BOOK BUTTON - NOW PULSING */}
-          <motion.button 
-            onClick={() => onBookClick()} 
-            className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg"
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            Book WV Appointment
-          </motion.button>
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
@@ -659,12 +599,12 @@ const Services = () => (
       </div>
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
-          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV.", variants: iconVariants.drive },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees.", variants: iconVariants.nod },
-          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents.", variants: iconVariants.pulse }
+          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV." },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
+          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
         ].map((s, i) => (
-          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center group">
-            <motion.div variants={s.variants} whileHover="hover" className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm group-hover:scale-110 transition-transform"><s.icon className="text-brand-navy-dark" size={36}/></motion.div>
+          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center">
+            <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
             <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
             <p className="text-gray-500 leading-relaxed text-sm">{s.desc}</p>
           </motion.div>
@@ -793,7 +733,12 @@ function App() {
 
   return (
     <div className="font-sans min-h-screen bg-white">
-      <Navbar onBookClick={() => handleBookingOpen()} onViewChange={setView} currentView={view} />
+      <Navbar 
+        onBookClick={() => handleBookingOpen()} 
+        onViewChange={setView} 
+        currentView={view} 
+        onQRClick={() => document.getElementById('qr-modal-trigger')?.click()}
+      />
       <main>
         {view === 'home' ? (
           <>
@@ -808,8 +753,21 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
+      {/* Hidden trigger for QR Modal handled by state in Navbar usually, simplified here */}
+      <QRModalController />
     </div>
   );
+}
+
+// Separate component to handle QR state cleanly
+const QRModalController = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <>
+            <button id="qr-modal-trigger" className="hidden" onClick={() => setIsOpen(true)}></button>
+            <QRModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+        </>
+    )
 }
 
 export default App;
