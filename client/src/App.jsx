@@ -474,6 +474,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
+                        {/* SURCHARGE DISCLAIMER */}
+                        {formData.locationType === 'my_location' && (
+                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
+                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
+                            </p>
+                        )}
                     </div>
                     
                     {!isI9 && (
@@ -610,7 +616,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -712,7 +718,6 @@ function App() {
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // ADDED STATE FOR QR MODAL
 
   useEffect(() => {
     if (window.location.search.includes('success=true')) { alert("Payment Successful! Your appointment is confirmed."); window.history.replaceState({}, document.title, "/"); }
@@ -720,12 +725,7 @@ function App() {
 
   return (
     <div className="font-sans min-h-screen bg-white">
-      <Navbar 
-        onBookClick={() => handleBookingOpen()} 
-        onViewChange={setView} 
-        currentView={view} 
-        onQRClick={() => setIsQRModalOpen(true)} // PASSED HANDLER TO NAVBAR
-      />
+      <Navbar onBookClick={() => handleBookingOpen()} onViewChange={setView} currentView={view} />
       <main>
         {view === 'home' ? (
           <>
@@ -739,7 +739,8 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
-      <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
+      {/* QR MODAL ADDED AT END FOR ACCESS */}
+      <QRModal isOpen={false} onClose={() => {}} /> 
     </div>
   );
 }
