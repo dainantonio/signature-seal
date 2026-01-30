@@ -43,6 +43,19 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
+// Custom Icon Animations
+const iconVariants = {
+  drive: {
+    hover: { x: [0, -3, 3, -3, 3, 0], transition: { duration: 0.5 } } // Car shimmy
+  },
+  nod: {
+    hover: { rotate: [0, -10, 10, -10, 0], transition: { duration: 0.5 } } // Document check
+  },
+  pulse: {
+    hover: { scale: [1, 1.1, 1], transition: { duration: 0.8, repeat: Infinity } } // Shield heartbeat
+  }
+};
+
 // --- COMPONENTS ---
 
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
@@ -55,17 +68,24 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleRefresh = () => {
-    window.location.reload();
+  const handleRefresh = (e) => {
+    e.preventDefault();
+    // Delay refresh slightly to allow the "Stamp" animation to play
+    setTimeout(() => window.location.reload(), 400);
   };
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
       <div className="hidden md:flex container mx-auto px-6 justify-between items-center h-24"> 
         <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
-          <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+          {/* THE STAMP ANIMATION */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.8, rotate: -15 }} // The "Stamp" press effect
+            className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}
+          >
             <Award className="w-8 h-8" />
-          </div>
+          </motion.div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
             <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
@@ -77,11 +97,24 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
           
-          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
+          <motion.button 
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={onQRClick} 
+            className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} 
+            title="Show QR Code"
+          >
              <QrCode size={24} />
-          </button>
+          </motion.button>
 
-          <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onBookClick()} 
+            className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}
+          >
+            Book Now
+          </motion.button>
         </div>
       </div>
       
@@ -93,9 +126,12 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
             </button>
         </div>
         <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
-           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
+           <motion.div 
+             whileTap={{ scale: 0.8, rotate: -15 }}
+             className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}
+            >
             <Award className="w-6 h-6" />
-          </div>
+          </motion.div>
           <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-xl font-bold leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
             <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Notary</span>
@@ -193,6 +229,8 @@ const BackToTop = () => {
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
+          whileHover={{ scale: 1.1, y: -2 }}
+          whileTap={{ scale: 0.9 }}
           onClick={scrollToTop}
           className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
           title="Back to Top"
@@ -302,7 +340,14 @@ const AIChatWidget = ({ onRecommend }) => {
           </motion.div>
         )}
       </AnimatePresence>
-      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all"><MessageSquare size={28} /></button>
+      <motion.button 
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setIsOpen(!isOpen)} 
+        className="bg-brand-teal text-white p-4 rounded-full shadow-xl"
+      >
+        <MessageSquare size={28} />
+      </motion.button>
     </div>
   );
 };
@@ -474,12 +519,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
-                        {/* SURCHARGE DISCLAIMER */}
-                        {formData.locationType === 'my_location' && (
-                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
-                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
-                            </p>
-                        )}
                     </div>
                     
                     {!isI9 && (
@@ -583,31 +622,31 @@ const Hero = ({ onBookClick }) => (
 );
 
 const Services = () => (
-  <section id="services" className="py-32 bg-white relative">
+  <motion.section id="services" className="py-32 bg-white relative" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
         <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV Expertise</h2>
         <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia.</p>
       </div>
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
+      <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
-          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
-          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
+          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV.", variants: iconVariants.drive },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees.", variants: iconVariants.nod },
+          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents.", variants: iconVariants.pulse }
         ].map((s, i) => (
-          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center">
-            <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
+          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center group">
+            <motion.div variants={s.variants} whileHover="hover" className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm group-hover:scale-110 transition-transform"><s.icon className="text-brand-navy-dark" size={36}/></motion.div>
             <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
             <p className="text-gray-500 leading-relaxed text-sm">{s.desc}</p>
           </motion.div>
         ))}
       </motion.div>
     </div>
-  </section>
+  </motion.section>
 );
 
 const Pricing = ({ onBookClick }) => (
-  <section id="pricing" className="py-32 bg-gray-50">
+  <motion.section id="pricing" className="py-32 bg-gray-50" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
     <div className="container mx-auto px-6">
       <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
       <div className="max-w-md mx-auto">
@@ -616,7 +655,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -627,7 +666,7 @@ const Pricing = ({ onBookClick }) => (
         </div>
       </div>
     </div>
-  </section>
+  </motion.section>
 );
 
 const Footer = ({ onViewChange }) => (
@@ -730,6 +769,7 @@ function App() {
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
+            <BackToTop />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
