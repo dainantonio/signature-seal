@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,6 +17,7 @@ const getBackendUrl = () => {
 
 const API_URL = getBackendUrl();
 const CONTACT_EMAIL = "sseal.notary@gmail.com"; 
+const SITE_URL = "https://signaturesealnotaries.com";
 
 // --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
@@ -42,11 +43,12 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-// --- COMPONENTS ---
+// --- SUB-COMPONENTS (Defined Before App) ---
 
-const Navbar = ({ onBookClick, onViewChange }) => {
+const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
@@ -67,18 +69,26 @@ const Navbar = ({ onBookClick, onViewChange }) => {
             <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
           </div>
         </div>
-        <div className="flex items-center space-x-10">
+        <div className="flex items-center space-x-8">
           {['Services', 'FAQ', 'Pricing'].map((item) => (
             <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
           ))}
-          <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
+          
+          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
+             <QrCode size={24} />
+          </button>
+
           <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
         </div>
       </div>
       
       {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
-        <div className="w-10"></div>
+        <div className="w-10">
+            <button onClick={onQRClick} className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+                <QrCode size={24} />
+            </button>
+        </div>
         <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
             <Award className="w-6 h-6" />
@@ -107,7 +117,55 @@ const Navbar = ({ onBookClick, onViewChange }) => {
   );
 };
 
-// --- BACK TO TOP BUTTON ---
+const QRModal = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+    
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(SITE_URL)}&color=2c3e50`;
+
+    const downloadQR = async () => {
+        try {
+            const response = await fetch(qrUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'signature_seal_qr.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            alert("Could not download image automatically. Please screenshot it instead.");
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative"
+            >
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20}/></button>
+                
+                <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
+                <p className="text-gray-500 text-sm mb-6">Share this code with clients for instant access.</p>
+                
+                <div className="bg-white border-4 border-brand-gold/20 rounded-2xl p-4 inline-block mb-6 shadow-inner">
+                    <img src={qrUrl} alt="Signature Seal QR Code" className="w-48 h-48" />
+                </div>
+                
+                <button 
+                    onClick={downloadQR}
+                    className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold hover:bg-brand-teal transition-all"
+                >
+                    <Download size={18} /> Download Image
+                </button>
+            </motion.div>
+        </div>
+    );
+};
+
 const BackToTop = () => {
   const [visible, setVisible] = useState(false);
 
@@ -142,16 +200,15 @@ const BackToTop = () => {
   );
 };
 
-// --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
   const faqs = [
-    { q: "Is I-9 Verification a notarized service?", a: "No. Form I-9 does not require notarization. This service is identity verification only, performed as an 'Authorized Representative' of the employer." },
-    { q: "Do you provide immigration advice?", a: "No. We do not offer legal or immigration advice. Documents must be selected by the employee in accordance with USCIS Form I-9 instructions." },
+    { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act under WV law." },
     { q: "Where does the appointment take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
-    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the service." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee ($40 base) to secure the appointment. The remaining fees ($10/stamp for Notary, or $25 for I-9 Service) are collected after the service is completed." },
+    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
+    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $60 service fee plus travel." },
+    { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
 
   return (
@@ -259,7 +316,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
 
-  // Handle Location Type Switching
   const handleLocationTypeChange = (type) => {
     setFormData(prev => ({ 
         ...prev, 
@@ -269,37 +325,32 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     }));
   };
 
-  // CHECK I-9 STATUS
   const isI9 = formData.service.includes('I-9');
 
-  // Price Calculation
   const price = useMemo(() => {
-    let base = 40; // Travel Base (Online)
+    let base = 40;
+    if (formData.service.includes('Loan')) base = 150;
+    if (isI9) base = 60; 
     
-    // Surcharge Logic
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    // Due Later (At Table)
-    // I-9 = $25 Service Fee (Total $65 = 40+25)
-    // Notary = $10 per stamp
-    const dueLater = isI9 ? 25 : (formData.signatures || 0) * 10;
+    const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
     
     return { 
         travelTotal: base + surcharge, 
-        dueLater, 
-        grandTotal: base + surcharge + dueLater 
+        notaryFee, 
+        grandTotal: base + surcharge + notaryFee 
     };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
-    
-    // I-9 = Flexible Hours (9am - 7pm Mon-Sat)
+    const dateObj = new Date(formData.date + 'T12:00:00');
+    const day = dateObj.getDay(); 
+    if (day === 0) return []; 
+    // I-9 Flexible
     if (isI9) {
-        const dateObj = new Date(formData.date + 'T12:00:00');
-        const day = dateObj.getDay(); 
-        if (day === 0) return []; 
         const slots = [];
         for (let i = 9; i <= 19; i++) {
             const hour = i > 12 ? i - 12 : i;
@@ -308,11 +359,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         }
         return slots;
     }
-
-    const dateObj = new Date(formData.date + 'T12:00:00');
-    const day = dateObj.getDay(); 
-    if (day === 0) return []; 
-    else if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+    // Standard
+    if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
@@ -365,18 +413,24 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
+                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing', 'General Notary (Other)'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
-                      <option value="">Select Time</option>
-                      {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                     <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
+                        <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                        <option value="">Select Time</option>
+                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
                   </div>
                   {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
@@ -423,11 +477,17 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                                 type="number" min="0" 
                                 className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
                                 value={formData.mileage} 
-                                disabled={formData.locationType === 'public'} 
+                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
                                 onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
+                        {/* SURCHARGE DISCLAIMER */}
+                        {formData.locationType === 'my_location' && (
+                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
+                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
+                            </p>
+                        )}
                     </div>
                     
                     {!isI9 && (
@@ -461,12 +521,14 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
                             <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
                         </div>
-                        <div className="text-right">
-                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
-                             <p className="text-xl font-bold text-gray-600">${price.dueLater}</p>
-                        </div>
+                        {price.notaryFee > 0 && (
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
+                                <p className="text-xl font-bold text-gray-600">${price.notaryFee}</p>
+                            </div>
+                        )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Fee' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -475,7 +537,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
-                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. A separate service fee is due at the appointment." 
+                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. Travel/Service fees are paid now." 
                                 : "I understand that the $10 notary fee is charged per notarized signature and will be collected after the notarization is completed."}
                         </span>
                     </label>
@@ -516,9 +578,9 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
@@ -538,7 +600,7 @@ const Services = () => (
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
           { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
+          { icon: FileText, title: "Oaths & Affirmations", desc: "Administering oaths for affidavits and sworn statements." },
           { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
         ].map((s, i) => (
           <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center">
@@ -607,22 +669,6 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const handleSendInvoice = async (id) => {
-    const sigs = prompt("How many signatures were notarized?");
-    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
-    try {
-        const res = await fetch(`${API_URL}/api/create-invoice`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, signatures: sigs })
-        });
-        const data = await res.json();
-        if (res.ok) alert("Invoice sent to customer!");
-        else alert("Failed to send invoice: " + data.error);
-    } catch (err) { alert("Error connecting to server."); }
-  };
-
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
@@ -640,6 +686,20 @@ const AdminDashboard = ({ token, onLogout }) => {
     link.download = "bookings.csv";
     link.click();
   };
+  const handleSendInvoice = async (id) => {
+    const sigs = prompt("How many signatures were notarized?");
+    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
+    try {
+        const res = await fetch(`${API_URL}/api/create-invoice`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, signatures: sigs, type: 'notary' })
+        });
+        const data = await res.json();
+        if (res.ok) alert("Invoice sent!");
+        else alert("Failed: " + data.error);
+    } catch (err) { alert("Error connecting."); }
+  };
   return (
     <div className="container mx-auto px-6 py-32 pt-40">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
@@ -648,7 +708,7 @@ const AdminDashboard = ({ token, onLogout }) => {
             <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
             <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
             <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <CreditCard size={14}/> Bill Fees
+                <CreditCard size={14}/> Bill Notary Fees
             </button>
         </div>
       ))}</div>
@@ -687,8 +747,26 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
+      {/* QR MODAL ADDED AT END FOR ACCESS */}
+      <QRModal isOpen={false} onClose={() => {}} /> 
     </div>
   );
 }
+
+// Added QRModal separately to ensure cleaner structure above
+const QRModal = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent("https://signaturesealnotaries.com")}&color=2c3e50`;
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full"><X size={20}/></button>
+                <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
+                <img src={qrUrl} alt="QR Code" className="w-48 h-48 mx-auto my-6" />
+                <a href={qrUrl} download="qr_code.png" className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold"><Download size={18}/> Save Image</a>
+            </div>
+        </div>
+    );
+};
 
 export default App;
