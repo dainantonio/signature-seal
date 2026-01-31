@@ -85,6 +85,21 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
+const FloatingBookButton = ({ onClick }) => (
+  <motion.div 
+    initial={{ y: 100, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    className="fixed bottom-6 left-4 right-4 z-[45] md:hidden" 
+  >
+    <button 
+      onClick={onClick}
+      className="w-full bg-brand-teal text-white font-bold text-lg py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
+    >
+      <Calendar size={24} /> Book Appointment
+    </button>
+  </motion.div>
+);
+
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -114,7 +129,11 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
             <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
           ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
-          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code"><QrCode size={24} /></button>
+          
+          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
+             <QrCode size={24} />
+          </button>
+
           <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
         </div>
       </div>
@@ -122,7 +141,9 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
       {/* MOBILE */}
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10">
-            <button onClick={onQRClick} className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}><QrCode size={24} /></button>
+            <button onClick={onQRClick} className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
+                <QrCode size={24} />
+            </button>
         </div>
         <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
@@ -152,7 +173,6 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   );
 };
 
-// --- CRASH-PROOF BACK TO TOP (CSS ONLY) ---
 const BackToTop = () => {
   const [visible, setVisible] = useState(false);
 
@@ -165,14 +185,25 @@ const BackToTop = () => {
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
-    <button
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
-      title="Back to Top"
-    >
-      <ArrowUp size={24} />
-    </button>
+    <AnimatePresence>
+      {visible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
+          title="Back to Top"
+        >
+          <ArrowUp size={24} />
+        </motion.button>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -201,7 +232,12 @@ const FAQ = () => {
               </button>
               <AnimatePresence>
                 {activeIndex === i && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }} 
+                    animate={{ height: "auto", opacity: 1 }} 
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
                     <p className="p-6 pt-0 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
                   </motion.div>
                 )}
@@ -220,6 +256,7 @@ const AIChatWidget = ({ onRecommend }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, isOpen]);
 
   const handleSubmit = async (e) => {
@@ -235,8 +272,9 @@ const AIChatWidget = ({ onRecommend }) => {
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
     } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting. Please use the 'Book Now' button." }]); } finally { setIsLoading(false); }
   };
+
   return (
-    <div className="fixed bottom-8 right-8 z-40 flex flex-col items-end font-sans">
+    <div className="fixed bottom-24 right-8 z-40 flex flex-col items-end font-sans">
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-2xl shadow-2xl mb-6 w-[90vw] md:w-96 border border-gray-100 overflow-hidden flex flex-col h-[500px]">
@@ -277,7 +315,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
     address: '', notes: '', mileage: 0, signatures: 1,
-    locationType: 'my_location'
+    locationType: 'my_location' // Default
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -287,7 +325,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
 
   const handleLocationTypeChange = (type) => {
-    setFormData(prev => ({ ...prev, locationType: type, mileage: type === 'public' ? 0 : prev.mileage, address: '' }));
+    setFormData(prev => ({ 
+        ...prev, 
+        locationType: type,
+        mileage: type === 'public' ? 0 : prev.mileage,
+        address: ''
+    }));
   };
 
   const isI9 = formData.service.includes('I-9');
@@ -296,10 +339,17 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     let base = 40;
     if (formData.service.includes('Loan')) base = 150;
     if (isI9) base = 60; 
+    
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
+    
     const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
-    return { travelTotal: base + surcharge, notaryFee, grandTotal: base + surcharge + notaryFee };
+    
+    return { 
+        travelTotal: base + surcharge, 
+        notaryFee, 
+        grandTotal: base + surcharge + notaryFee 
+    };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
   const timeSlots = useMemo(() => {
@@ -307,6 +357,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
     if (day === 0) return []; 
+    // I-9 Flexible
     if (isI9) {
         const slots = [];
         for (let i = 9; i <= 19; i++) {
@@ -316,16 +367,21 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         }
         return slots;
     }
+    // Standard
     if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
+  // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
         const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
-        if (formData.locationType === 'my_location') return basicFields && formData.address && !isNaN(formData.mileage);
-        else return basicFields && formData.address;
+        if (formData.locationType === 'my_location') {
+            return basicFields && formData.address && !isNaN(formData.mileage);
+        } else {
+            return basicFields && formData.address;
+        }
     }
     if (step === 3) return termsAccepted && payNow;
     return false;
@@ -368,7 +424,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing', 'General Notary (Other)'].map(svc => (
+                    {/* NO COURIER - COMPLIANT LIST */}
+                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
@@ -381,13 +438,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                       {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
-                  {/* I-9 SPECIFIC HOURS NOTE */}
-                  {isI9 && (
-                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
-                        <Info size={16} className="mt-0.5 shrink-0" />
-                        <div><strong>Flexible Hours:</strong> I-9 Verifications are available Mon-Sat (9am-7pm).</div>
-                    </div>
-                  )}
                 </div>
               )}
               {step === 2 && (
@@ -688,12 +738,13 @@ function App() {
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
         currentView={view} 
-        onQRClick={() => setIsQRModalOpen(true)}
+        onQRClick={() => setIsQRModalOpen(true)} // PASSED TO NAVBAR
       />
       <main>
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
+            <BackToTop />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
@@ -703,7 +754,10 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
+      {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
+      {/* Floating Action Button for Mobile */}
+      <FloatingBookButton onClick={() => handleBookingOpen()} />
     </div>
   );
 }
