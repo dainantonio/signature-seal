@@ -71,7 +71,7 @@ const QRModal = ({ isOpen, onClose }) => {
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
             <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative" onClick={e => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20}/></button>
                 <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
                 <p className="text-gray-500 text-sm mb-6">Share this code with clients for instant access.</p>
                 <div className="bg-white border-4 border-brand-gold/20 rounded-2xl p-4 inline-block mb-6 shadow-inner">
@@ -424,20 +424,32 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {/* NO COURIER - COMPLIANT LIST */}
-                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
+                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing', 'General Notary (Other)'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
-                      <option value="">Select Time</option>
-                      {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
+                        <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                        <option value="">Select Time</option>
+                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                    </div>
                   </div>
+                  {/* I-9 SPECIFIC HOURS NOTE */}
+                  {isI9 && (
+                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
+                        <Info size={16} className="mt-0.5 shrink-0" />
+                        <div><strong>Flexible Hours:</strong> I-9 Verifications are available Mon-Sat (9am-7pm).</div>
+                    </div>
+                  )}
                 </div>
               )}
               {step === 2 && (
@@ -722,7 +734,7 @@ function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // MANAGED HERE
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
 
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
@@ -738,13 +750,12 @@ function App() {
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
         currentView={view} 
-        onQRClick={() => setIsQRModalOpen(true)} // PASSED TO NAVBAR
+        onQRClick={() => setIsQRModalOpen(true)}
       />
       <main>
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
-            <BackToTop />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
