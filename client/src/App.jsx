@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Truck
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -85,7 +85,6 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// Floating Mobile Action Button (Extra Rounded)
 const FloatingBookButton = ({ onClick }) => (
   <div className="fixed bottom-6 left-4 right-4 z-[45] md:hidden">
     <button 
@@ -420,8 +419,9 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
                      <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
-                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                        <p className="text-xs text-gray-400 mt-1 ml-1">Date</p>
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                         {/* DATE READOUT FOR MOBILE CLARITY */}
+                        {formData.date && <p className="text-[10px] text-brand-teal font-medium pl-1">{new Date(formData.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
                     </div>
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
@@ -639,7 +639,7 @@ const Pricing = ({ onBookClick }) => (
 );
 
 const Footer = ({ onViewChange }) => (
-  <footer className="bg-brand-navy-dark text-white py-20 text-center">
+  <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
     <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
     <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Notary</h2>
     <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
@@ -701,14 +701,14 @@ const AdminDashboard = ({ token, onLogout }) => {
     } catch (err) { alert("Error connecting."); }
   };
   return (
-    <div className="container mx-auto px-6 py-32 pt-40">
+    <div className="container mx-auto px-6 py-32 pt-40 pb-48">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
       <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
         <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
             <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
             <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
             <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <CreditCard size={14}/> Bill Notary Fees
+                <DollarSign size={14}/> Bill Notary Fees
             </button>
         </div>
       ))}</div>
@@ -723,7 +723,7 @@ function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // MANAGED HERE
 
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
@@ -754,9 +754,10 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
+      {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
-      {/* Floating Action Button for Mobile */}
-      <FloatingBookButton onClick={() => handleBookingOpen()} />
+      {/* Floating Button: Hide if Admin or Booking Open */}
+      {!adminToken && !isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
     </div>
   );
 }
