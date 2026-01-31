@@ -85,6 +85,7 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
+// Floating Mobile Action Button (Extra Rounded)
 const FloatingBookButton = ({ onClick }) => (
   <div className="fixed bottom-6 left-4 right-4 z-[45] md:hidden">
     <button 
@@ -419,9 +420,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
                      <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
-                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                         {/* DATE READOUT FOR MOBILE CLARITY */}
-                        {formData.date && <p className="text-[10px] text-brand-teal font-medium pl-1">{new Date(formData.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                        <p className="text-xs text-gray-400 mt-1 ml-1">Date</p>
                     </div>
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
@@ -544,7 +544,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
                     <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-colors ${payNow ? 'border-brand-teal bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}>
                         <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Travel Fee Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
                     </label>
                   </div>
                 </div>
@@ -582,7 +582,7 @@ const Hero = ({ onBookClick }) => (
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary, I-9 verification, and legal courier services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
+          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
@@ -628,7 +628,7 @@ const Pricing = ({ onBookClick }) => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
-          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book Appointment</button>
+          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book WV Standard</button>
           <div className="text-[10px] text-gray-400 mt-6 text-center italic border-t pt-4 w-full">
             Travel fees are disclosed at booking. Notary fees are regulated by West Virginia law at $10 per notarized signature and are collected after the notarization is completed.
           </div>
@@ -639,7 +639,7 @@ const Pricing = ({ onBookClick }) => (
 );
 
 const Footer = ({ onViewChange }) => (
-  <footer className="bg-brand-navy-dark text-white py-20 pb-32 text-center">
+  <footer className="bg-brand-navy-dark text-white py-20 text-center">
     <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
     <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Notary</h2>
     <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
@@ -701,7 +701,7 @@ const AdminDashboard = ({ token, onLogout }) => {
     } catch (err) { alert("Error connecting."); }
   };
   return (
-    <div className="container mx-auto px-6 py-32 pt-40 pb-48">
+    <div className="container mx-auto px-6 py-32 pt-40">
       <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
       <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
         <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
@@ -754,10 +754,9 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
-      {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
-      {/* Floating Button: Hide if Admin or Booking Open */}
-      {!adminToken && !isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
+      {/* Floating Action Button for Mobile */}
+      <FloatingBookButton onClick={() => handleBookingOpen()} />
     </div>
   );
 }
