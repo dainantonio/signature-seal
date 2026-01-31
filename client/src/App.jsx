@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -71,7 +71,7 @@ const QRModal = ({ isOpen, onClose }) => {
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
             <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative" onClick={e => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20}/></button>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
                 <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
                 <p className="text-gray-500 text-sm mb-6">Share this code with clients for instant access.</p>
                 <div className="bg-white border-4 border-brand-gold/20 rounded-2xl p-4 inline-block mb-6 shadow-inner">
@@ -86,18 +86,14 @@ const QRModal = ({ isOpen, onClose }) => {
 };
 
 const FloatingBookButton = ({ onClick }) => (
-  <motion.div 
-    initial={{ y: 100, opacity: 0 }}
-    animate={{ y: 0, opacity: 1 }}
-    className="fixed bottom-6 left-4 right-4 z-[45] md:hidden" 
-  >
+  <div className="fixed bottom-6 left-4 right-4 z-[45] md:hidden">
     <button 
       onClick={onClick}
       className="w-full bg-brand-teal text-white font-bold text-lg py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
     >
       <Calendar size={24} /> Book Appointment
     </button>
-  </motion.div>
+  </div>
 );
 
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
@@ -165,7 +161,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
               <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
-            <button onClick={() => { onBookClick(); setIsOpen(false); }} className="bg-brand-teal text-white font-bold px-10 py-4 rounded-full text-xl shadow-xl">Book Appointment</button>
+            {/* REMOVED DUPLICATE MOBILE MENU BUTTON HERE - FLOATING BUTTON HANDLES IT */}
           </motion.div>
         )}
       </AnimatePresence>
@@ -185,25 +181,14 @@ const BackToTop = () => {
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.5 }}
-          onClick={scrollToTop}
-          className="fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-colors"
-          title="Back to Top"
-        >
-          <ArrowUp size={24} />
-        </motion.button>
-      )}
-    </AnimatePresence>
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+      title="Back to Top"
+    >
+      <ArrowUp size={24} />
+    </button>
   );
 };
 
@@ -431,17 +416,11 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
-                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
-                        <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
-                        <option value="">Select Time</option>
-                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
+                    <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                    <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                      <option value="">Select Time</option>
+                      {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
                   </div>
                   {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
@@ -593,7 +572,7 @@ const Hero = ({ onBookClick }) => (
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
+          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
@@ -602,7 +581,7 @@ const Hero = ({ onBookClick }) => (
 );
 
 const Services = () => (
-  <section id="services" className="py-32 bg-white relative">
+  <section id="services" className="py-32 bg-slate-50 relative">
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
         <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV Expertise</h2>
@@ -614,8 +593,8 @@ const Services = () => (
           { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
           { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
         ].map((s, i) => (
-          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-gray-50 hover:bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center">
-            <div className="bg-white w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
+          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-white hover:shadow-2xl transition-all duration-500 border border-transparent hover:border-gray-100 text-center shadow-lg">
+            <div className="bg-slate-50 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
             <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
             <p className="text-gray-500 leading-relaxed text-sm">{s.desc}</p>
           </motion.div>
@@ -626,16 +605,16 @@ const Services = () => (
 );
 
 const Pricing = ({ onBookClick }) => (
-  <section id="pricing" className="py-32 bg-gray-50">
+  <section id="pricing" className="py-32 bg-slate-50">
     <div className="container mx-auto px-6">
       <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
       <div className="max-w-md mx-auto">
-        <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-gray-100 flex flex-col items-center group hover:shadow-xl transition-all">
+        <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col items-center group hover:shadow-2xl transition-all">
           <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Mobile Service (WV)</span>
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', '+ State Fee ($10 WV per stamp)'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -650,16 +629,16 @@ const Pricing = ({ onBookClick }) => (
 );
 
 const Footer = ({ onViewChange }) => (
-  <footer className="bg-white border-t border-gray-100 py-20 text-center">
-    <div className="inline-block p-4 bg-gray-50 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
-    <h2 className="font-serif text-3xl font-bold text-brand-navy-dark mb-10">Signature Seal Notary</h2>
-    <div className="flex justify-center gap-10 mb-12 text-gray-500 font-bold uppercase text-[10px] tracking-widest">
+  <footer className="bg-brand-navy-dark text-white py-20 text-center">
+    <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
+    <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Notary</h2>
+    <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
       <a href="#services" className="hover:text-brand-teal">Services</a>
       <a href="#faq" className="hover:text-brand-teal">FAQ</a>
       <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
     </div>
-    <p className="text-gray-400 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
-    <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-200 hover:text-brand-navy-dark flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin Portal</button>
+    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
+    <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin Portal</button>
   </footer>
 );
 
@@ -734,7 +713,7 @@ function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // MANAGED HERE
 
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
@@ -750,7 +729,7 @@ function App() {
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
         currentView={view} 
-        onQRClick={() => setIsQRModalOpen(true)}
+        onQRClick={() => setIsQRModalOpen(true)} // PASSED TO NAVBAR
       />
       <main>
         {view === 'home' ? (
@@ -765,7 +744,6 @@ function App() {
       </main>
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
-      {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
       {/* Floating Action Button for Mobile */}
       <FloatingBookButton onClick={() => handleBookingOpen()} />
