@@ -87,12 +87,12 @@ const QRModal = ({ isOpen, onClose }) => {
 
 // Floating Mobile Action Button
 const FloatingBookButton = ({ onClick }) => (
-  <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
+  <div className="fixed bottom-8 left-4 right-20 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
     <button 
       onClick={onClick}
-      className="w-full bg-brand-teal text-white font-bold text-lg py-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
+      className="w-full bg-brand-teal text-white font-bold text-base py-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
     >
-      <Calendar size={24} /> Book Appointment
+      <Calendar size={20} /> Book Now
     </button>
   </div>
 );
@@ -260,7 +260,7 @@ const AIChatWidget = ({ onRecommend }) => {
   };
 
   return (
-    <div className="fixed bottom-24 right-8 z-40 flex flex-col items-end font-sans">
+    <div className="fixed bottom-8 right-4 z-[46] flex flex-col items-end font-sans pb-[env(safe-area-inset-bottom)]">
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-2xl shadow-2xl mb-6 w-[90vw] md:w-96 border border-gray-100 overflow-hidden flex flex-col h-[500px]">
@@ -291,7 +291,7 @@ const AIChatWidget = ({ onRecommend }) => {
           </motion.div>
         )}
       </AnimatePresence>
-      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all"><MessageSquare size={28} /></button>
+      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all border-2 border-white/20"><MessageSquare size={28} /></button>
     </div>
   );
 };
