@@ -587,8 +587,8 @@ const Hero = ({ onBookClick }) => (
         <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Local, trusted notary & courier service serving Huntington WV, South Point OH, and nearby areas — appointments secured with prepaid travel fees for your convenience.</p>
-        <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
+        <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-6">
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
