@@ -118,7 +118,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Notary</span>
           </div>
         </div>
         <div className="flex items-center space-x-8">
@@ -148,7 +148,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-2xl font-bold leading-none tracking-tight ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[10px] uppercase font-bold mt-1 tracking-[0.1em] ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
+            <span className={`text-[10px] uppercase font-bold mt-1 tracking-[0.1em] ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Notary</span>
           </div>
         </div>
         <div className="justify-self-end">
@@ -588,7 +588,7 @@ const Hero = ({ onBookClick }) => (
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Local, trusted notary & courier service serving Huntington WV, South Point OH, and nearby areas — appointments secured with prepaid travel fees for your convenience.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
+          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
