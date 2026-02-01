@@ -296,7 +296,7 @@ const AIChatWidget = ({ onRecommend }) => {
   );
 };
 
-const BookingModal = ({ isOpen, onClose, initialService }) => {
+const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
@@ -308,7 +308,18 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [payNow, setPayNow] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
+  // RESTORE STATE ON MOUNT
+  useEffect(() => {
+    // 1. Restore passed service
+    if (initialService) {
+        setFormData(prev => ({ ...prev, service: initialService }));
+    }
+    // 2. Restore saved data if coming back from Stripe/Cancel
+    if (initialData) {
+        setFormData(initialData);
+        setStep(3); // Jump to review
+    }
+  }, [initialService, initialData]);
 
   const handleLocationTypeChange = (type) => {
     setFormData(prev => ({ 
@@ -322,17 +333,17 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const isI9 = formData.service.includes('I-9');
 
   const price = useMemo(() => {
-    let base = 40; // UNIFIED RESERVATION FEE
+    let base = 40; // UNIFIED RESERVATION FEE for all services
+    if (formData.service.includes('Loan')) base = 150;
     
-    // I-9 = $40 Travel (Online) + $25 Service (Later)
-    // Notary = $40 Travel (Online) + $10/sig (Later)
-
-    if (formData.service.includes('Loan')) base = 150; // Keep loan special case if needed
+    // I-9 IS NOW $40 Online (Reservation) + $25 Later
     
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    // Calculate Due Later based on service type
+    // Calculate Due Later
+    // I-9 = $25 Service Fee
+    // Notary = $10 per stamp
     const dueLater = isI9 ? 25 : (formData.signatures || 0) * 10;
     
     return { 
@@ -347,7 +358,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
     if (day === 0) return []; 
-    // I-9 Flexible
+    // Flexible Hours for I-9
     if (isI9) {
         const slots = [];
         for (let i = 9; i <= 19; i++) {
@@ -357,12 +368,10 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
         }
         return slots;
     }
-    // Standard
     if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
-  // --- STRICT STEP VALIDATION ---
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
@@ -383,13 +392,26 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     if (!isStepValid()) return; 
     setIsSubmitting(true);
     const payload = { ...formData };
+    
+    // PERSISTENCE: Save to localStorage before leaving page
+    localStorage.setItem('pendingBooking', JSON.stringify(payload));
+    
+    // 1. LEAD CAPTURE (Save to DB)
+    try {
+        await safeFetch(`${API_URL}/api/bookings`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload) 
+        });
+    } catch(e) { console.log("Lead capture failed, proceeding to payment anyway"); }
+
+    // 2. PAYMENT REDIRECT
     const endpoint = `${API_URL}/api/create-checkout-session`;
     try {
       const res = await safeFetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (res.ok) {
-        if (data.url) window.location.href = data.url;
-        else setSuccess(true);
+      if (res.ok && data.url) {
+        window.location.href = data.url;
       } else { alert(data.error || "Submission failed."); }
     } catch (err) { alert(err.message); } finally { setIsSubmitting(false); }
   };
@@ -414,7 +436,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {/* NO COURIER */}
+                    {/* UPDATED SERVICE LIST */}
                     {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
@@ -425,8 +447,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                      <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
                         <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                         {/* DATE READOUT FOR MOBILE CLARITY */}
-                        {formData.date && <p className="text-[10px] text-brand-teal font-medium pl-1">{new Date(formData.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
+                         {formData.date && <p className="text-[10px] text-brand-teal font-medium pl-1">{new Date(formData.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
                     </div>
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
@@ -436,7 +457,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         </select>
                     </div>
                   </div>
-                  {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
@@ -450,7 +470,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   
-                  {/* DYNAMIC LOCATION SELECTOR */}
                   <div className="grid grid-cols-2 gap-4">
                      <button onClick={() => handleLocationTypeChange('my_location')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'my_location' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
                         <Home size={18} /> My Location
@@ -486,7 +505,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             />
                             <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
-                        {/* SURCHARGE DISCLAIMER */}
                         {formData.locationType === 'my_location' && (
                             <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
                                 Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
@@ -534,7 +552,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Fee' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Reservation' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -543,8 +561,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
-                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. Travel/Service fees are paid now." 
-                                : "Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure and our availability is guaranteed."}
+                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. A separate $25 service fee is due at the appointment." 
+                                : "Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure."}
                         </span>
                     </label>
 
@@ -573,165 +591,6 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   );
 };
 
-// --- MAIN PAGE SECTIONS ---
-
-const Hero = ({ onBookClick }) => (
-  <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-    <div className="absolute inset-0 z-0">
-      <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Background" className="w-full h-full object-cover scale-105" />
-      <div className="absolute inset-0 bg-brand-navy-dark/90 mix-blend-multiply"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-dark via-transparent to-transparent opacity-80"></div>
-    </div>
-    <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
-        <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Local, trusted notary & courier service serving Huntington WV, South Point OH, and nearby areas — appointments secured with prepaid travel fees for your convenience.</p>
-        <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
-          <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
-        </div>
-      </motion.div>
-    </div>
-  </section>
-);
-
-const Services = () => (
-  <section id="services" className="py-32 bg-slate-100 relative">
-    <div className="container mx-auto px-6">
-      <div className="text-center mb-24 max-w-3xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV Expertise</h2>
-        <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia.</p>
-      </div>
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
-        {[
-          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
-          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
-        ].map((s, i) => (
-          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-white hover:shadow-xl transition-all duration-500 border border-gray-200 text-center shadow-lg">
-            <div className="bg-slate-50 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
-            <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
-            <p className="text-gray-500 leading-relaxed text-sm">{s.desc}</p>
-          </motion.div>
-        ))}
-      </motion.div>
-    </div>
-  </section>
-);
-
-const Pricing = ({ onBookClick }) => (
-  <section id="pricing" className="py-32 bg-slate-50">
-    <div className="container mx-auto px-6">
-      <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
-      <div className="max-w-md mx-auto">
-        <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col items-center group hover:shadow-2xl transition-all">
-          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Most Popular</span>
-          <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Service</h3>
-          <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
-          <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
-              <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
-            ))}
-          </ul>
-          
-          <div className="bg-slate-50 p-4 rounded-xl mb-6 text-left border border-gray-200">
-             <h4 className="font-bold text-brand-navy-dark text-sm mb-2">Travel & Delivery Fees</h4>
-             <p className="text-xs text-gray-600 mb-2">To reserve your appointment and cover travel time, a small travel or delivery fee may be required at booking for:</p>
-             <ul className="list-disc list-inside text-xs text-gray-500 mb-2 pl-2">
-                 <li>First-time clients</li>
-                 <li>Longer distances (over 10 miles)</li>
-                 <li>Same-day or rush service</li>
-                 <li>After-hours appointments</li>
-             </ul>
-             <p className="text-xs text-brand-teal font-medium">Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure and our availability is guaranteed.</p>
-          </div>
-
-          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book Appointment</button>
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-const Footer = ({ onViewChange }) => (
-  <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
-    <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
-    <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Notary</h2>
-    <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
-      <a href="#services" className="hover:text-brand-teal">Services</a>
-      <a href="#faq" className="hover:text-brand-teal">FAQ</a>
-      <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
-    </div>
-    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
-    <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin Portal</button>
-  </footer>
-);
-
-// ADMIN
-const LoginScreen = ({ onLogin }) => {
-  const [password, setPassword] = useState('');
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await safeFetch(`${API_URL}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
-      const data = await res.json();
-      if (res.ok) onLogin(data.token); else alert("Incorrect.");
-    } catch (err) { alert("Offline."); }
-  };
-  return <div className="min-h-screen bg-brand-navy-dark flex items-center justify-center"><form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl"><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="p-4 border rounded-xl" placeholder="Admin Password"/><button className="w-full bg-brand-navy-dark text-white mt-4 p-4 rounded-xl font-bold">Login</button></form></div>;
-};
-
-const AdminDashboard = ({ token, onLogout }) => {
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
-      .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [token]);
-  const handleDelete = async (id) => {
-    if(!window.confirm("Delete?")) return;
-    setBookings(prev => prev.filter(b => b.id !== id));
-    await fetch(`${API_URL}/api/bookings/delete/${id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-  };
-  const handleExport = () => {
-    const csv = "ID,Name,Service,Date\n" + bookings.map(b => `${b.id},${b.name},${b.service},${b.date}`).join("\n");
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = "bookings.csv";
-    link.click();
-  };
-  const handleSendInvoice = async (id) => {
-    const sigs = prompt("How many signatures were notarized?");
-    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
-    try {
-        const res = await fetch(`${API_URL}/api/create-invoice`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, signatures: sigs, type: 'notary' })
-        });
-        const data = await res.json();
-        if (res.ok) alert("Invoice sent!");
-        else alert("Failed: " + data.error);
-    } catch (err) { alert("Error connecting."); }
-  };
-  return (
-    <div className="container mx-auto px-6 py-32 pt-40 pb-48">
-      <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
-      <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
-        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
-            <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
-            <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
-            <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <CreditCard size={14}/> Bill Notary Fees
-            </button>
-        </div>
-      ))}</div>
-    </div>
-  );
-};
-
 // --- APP ROOT ---
 
 function App() {
@@ -740,13 +599,24 @@ function App() {
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
   const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
+  const [restoredData, setRestoredData] = useState(null);
 
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
 
+  // BACK BUTTON LOGIC: Check for ?canceled=true
   useEffect(() => {
-    if (window.location.search.includes('success=true')) { alert("Payment Successful! Your appointment is confirmed."); window.history.replaceState({}, document.title, "/"); }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('canceled')) {
+        const saved = localStorage.getItem('pendingBooking');
+        if (saved) {
+            setRestoredData(JSON.parse(saved));
+            setIsBookingOpen(true); // Re-open modal automatically
+            // Clean URL
+            window.history.replaceState({}, document.title, "/");
+        }
+    }
   }, []);
 
   return (
@@ -761,6 +631,7 @@ function App() {
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
+            <BackToTop />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
@@ -769,7 +640,8 @@ function App() {
         ) : (!adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />)}
       </main>
       <Footer onViewChange={setView} />
-      <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
+      {/* Pass restoredData to BookingModal */}
+      <BookingModal isOpen={isBookingOpen} onClose={() => { setIsBookingOpen(false); setRestoredData(null); }} initialService={preSelectedService} initialData={restoredData} />
       {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
       {/* Floating Button: Hide if Admin or Booking Open */}
