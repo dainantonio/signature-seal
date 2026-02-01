@@ -346,20 +346,35 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     if (!formData.date) return [];
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
+    
+    // Sunday: Emergency Only (No standard slots)
     if (day === 0) return []; 
-    // I-9 Flexible
-    if (isI9) {
+
+    // Helper to generate slots
+    const generateSlots = (start, end) => {
         const slots = [];
-        for (let i = 9; i <= 19; i++) {
-            const hour = i > 12 ? i - 12 : i;
+        for (let i = start; i <= end; i++) {
+            const hour = i > 12 ? i - 12 : (i === 0 ? 12 : i);
             const ampm = i >= 12 ? 'PM' : 'AM';
             slots.push(`${hour}:00 ${ampm}`);
         }
         return slots;
+    };
+
+    // I-9 remains flexible but respects general availability windows for convenience
+    if (isI9) {
+        if (day === 1 || day === 2) return generateSlots(18, 22); // 6pm-10pm
+        if (day >= 3 && day <= 5) return generateSlots(9, 17);    // 9am-5pm
+        if (day === 6) return generateSlots(9, 14);              // 9am-2pm
+        return [];
     }
-    // Standard
-    if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
-    else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
+
+    // Standard Notary Hours
+    if (day === 1 || day === 2) return generateSlots(18, 22); // Mon-Tue: 6pm-10pm
+    if (day >= 3 && day <= 5) return generateSlots(9, 17);    // Wed-Fri: 9am-5pm
+    if (day === 6) return generateSlots(9, 14);              // Sat: 9am-2pm
+    
+    return [];
   }, [formData.date, isI9]);
 
   // --- STRICT STEP VALIDATION ---
