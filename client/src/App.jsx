@@ -122,9 +122,9 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
         </div>
         <div className="flex items-center space-x-8">
-          {['Services', 'FAQ', 'Pricing'].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
-          ))}
+{['Services', 'FAQ', 'Hours', 'Pricing'].map((item) => (
+        <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
+      ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
           
           <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
@@ -158,9 +158,9 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="md:hidden fixed top-0 left-0 w-full h-screen bg-white z-40 flex flex-col items-center justify-center space-y-8">
-             {['Services', 'FAQ', 'Pricing'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
-            ))}
+{['Services', 'FAQ', 'Hours', 'Pricing'].map((item) => (
+          <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
+        ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
             {/* Removed duplicate button from menu since we have floating button */}
           </motion.div>
@@ -654,6 +654,40 @@ const Pricing = ({ onBookClick }) => (
   </section>
 );
 
+const BusinessHours = () => (
+  <section id="hours" className="py-24 bg-slate-50">
+    <div className="container mx-auto px-6 max-w-3xl text-center">
+      <h2 className="text-3xl font-serif font-bold text-brand-navy-dark mb-12">Business Hours</h2>
+      <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+          <div className="space-y-4">
+            <div className="flex justify-between border-b border-gray-100 pb-2">
+              <span className="font-bold text-brand-navy-dark">Mon & Tue</span>
+              <span className="text-gray-600">6:00 PM – 10:00 PM</span>
+            </div>
+            <div className="flex justify-between border-b border-gray-100 pb-2">
+              <span className="font-bold text-brand-navy-dark">Wed – Fri</span>
+              <span className="text-gray-600">9:00 AM – 5:00 PM</span>
+            </div>
+            <div className="flex justify-between border-b border-gray-100 pb-2">
+              <span className="font-bold text-brand-navy-dark">Saturday</span>
+              <span className="text-gray-600">9:00 AM – 2:00 PM</span>
+            </div>
+            <div className="flex justify-between border-b border-gray-100 pb-2">
+              <span className="font-bold text-brand-navy-dark">Sunday</span>
+              <span className="text-brand-teal font-bold">Emergency Only</span>
+            </div>
+          </div>
+          <div className="bg-brand-navy-dark/5 p-6 rounded-2xl flex flex-col justify-center">
+            <p className="text-sm text-brand-navy-dark font-bold mb-2 uppercase tracking-wider">Special Rates</p>
+            <p className="text-gray-600 text-sm leading-relaxed">Appointments requested outside of standard hours are available by appointment at a special rate. Contact us for a custom quote.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
 const Footer = ({ onViewChange }) => (
   <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
     <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
@@ -661,6 +695,7 @@ const Footer = ({ onViewChange }) => (
     <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
       <a href="#services" className="hover:text-brand-teal">Services</a>
       <a href="#faq" className="hover:text-brand-teal">FAQ</a>
+      <a href="#hours" className="hover:text-brand-teal">Hours</a>
       <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
     </div>
     <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
