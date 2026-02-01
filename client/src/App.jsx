@@ -64,7 +64,7 @@ const QRModal = ({ isOpen, onClose }) => {
             link.click();
             document.body.removeChild(link);
         } catch (err) {
-            alert("Could not download image. Please screenshot it instead.");
+            alert("Could not download image automatically. Please screenshot it instead.");
         }
     };
 
@@ -85,9 +85,9 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// Floating Mobile Action Button (Extra Rounded)
+// Floating Mobile Action Button
 const FloatingBookButton = ({ onClick }) => (
-  <div className="fixed bottom-6 left-4 right-4 z-[45] md:hidden">
+  <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
     <button 
       onClick={onClick}
       className="w-full bg-brand-teal text-white font-bold text-lg py-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
@@ -162,7 +162,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
               <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
-            {/* Removed duplicate book button from menu */}
+            {/* Removed duplicate button */}
           </motion.div>
         )}
       </AnimatePresence>
@@ -198,11 +198,11 @@ const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
   const faqs = [
-    { q: "Where does the notarization take place?", a: "We meet you at YOUR location (home, office, hospital) or a mutually agreed-upon public spot (like a library or coffee shop) in the Huntington, WV area." },
+    { q: "Why do I have to pay a travel fee upfront?", a: "Travel fees help us reserve your time and ensure we can reach you promptly, especially for first-time or long-distance appointments. Prepaying guarantees your slot and covers fuel/time for your appointment." },
+    { q: "I’m close by. Do I still pay a travel fee?", a: "Travel fees are usually waived for repeat clients or appointments within a 10-mile radius. We aim to keep it fair and convenient for our local community." },
+    { q: "Can I book a same-day or rush appointment?", a: "Yes! Travel fees are slightly higher for same-day or after-hours service, reflecting the premium for quick, reliable scheduling." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
-    { q: "How does pricing work?", a: "We charge a standard Travel Fee (starting at $40) to come to you. The state-regulated Notary Fee ($10 per stamp in WV) is separate and collected at the appointment. I-9 Verification is a flat $60 service fee plus travel." },
-    { q: "Do you offer legal advice?", a: "No. As notaries, we verify identity and witness signatures. We cannot explain legal documents or provide legal advice." },
-    { q: "What if I need to meet at a hospital?", a: "We specialize in hospital and care home visits. Please select 'My Location' when booking and provide the room number/ward details in the notes." }
+    { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
 
   return (
@@ -402,22 +402,23 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
           </div>
         ) : (
           <>
-            <div className="px-8 py-6 border-b flex justify-between items-center bg-white sticky top-0 z-10">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-white sticky top-0 z-10">
               <h2 className="text-xl font-bold font-serif text-brand-navy-dark">{step === 1 ? 'Service' : step === 2 ? 'Details' : 'Review & Terms'}</h2>
               <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20}/></button>
             </div>
-            <div className="p-8 overflow-y-auto">
+            <div className="p-6 overflow-y-auto">
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing', 'General Notary (Other)'].map(svc => (
+                    {/* NO COURIER */}
+                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                    <div className="space-y-1">
+                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
                         <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
                          {/* DATE READOUT FOR MOBILE CLARITY */}
@@ -518,7 +519,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-4">
                         <div>
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
-                            <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
+                            <p className="text-3xl font-bold text-brand-navy-dark">Travel Reservation Fee: ${price.travelTotal}</p>
                         </div>
                         {price.notaryFee > 0 && (
                             <div className="text-right">
@@ -537,7 +538,7 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
                                 ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. Travel/Service fees are paid now." 
-                                : "I understand that the $10 notary fee is charged per notarized signature and will be collected after the notarization is completed."}
+                                : "Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure and our availability is guaranteed."}
                         </span>
                     </label>
 
@@ -579,9 +580,8 @@ const Hero = ({ onBookClick }) => (
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
         <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Local, trusted notary & courier service serving Huntington WV, South Point OH, and nearby areas — appointments secured with prepaid travel fees for your convenience.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          {/* HIDDEN ON MOBILE */}
           <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
@@ -620,18 +620,28 @@ const Pricing = ({ onBookClick }) => (
       <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
       <div className="max-w-md mx-auto">
         <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col items-center group hover:shadow-2xl transition-all">
-          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Mobile Service (WV)</span>
-          <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Notary</h3>
+          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Most Popular</span>
+          <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Service</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
             {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
-          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book Appointment</button>
-          <div className="text-[10px] text-gray-400 mt-6 text-center italic border-t pt-4 w-full">
-            Travel fees are disclosed at booking. Notary fees are regulated by West Virginia law at $10 per notarized signature and are collected after the notarization is completed.
+          
+          <div className="bg-slate-50 p-4 rounded-xl mb-6 text-left border border-gray-200">
+             <h4 className="font-bold text-brand-navy-dark text-sm mb-2">Travel & Delivery Fees</h4>
+             <p className="text-xs text-gray-600 mb-2">To reserve your appointment and cover travel time, a small travel or delivery fee may be required at booking for:</p>
+             <ul className="list-disc list-inside text-xs text-gray-500 mb-2 pl-2">
+                 <li>First-time clients</li>
+                 <li>Longer distances (over 10 miles)</li>
+                 <li>Same-day or rush service</li>
+                 <li>After-hours appointments</li>
+             </ul>
+             <p className="text-xs text-brand-teal font-medium">Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure and our availability is guaranteed.</p>
           </div>
+
+          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book Appointment</button>
         </div>
       </div>
     </div>
@@ -647,7 +657,7 @@ const Footer = ({ onViewChange }) => (
       <a href="#faq" className="hover:text-brand-teal">FAQ</a>
       <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
     </div>
-    <p className="text-gray-400 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
+    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
     <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin Portal</button>
   </footer>
 );
@@ -723,7 +733,7 @@ function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
   const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false); // MANAGED HERE
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
 
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
