@@ -44,7 +44,7 @@ const recommendService = (query) => {
   if (q.includes('hour') || q.includes('time') || q.includes('when') || q.includes('open') || q.includes('sunday') || q.includes('saturday')) {
     return {
       service: "Information",
-      reasoning: "Our hours are: Mon-Tue (6pm-10pm), Wed-Fri (9am-5pm), Sat (9am-2pm). Sunday is for emergency appointments only. Appointments outside these hours are available at a special rate.",
+      reasoning: "Our hours are: Mon-Tue (6pm-10pm), Wed-Fri (9am-5pm), Sat (9am-2pm). Sundays and after-hours are reserved for emergency appointments only. Appointments outside standard hours are available at a special rate.",
       action: "read_faq"
     };
   }

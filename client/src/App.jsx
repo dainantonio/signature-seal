@@ -199,8 +199,8 @@ const FAQ = () => {
   
   const faqs = [
     { q: "Why do I have to pay a travel fee upfront?", a: "Travel fees help us reserve your time and ensure we can reach you promptly, especially for first-time or long-distance appointments. Prepaying guarantees your slot and covers fuel/time for your appointment." },
-    { q: "I’m close by. Do I still pay a travel fee?", a: "Travel fees are usually waived for repeat clients or appointments within a 10-mile radius. We aim to keep it fair and convenient for our local community." },
-    { q: "Can I book a same-day or rush appointment?", a: "Yes! Travel fees are slightly higher for same-day or after-hours service, reflecting the premium for quick, reliable scheduling." },
+    { q: "What are your business hours?", a: "Monday & Tuesday: 6pm – 10pm. Wednesday – Friday: 9am – 5pm. Saturday: 9am – 2pm. Sunday & After-Hours: Emergency appointments only. Appointments outside these hours are available at a special rate." },
+    { q: "Can I book a same-day or rush appointment?", a: "Yes! We accommodate same-day and emergency requests when possible. Appointments on Sundays or outside our standard hours are reserved for emergencies and are subject to a special rate." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
@@ -674,13 +674,13 @@ const BusinessHours = () => (
               <span className="text-gray-600">9:00 AM – 2:00 PM</span>
             </div>
             <div className="flex justify-between border-b border-gray-100 pb-2">
-              <span className="font-bold text-brand-navy-dark">Sunday</span>
+              <span className="font-bold text-brand-navy-dark">Sun & After-Hours</span>
               <span className="text-brand-teal font-bold">Emergency Only</span>
             </div>
           </div>
           <div className="bg-brand-navy-dark/5 p-6 rounded-2xl flex flex-col justify-center">
-            <p className="text-sm text-brand-navy-dark font-bold mb-2 uppercase tracking-wider">Special Rates</p>
-            <p className="text-gray-600 text-sm leading-relaxed">Appointments requested outside of standard hours are available by appointment at a special rate. Contact us for a custom quote.</p>
+            <p className="text-sm text-brand-navy-dark font-bold mb-2 uppercase tracking-wider">Emergency & Special Rates</p>
+            <p className="text-gray-600 text-sm leading-relaxed">Sundays and after-hours are reserved for emergency appointments. All appointments outside of standard hours are available at a special rate.</p>
           </div>
         </div>
       </div>
