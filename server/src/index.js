@@ -53,9 +53,13 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // Unified Travel Fee: $40.00 for all services
+  // Unified Travel Fee: $40.00 Base + $2.00/mile over 10 miles
   const baseAmount = 4000; 
   const productName = service.includes('I-9') ? "I-9 Travel Reservation Fee" : "Mobile Travel & Convenience Fee";
+
+  const miles = parseInt(mileage) || 0;
+  const extraMiles = Math.max(0, miles - 10);
+  const surchargeAmount = extraMiles * 200; // $2.00 per mile (cents)
 
   const line_items = [
     {
@@ -67,6 +71,17 @@ app.post('/api/create-checkout-session', async (req, res) => {
       quantity: 1,
     }
   ];
+
+  if (surchargeAmount > 0) {
+      line_items.push({
+        price_data: { 
+            currency: 'usd', 
+            product_data: { name: `Mileage Surcharge (${extraMiles} extra miles)` }, 
+            unit_amount: surchargeAmount,
+        },
+        quantity: 1,
+      });
+  }
 
   try {
     const session = await stripe.checkout.sessions.create({

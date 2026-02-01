@@ -199,8 +199,8 @@ const FAQ = () => {
   
   const faqs = [
     { q: "Why do I have to pay a travel fee upfront?", a: "Travel fees help us reserve your time and ensure we can reach you promptly, especially for first-time or long-distance appointments. Prepaying guarantees your slot and covers fuel/time for your appointment." },
-    { q: "I’m close by. Do I still pay a travel fee?", a: "Yes, a flat $40 travel fee applies to all mobile appointments to cover fuel, time, and the convenience of us coming to you." },
-    { q: "Can I book a same-day or rush appointment?", a: "Yes! We offer same-day and after-hours service at our standard flat rate, subject to availability." },
+    { q: "I’m close by. Do I still pay a travel fee?", a: "Travel fees are usually waived for repeat clients or appointments within a 10-mile radius. We aim to keep it fair and convenient for our local community." },
+    { q: "Can I book a same-day or rush appointment?", a: "Yes! Travel fees are slightly higher for same-day or after-hours service, reflecting the premium for quick, reliable scheduling." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
@@ -329,15 +329,18 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
     if (formData.service.includes('Loan')) base = 150; // Keep loan special case if needed
     
+    const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
+    const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
+    
     // Calculate Due Later based on service type
     const dueLater = isI9 ? 25 : (formData.signatures || 0) * 10;
     
     return { 
-        travelTotal: base, 
+        travelTotal: base + surcharge, 
         dueLater, 
-        grandTotal: base + dueLater 
+        grandTotal: base + surcharge + dueLater 
     };
-  }, [formData.service, formData.signatures, isI9]);
+  }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
@@ -468,16 +471,28 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <label className="text-xs font-bold text-gray-500 uppercase flex justify-between items-center">
-                            <span>Travel Fee</span>
+                            <span>Travel Distance</span>
+                            {formData.locationType === 'my_location' && (
+                                <a href={`https://www.google.com/maps/dir/25701/${encodeURIComponent(formData.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline flex items-center gap-1"><Navigation size={12}/> Check Map</a>
+                            )}
                         </label>
                         <div className="flex items-center gap-2 mt-2">
-                            <span className="text-lg font-bold text-brand-navy-dark">$40.00</span>
-                            <span className="text-sm text-gray-600">Flat Rate</span>
+                            <input 
+                                type="number" min="0" 
+                                className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
+                                value={formData.mileage} 
+                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
+                                onChange={(e) => setFormData({...formData, mileage: parseInt(e.target.value) || 0})} 
+                            />
+                            <span className="text-sm text-gray-600">miles from 25701</span>
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
-                            A consistent flat rate for all mobile appointments in our service area.
-                        </p>
-                    </div>v>
+                        {/* SURCHARGE DISCLAIMER */}
+                        {formData.locationType === 'my_location' && (
+                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
+                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
+                            </p>
+                        )}
+                    </div>
                     
                     {!isI9 && (
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
@@ -505,21 +520,21 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 3 && (
                 <div className="space-y-6">
                   <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-4">
-                        <div>
-                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
-                            <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
-                            <p className="text-xs text-gray-400">Travel Reservation Fee</p>
+                    <div className="flex justify-between items-start mb-4 border-b border-gray-200 pb-4">
+                        <div className="flex-1">
+                            <p className="text-[10px] md:text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
+                            <p className="text-2xl md:text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
+                            <p className="text-[10px] md:text-xs text-gray-400">Travel Reservation Fee</p>
                         </div>
                         {price.dueLater > 0 && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
-                                <p className="text-xl font-bold text-gray-600">${price.dueLater}</p>
-                                <p className="text-xs text-gray-400">{isI9 ? 'Verification Fee' : 'Notary Fee'}</p>
+                            <div className="flex-1 text-right">
+                                <p className="text-[10px] md:text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
+                                <p className="text-2xl md:text-3xl font-bold text-gray-600">${price.dueLater}</p>
+                                <p className="text-[10px] md:text-xs text-gray-400">{isI9 ? 'Verification Fee' : 'Notary Fee'}</p>
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Fee' : 'Mobile Travel Fee'} to your location.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Fee' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -615,7 +630,7 @@ const Pricing = ({ onBookClick }) => (
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Service</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
-            {['Travel included', 'Professional Service Fee', 'Evening & Weekends', 'Flat Rate: $40 Travel Fee'].map(item => (
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
               <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
             ))}
           </ul>
@@ -625,7 +640,7 @@ const Pricing = ({ onBookClick }) => (
              <p className="text-xs text-gray-600 mb-2">To reserve your appointment and cover travel time, a small travel or delivery fee may be required at booking for:</p>
              <ul className="list-disc list-inside text-xs text-gray-500 mb-2 pl-2">
                  <li>First-time clients</li>
-                 <li>Mobile appointments</li>
+                 <li>Longer distances (over 10 miles)</li>
                  <li>Same-day or rush service</li>
                  <li>After-hours appointments</li>
              </ul>
