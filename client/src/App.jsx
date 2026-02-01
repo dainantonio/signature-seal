@@ -770,6 +770,7 @@ function App() {
             <Hero onBookClick={() => handleBookingOpen()} />
             <Services />
             <FAQ />
+            <BusinessHours />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
             <AIChatWidget onRecommend={(service) => handleBookingOpen(service)} />
           </>

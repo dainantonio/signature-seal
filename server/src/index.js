@@ -31,19 +31,50 @@ app.use(express.json());
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('ohio') || q.includes(' oh ')) return { service: "Waiting List", reasoning: "WV only for now.", action: "read_faq" };
+  // Location check
+  if (q.includes('ohio') || q.includes(' oh ')) {
+    return { 
+      service: "Waiting List", 
+      reasoning: "We currently only serve West Virginia. We can add you to our waiting list for Ohio services.", 
+      action: "contact_us" 
+    };
+  }
+
+  // Hours check
+  if (q.includes('hour') || q.includes('time') || q.includes('when') || q.includes('open') || q.includes('sunday') || q.includes('saturday')) {
+    return {
+      service: "Information",
+      reasoning: "Our hours are: Mon-Tue (6pm-10pm), Wed-Fri (9am-5pm), Sat (9am-2pm). Sunday is for emergency appointments only. Appointments outside these hours are available at a special rate.",
+      action: "read_faq"
+    };
+  }
+
+  // Pricing check
+  if (q.includes('price') || q.includes('cost') || q.includes('fee') || q.includes('charge') || q.includes('travel')) {
+    return {
+      service: "Pricing",
+      reasoning: "Travel fee is $40 (covers first 10 miles), then $2/mile. Notary fees are $10 per stamp. I-9 verification has a $65 service fee.",
+      action: "book_general"
+    };
+  }
 
   // I-9 Logic
-  if (q.includes('i9') || q.includes('employment') || q.includes('authorized')) {
+  if (q.includes('i9') || q.includes('employment') || q.includes('authorized') || q.includes('remote')) {
     return {
       service: "I-9 Employment Verification",
-      reasoning: "We act as an Authorized Representative for remote hires.",
+      reasoning: "We act as an Authorized Representative for remote hires. The fee is $65 plus travel.",
       estimatedPrice: "$65 Service Fee + Travel",
       action: "book_general"
     };
   }
 
-  return { service: "Mobile Notary", reasoning: "Standard WV appointment.", estimatedPrice: "$40 Base + $10/stamp", action: "book_general" };
+  // Default Notary
+  return { 
+    service: "Mobile Notary", 
+    reasoning: "We provide mobile notary services across WV. Travel starts at $40, and notary stamps are $10 each.", 
+    estimatedPrice: "$40 Base + $10/stamp", 
+    action: "book_general" 
+  };
 };
 
 app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
