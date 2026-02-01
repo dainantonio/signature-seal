@@ -146,7 +146,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0 ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-sm'}`}>
             <Award className="w-8 h-8" />
           </div>
-          <div className="flex flex-col justify-center items-start">
+          <div className="flex flex-col justify-center items-center">
             <h1 className={`font-serif text-2xl font-bold leading-none tracking-tight ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
             <span className={`text-[10px] uppercase font-bold mt-1 tracking-[0.1em] ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
           </div>
