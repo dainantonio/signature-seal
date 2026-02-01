@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Truck, Grid
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -128,7 +128,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
           
           <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
-             <Grid size={24} />
+             <QrCode size={24} />
           </button>
 
           <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
@@ -139,7 +139,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
       <div className="md:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
         <div className="w-10">
             <button onClick={onQRClick} className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
-                <Grid size={24} />
+                <QrCode size={24} />
             </button>
         </div>
         <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
@@ -162,7 +162,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
               <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
-            {/* Removed duplicate button */}
+            {/* Removed duplicate button from menu since we have floating button */}
           </motion.div>
         )}
       </AnimatePresence>
@@ -322,19 +322,23 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const isI9 = formData.service.includes('I-9');
 
   const price = useMemo(() => {
-    let base = 40;
-    if (formData.service.includes('Loan')) base = 150;
-    if (isI9) base = 60; 
+    let base = 40; // UNIFIED RESERVATION FEE
+    
+    // I-9 = $40 Travel (Online) + $25 Service (Later)
+    // Notary = $40 Travel (Online) + $10/sig (Later)
+
+    if (formData.service.includes('Loan')) base = 150; // Keep loan special case if needed
     
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    const notaryFee = isI9 ? 0 : (formData.signatures || 0) * 10;
+    // Calculate Due Later based on service type
+    const dueLater = isI9 ? 25 : (formData.signatures || 0) * 10;
     
     return { 
         travelTotal: base + surcharge, 
-        notaryFee, 
-        grandTotal: base + surcharge + notaryFee 
+        dueLater, 
+        grandTotal: base + surcharge + dueLater 
     };
   }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9]);
 
@@ -519,16 +523,18 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                     <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-4">
                         <div>
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
-                            <p className="text-3xl font-bold text-brand-navy-dark">Travel Reservation Fee: ${price.travelTotal}</p>
+                            <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
+                            <p className="text-xs text-gray-400">Travel Reservation Fee</p>
                         </div>
-                        {price.notaryFee > 0 && (
+                        {price.dueLater > 0 && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
-                                <p className="text-xl font-bold text-gray-600">${price.notaryFee}</p>
+                                <p className="text-xl font-bold text-gray-600">${price.dueLater}</p>
+                                <p className="text-xs text-gray-400">{isI9 ? 'Verification Fee' : 'Notary Fee'}</p>
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Service Fee & ' : ''} Travel to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Fee' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
