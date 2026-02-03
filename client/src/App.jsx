@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Truck
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -85,14 +85,14 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// Floating Mobile Action Button
+// Floating Mobile Action Button (Extra Rounded)
 const FloatingBookButton = ({ onClick }) => (
-  <div className="fixed bottom-8 left-4 right-20 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
+  <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
     <button 
       onClick={onClick}
-      className="w-full bg-brand-teal text-white font-bold text-base py-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
+      className="w-full bg-brand-teal text-white font-bold text-lg py-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
     >
-      <Calendar size={20} /> Book Now
+      <Calendar size={24} /> Book Appointment
     </button>
   </div>
 );
@@ -118,13 +118,13 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Notary</span>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
           </div>
         </div>
         <div className="flex items-center space-x-8">
-{['Services', 'FAQ', 'Hours', 'Pricing'].map((item) => (
-        <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
-      ))}
+          {['Services', 'FAQ', 'Pricing'].map((item) => (
+            <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
+          ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
           
           <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
@@ -143,12 +143,12 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
             </button>
         </div>
         <div className="flex flex-row items-center gap-2 cursor-pointer justify-center" onClick={handleRefresh}>
-           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0 ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-sm'}`}>
+           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
             <Award className="w-8 h-8" />
           </div>
-          <div className="flex flex-col justify-center items-center">
-            <h1 className={`font-serif text-2xl font-bold leading-none tracking-tight ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[10px] uppercase font-bold mt-1 tracking-[0.1em] ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Notary</span>
+          <div className="flex flex-col justify-center items-start">
+            <h1 className={`font-serif text-2xl font-black leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
+            <span className={`text-[11px] uppercase font-bold mt-0.5 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
           </div>
         </div>
         <div className="justify-self-end">
@@ -158,9 +158,9 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="md:hidden fixed top-0 left-0 w-full h-screen bg-white z-40 flex flex-col items-center justify-center space-y-8">
-{['Services', 'FAQ', 'Hours', 'Pricing'].map((item) => (
-          <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
-        ))}
+             {['Services', 'FAQ', 'Pricing'].map((item) => (
+              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
+            ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
             {/* Removed duplicate button from menu since we have floating button */}
           </motion.div>
@@ -185,7 +185,7 @@ const BackToTop = () => {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+      className={`fixed bottom-24 left-4 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
       title="Back to Top"
     >
       <ArrowUp size={24} />
@@ -199,8 +199,8 @@ const FAQ = () => {
   
   const faqs = [
     { q: "Why do I have to pay a travel fee upfront?", a: "Travel fees help us reserve your time and ensure we can reach you promptly, especially for first-time or long-distance appointments. Prepaying guarantees your slot and covers fuel/time for your appointment." },
-    { q: "What are your business hours?", a: "Monday & Tuesday: 6pm – 10pm. Wednesday – Friday: 9am – 5pm. Saturday: 9am – 2pm. Sunday & After-Hours: Emergency appointments only. Appointments outside these hours are available at a special rate." },
-    { q: "Can I book a same-day or rush appointment?", a: "Yes! We accommodate same-day and emergency requests when possible. Appointments on Sundays or outside our standard hours are reserved for emergencies and are subject to a special rate." },
+    { q: "I’m close by. Do I still pay a travel fee?", a: "Travel fees are usually waived for repeat clients or appointments within a 10-mile radius. We aim to keep it fair and convenient for our local community." },
+    { q: "Can I book a same-day or rush appointment?", a: "Yes! Travel fees are slightly higher for same-day or after-hours service, reflecting the premium for quick, reliable scheduling." },
     { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
@@ -260,7 +260,7 @@ const AIChatWidget = ({ onRecommend }) => {
   };
 
   return (
-    <div className="fixed bottom-8 right-4 z-[46] flex flex-col items-end font-sans pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end font-sans">
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-2xl shadow-2xl mb-6 w-[90vw] md:w-96 border border-gray-100 overflow-hidden flex flex-col h-[500px]">
@@ -291,12 +291,12 @@ const AIChatWidget = ({ onRecommend }) => {
           </motion.div>
         )}
       </AnimatePresence>
-      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all border-2 border-white/20"><MessageSquare size={28} /></button>
+      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all"><MessageSquare size={28} /></button>
     </div>
   );
 };
 
-const BookingModal = ({ isOpen, onClose, initialService }) => {
+const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
@@ -308,7 +308,13 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
   const [payNow, setPayNow] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  useEffect(() => { if (initialService) setFormData(prev => ({ ...prev, service: initialService })); }, [initialService]);
+  useEffect(() => { 
+    if (initialService) setFormData(prev => ({ ...prev, service: initialService })); 
+    if (initialData) {
+        setFormData(initialData);
+        setStep(3);
+    }
+  }, [initialService, initialData]);
 
   const handleLocationTypeChange = (type) => {
     setFormData(prev => ({ 
@@ -323,16 +329,12 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
 
   const price = useMemo(() => {
     let base = 40; // UNIFIED RESERVATION FEE
-    
-    // I-9 = $40 Travel (Online) + $25 Service (Later)
-    // Notary = $40 Travel (Online) + $10/sig (Later)
-
-    if (formData.service.includes('Loan')) base = 150; // Keep loan special case if needed
+    if (formData.service.includes('Loan')) base = 150;
     
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
     
-    // Calculate Due Later based on service type
+    // Calculate Due Later
     const dueLater = isI9 ? 25 : (formData.signatures || 0) * 10;
     
     return { 
@@ -346,35 +348,20 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     if (!formData.date) return [];
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
-    
-    // Sunday: Emergency Only (No standard slots)
     if (day === 0) return []; 
-
-    // Helper to generate slots
-    const generateSlots = (start, end) => {
+    // Flexible Hours for I-9
+    if (isI9) {
         const slots = [];
-        for (let i = start; i <= end; i++) {
-            const hour = i > 12 ? i - 12 : (i === 0 ? 12 : i);
+        for (let i = 9; i <= 19; i++) {
+            const hour = i > 12 ? i - 12 : i;
             const ampm = i >= 12 ? 'PM' : 'AM';
             slots.push(`${hour}:00 ${ampm}`);
         }
         return slots;
-    };
-
-    // I-9 remains flexible but respects general availability windows for convenience
-    if (isI9) {
-        if (day === 1 || day === 2) return generateSlots(18, 22); // 6pm-10pm
-        if (day >= 3 && day <= 5) return generateSlots(9, 17);    // 9am-5pm
-        if (day === 6) return generateSlots(9, 14);              // 9am-2pm
-        return [];
     }
-
-    // Standard Notary Hours
-    if (day === 1 || day === 2) return generateSlots(18, 22); // Mon-Tue: 6pm-10pm
-    if (day >= 3 && day <= 5) return generateSlots(9, 17);    // Wed-Fri: 9am-5pm
-    if (day === 6) return generateSlots(9, 14);              // Sat: 9am-2pm
-    
-    return [];
+    // Standard
+    if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+    else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
   // --- STRICT STEP VALIDATION ---
@@ -398,13 +385,25 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
     if (!isStepValid()) return; 
     setIsSubmitting(true);
     const payload = { ...formData };
+    
+    try {
+        localStorage.setItem('pendingBooking', JSON.stringify(payload));
+    } catch (e) { console.warn("Storage failed", e); }
+    
+    try {
+        await safeFetch(`${API_URL}/api/bookings`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload) 
+        });
+    } catch(e) { console.log("Lead capture failed, proceeding to payment anyway"); }
+
     const endpoint = `${API_URL}/api/create-checkout-session`;
     try {
       const res = await safeFetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (res.ok) {
-        if (data.url) window.location.href = data.url;
-        else setSuccess(true);
+      if (res.ok && data.url) {
+        window.location.href = data.url;
       } else { alert(data.error || "Submission failed."); }
     } catch (err) { alert(err.message); } finally { setIsSubmitting(false); }
   };
@@ -484,8 +483,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <label className="text-xs font-bold text-gray-500 uppercase flex justify-between items-center">
+                    <div className={`bg-gray-50 p-4 rounded-xl border border-gray-100 ${formData.locationType === 'public' ? 'opacity-50' : ''}`}>
+                        <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
                             <span>Travel Distance</span>
                             {formData.locationType === 'my_location' && (
                                 <a href={`https://www.google.com/maps/dir/25701/${encodeURIComponent(formData.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline flex items-center gap-1"><Navigation size={12}/> Check Map</a>
@@ -535,21 +534,21 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
               {step === 3 && (
                 <div className="space-y-6">
                   <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex justify-between items-start mb-4 border-b border-gray-200 pb-4">
-                        <div className="flex-1">
-                            <p className="text-[10px] md:text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
-                            <p className="text-2xl md:text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
-                            <p className="text-[10px] md:text-xs text-gray-400">Travel Reservation Fee</p>
+                    <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-4">
+                        <div>
+                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
+                            <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
+                            <p className="text-xs text-gray-400">Travel Reservation Fee</p>
                         </div>
                         {price.dueLater > 0 && (
-                            <div className="flex-1 text-right">
-                                <p className="text-[10px] md:text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
-                                <p className="text-2xl md:text-3xl font-bold text-gray-600">${price.dueLater}</p>
-                                <p className="text-[10px] md:text-xs text-gray-400">{isI9 ? 'Verification Fee' : 'Notary Fee'}</p>
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
+                                <p className="text-xl font-bold text-gray-600">${price.dueLater}</p>
+                                <p className="text-xs text-gray-400">{isI9 ? 'Verification Fee' : 'Notary Fee'}</p>
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Fee' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Reservation' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -558,8 +557,8 @@ const BookingModal = ({ isOpen, onClose, initialService }) => {
                         <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
-                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. Travel/Service fees are paid now." 
-                                : "Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure and our availability is guaranteed."}
+                                ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. A separate $25 service fee is due at the appointment." 
+                                : "Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure."}
                         </span>
                     </label>
 
@@ -603,7 +602,8 @@ const Hero = ({ onBookClick }) => (
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
         <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Local, trusted notary & courier service serving Huntington WV, South Point OH, and nearby areas — appointments secured with prepaid travel fees for your convenience.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book Appointment</button>
+          {/* HIDDEN ON MOBILE (md:block) */}
+          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV Appointment</button>
           <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
         </div>
       </motion.div>
@@ -641,7 +641,7 @@ const Pricing = ({ onBookClick }) => (
       <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia local service.</p></div>
       <div className="max-w-md mx-auto">
         <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col items-center group hover:shadow-2xl transition-all">
-          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Most Popular</span>
+          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Mobile Service (WV)</span>
           <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Service</h3>
           <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
           <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
@@ -669,40 +669,6 @@ const Pricing = ({ onBookClick }) => (
   </section>
 );
 
-const BusinessHours = () => (
-  <section id="hours" className="py-24 bg-slate-50">
-    <div className="container mx-auto px-6 max-w-3xl text-center">
-      <h2 className="text-3xl font-serif font-bold text-brand-navy-dark mb-12">Business Hours</h2>
-      <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 border border-gray-100">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-          <div className="space-y-4">
-            <div className="flex justify-between border-b border-gray-100 pb-2">
-              <span className="font-bold text-brand-navy-dark">Mon & Tue</span>
-              <span className="text-gray-600">6:00 PM – 10:00 PM</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-100 pb-2">
-              <span className="font-bold text-brand-navy-dark">Wed – Fri</span>
-              <span className="text-gray-600">9:00 AM – 5:00 PM</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-100 pb-2">
-              <span className="font-bold text-brand-navy-dark">Saturday</span>
-              <span className="text-gray-600">9:00 AM – 2:00 PM</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-100 pb-2">
-              <span className="font-bold text-brand-navy-dark">Sun & After-Hours</span>
-              <span className="text-brand-teal font-bold">Emergency Only</span>
-            </div>
-          </div>
-          <div className="bg-brand-navy-dark/5 p-6 rounded-2xl flex flex-col justify-center">
-            <p className="text-sm text-brand-navy-dark font-bold mb-2 uppercase tracking-wider">Emergency & Special Rates</p>
-            <p className="text-gray-600 text-sm leading-relaxed">Sundays and after-hours are reserved for emergency appointments. All appointments outside of standard hours are available at a special rate.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
 const Footer = ({ onViewChange }) => (
   <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
     <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
@@ -710,7 +676,6 @@ const Footer = ({ onViewChange }) => (
     <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
       <a href="#services" className="hover:text-brand-teal">Services</a>
       <a href="#faq" className="hover:text-brand-teal">FAQ</a>
-      <a href="#hours" className="hover:text-brand-teal">Hours</a>
       <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
     </div>
     <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
@@ -788,23 +753,33 @@ function App() {
   const [view, setView] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
-  const [adminToken, setAdminToken] = useState(localStorage.getItem('adminToken'));
+  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken')); // Lazy init
   const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
+  const [restoredData, setRestoredData] = useState(null);
 
   const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
 
+  // BACK BUTTON LOGIC: Check for ?canceled=true
   useEffect(() => {
-    if (window.location.search.includes('success=true')) { 
-      alert("Payment Successful! Your appointment is confirmed."); 
-      window.history.replaceState({}, document.title, "/"); 
-    }
-    if (window.location.search.includes('canceled=true')) {
-      setIsBookingOpen(true);
-      window.history.replaceState({}, document.title, "/");
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('canceled')) {
+        try {
+            const saved = localStorage.getItem('pendingBooking');
+            if (saved) {
+                setRestoredData(JSON.parse(saved));
+                setIsBookingOpen(true); 
+                window.history.replaceState({}, document.title, "/");
+            }
+        } catch(e) { console.warn("Storage parse error", e); }
     }
   }, []);
+
+  // NEW: Scroll to top when view changes (Fixes Admin Login scroll issue)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
 
   return (
     <div className="font-sans min-h-screen bg-white">
@@ -820,18 +795,18 @@ function App() {
             <Hero onBookClick={() => handleBookingOpen()} />
             <Services />
             <FAQ />
-            <BusinessHours />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
             <AIChatWidget onRecommend={(service) => handleBookingOpen(service)} />
           </>
         ) : (!adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />)}
       </main>
       <Footer onViewChange={setView} />
-      <BookingModal isOpen={isBookingOpen} onClose={() => setIsBookingOpen(false)} initialService={preSelectedService} />
+      {/* Pass restoredData to BookingModal */}
+      <BookingModal isOpen={isBookingOpen} onClose={() => { setIsBookingOpen(false); setRestoredData(null); }} initialService={preSelectedService} initialData={restoredData} />
       {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
       {/* Floating Button: Hide if Admin or Booking Open */}
-      {!adminToken && !isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
+      {!isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
     </div>
   );
 }
