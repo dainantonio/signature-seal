@@ -123,7 +123,19 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
         </div>
         <div className="flex items-center space-x-8">
           {['Services', 'FAQ', 'Pricing'].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
+            <button 
+              key={item} 
+              onClick={() => {
+                onViewChange('home');
+                // Allow a tiny delay for view to switch before scrolling
+                setTimeout(() => {
+                  document.getElementById(item.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }} 
+              className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}
+            >
+              {item}
+            </button>
           ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
           
@@ -142,13 +154,13 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
                 <QrCode size={24} />
             </button>
         </div>
-        <div className="flex flex-row items-center gap-2 cursor-pointer justify-center" onClick={handleRefresh}>
-           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
-            <Award className="w-8 h-8" />
+        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
+           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
+            <Award className="w-6 h-6" />
           </div>
-          <div className="flex flex-col justify-center items-start">
-            <h1 className={`font-serif text-2xl font-black leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[11px] uppercase font-bold mt-0.5 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
+          <div className="flex flex-col justify-center items-center">
+            <h1 className={`font-serif text-xl font-bold leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
+            <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Notary</span>
           </div>
         </div>
         <div className="justify-self-end">
@@ -159,7 +171,19 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
         {isOpen && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="md:hidden fixed top-0 left-0 w-full h-screen bg-white z-40 flex flex-col items-center justify-center space-y-8">
              {['Services', 'FAQ', 'Pricing'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
+              <button 
+                key={item} 
+                onClick={() => {
+                  setIsOpen(false);
+                  onViewChange('home');
+                  setTimeout(() => {
+                    document.getElementById(item.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }} 
+                className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal"
+              >
+                {item}
+              </button>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
             {/* Removed duplicate button from menu since we have floating button */}
@@ -185,7 +209,7 @@ const BackToTop = () => {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed bottom-24 left-4 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+      className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
       title="Back to Top"
     >
       <ArrowUp size={24} />
@@ -260,7 +284,7 @@ const AIChatWidget = ({ onRecommend }) => {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end font-sans">
+    <div className="fixed bottom-24 right-8 z-40 flex flex-col items-end font-sans">
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-2xl shadow-2xl mb-6 w-[90vw] md:w-96 border border-gray-100 overflow-hidden flex flex-col h-[500px]">
@@ -674,12 +698,20 @@ const Footer = ({ onViewChange }) => (
     <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
     <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Notary</h2>
     <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
-      <a href="#services" className="hover:text-brand-teal">Services</a>
-      <a href="#faq" className="hover:text-brand-teal">FAQ</a>
-      <a href="#pricing" className="hover:text-brand-teal">Pricing</a>
+      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('services')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Services</button>
+      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('faq')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">FAQ</button>
+      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('pricing')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Pricing</button>
     </div>
     <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
-    <button onClick={() => onViewChange('admin')} className="mt-10 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"><Lock size={12}/> Admin Portal</button>
+    <button 
+        onClick={() => { 
+            window.scrollTo({ top: 0, behavior: 'instant' }); 
+            onViewChange('admin'); 
+        }} 
+        className="mt-10 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"
+    >
+        <Lock size={12}/> Admin Portal
+    </button>
   </footer>
 );
 
@@ -753,7 +785,7 @@ function App() {
   const [view, setView] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
-  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken')); // Lazy init
+  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken')); 
   const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
   const [restoredData, setRestoredData] = useState(null);
 
@@ -778,7 +810,7 @@ function App() {
 
   // NEW: Scroll to top when view changes (Fixes Admin Login scroll issue)
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [view]);
 
   return (
