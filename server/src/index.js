@@ -57,9 +57,15 @@ const recommendService = (query) => {
 };
 
 // --- HELPER: GOOGLE CALENDAR LINK ---
+// Automatically generates a link to add the job to your schedule
 const generateCalendarLink = (name, service, date, time, address, notes) => {
-    const start = new Date(date).toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0,8);
-    const details = `Service: ${service}\nClient: ${name}\nNotes: ${notes}`;
+    // Convert date to YYYYMMDD format for Google
+    const dateObj = new Date(date);
+    const start = dateObj.toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0,8);
+    // Create a 1-hour slot (approximation)
+    const details = `Service: ${service}\nClient: ${name}\nNotes: ${notes || 'None'}`;
+    
+    // Construct the Google Calendar URL
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Job:+${encodeURIComponent(name)}&dates=${start}/${start}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(address)}`;
 };
 
@@ -143,6 +149,7 @@ app.post('/api/bookings', async (req, res) => {
         // SMART EMAIL LOGIC
         if (resend) {
             const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            // Subject designed for easy scanning: "📅 BOOKING: Oct 14 @ 2:00 PM - John Doe"
             const subjectLine = `📅 BOOKING: ${dateStr} @ ${time} - ${name}`;
             const calLink = generateCalendarLink(name, service, date, time, address, notes);
 
@@ -152,21 +159,21 @@ app.post('/api/bookings', async (req, res) => {
                 reply_to: email, 
                 subject: subjectLine, 
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #2c3e50;">New Appointment Request</h2>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
-                            <p><strong>Client:</strong> ${name}</p>
-                            <p><strong>Service:</strong> ${service}</p>
-                            <p><strong>When:</strong> ${dateStr} at ${time}</p>
-                            <p><strong>Where:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(address)}">${address}</a></p>
-                            <p><strong>Distance:</strong> ${mileage || 0} miles</p>
-                            <p><strong>Notes:</strong> ${notes || 'None'}</p>
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                        <h2 style="color: #2c3e50; border-bottom: 2px solid #0d9488; padding-bottom: 10px;">New Appointment Request</h2>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">
+                            <p style="margin: 5px 0;"><strong>👤 Client:</strong> ${name}</p>
+                            <p style="margin: 5px 0;"><strong>📝 Service:</strong> ${service}</p>
+                            <p style="margin: 5px 0;"><strong>⏰ When:</strong> ${dateStr} at ${time}</p>
+                            <p style="margin: 5px 0;"><strong>📍 Where:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(address)}">${address}</a></p>
+                            <p style="margin: 5px 0;"><strong>🚗 Distance:</strong> ${mileage || 0} miles</p>
+                            <p style="margin: 5px 0;"><strong>💬 Notes:</strong> ${notes || 'None'}</p>
                         </div>
                         <br/>
-                        <div style="text-align: center;">
-                            <a href="${calLink}" style="background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📅 Add to Google Calendar</a>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <a href="${calLink}" style="background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">📅 Add to Google Calendar</a>
                             <br/><br/>
-                            <a href="mailto:${email}" style="color: #64748b; text-decoration: none;">Reply to Client</a>
+                            <a href="mailto:${email}" style="color: #64748b; text-decoration: none; font-size: 14px;">Reply to Client directly</a>
                         </div>
                         <p style="font-size: 10px; color: #999; text-align: center; margin-top: 30px;">Sent via Signature Seal Mobile Notary System</p>
                     </div>
