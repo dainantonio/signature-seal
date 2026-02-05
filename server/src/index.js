@@ -15,82 +15,75 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
 
+// --- INITIALIZE STRIPE ---
 let stripe = null;
-if (process.env.STRIPE_SECRET_KEY) {
-  try { stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim()); } catch(e) {}
-}
+const initStripe = () => {
+    if (!stripe && process.env.STRIPE_SECRET_KEY) {
+        try {
+            stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim());
+            console.log("✅ STRIPE: Initialized successfully.");
+        } catch (e) {
+            console.error("❌ STRIPE: Failed to initialize:", e.message);
+        }
+    }
+    return stripe;
+};
+initStripe();
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
+const SENDER_EMAIL = process.env.SENDER_EMAIL || 'bookings@signaturesealnotaries.com';
 
 app.use(cors({ origin: '*' })); 
 app.options('*', cors());
 app.use(express.json());
 
-// --- AI LOGIC (WV ONLY) ---
+// --- AI LOGIC ---
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  // Location check
-  if (q.includes('ohio') || q.includes(' oh ')) {
-    return { 
-      service: "Waiting List", 
-      reasoning: "We currently only serve West Virginia. We can add you to our waiting list for Ohio services.", 
-      action: "contact_us" 
-    };
-  }
+  if (q.includes('ohio') || q.includes(' oh ')) return { service: "Waiting List", reasoning: "WV only for now.", action: "read_faq" };
 
-  // Hours check
-  if (q.includes('hour') || q.includes('time') || q.includes('when') || q.includes('open') || q.includes('sunday') || q.includes('saturday')) {
-    return {
-      service: "Information",
-      reasoning: "Our hours are: Mon-Tue (6pm-10pm), Wed-Fri (9am-5pm), Sat (9am-2pm). Sundays and after-hours are reserved for emergency appointments only. Appointments outside standard hours are available at a special rate.",
-      action: "read_faq"
-    };
-  }
-
-  // Pricing check
-  if (q.includes('price') || q.includes('cost') || q.includes('fee') || q.includes('charge') || q.includes('travel')) {
-    return {
-      service: "Pricing",
-      reasoning: "Travel fee is $40 (covers first 10 miles), then $2/mile. Notary fees are $10 per stamp. I-9 verification has a $65 service fee.",
-      action: "book_general"
-    };
-  }
-
-  // I-9 Logic
-  if (q.includes('i9') || q.includes('employment') || q.includes('authorized') || q.includes('remote')) {
+  if (q.includes('i9') || q.includes('employment') || q.includes('authorized')) {
     return {
       service: "I-9 Employment Verification",
-      reasoning: "We act as an Authorized Representative for remote hires. The fee is $65 plus travel.",
-      estimatedPrice: "$65 Service Fee + Travel",
+      reasoning: "We act as an Authorized Representative for remote hires.",
+      estimatedPrice: "$40 Travel Reservation + $25 Service",
       action: "book_general"
     };
   }
 
-  // Default Notary
-  return { 
-    service: "Mobile Notary", 
-    reasoning: "We provide mobile notary services across WV. Travel starts at $40, and notary stamps are $10 each.", 
-    estimatedPrice: "$40 Base + $10/stamp", 
-    action: "book_general" 
-  };
+  return { service: "Mobile Notary", reasoning: "Standard WV appointment.", estimatedPrice: "$40 Reservation + $10/stamp", action: "book_general" };
+};
+
+// --- HELPER: GOOGLE CALENDAR LINK ---
+const generateCalendarLink = (name, service, date, time, address, notes) => {
+    const start = new Date(date).toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0,8);
+    const details = `Service: ${service}\nClient: ${name}\nNotes: ${notes}`;
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Job:+${encodeURIComponent(name)}&dates=${start}/${start}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(address)}`;
 };
 
 app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
 
 app.post('/api/create-checkout-session', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: "Stripe not ready" });
+  const stripeInstance = initStripe();
+  if (!stripeInstance) return res.status(500).json({ error: "Stripe not ready." });
 
   const { name, email, service, date, time, mileage } = req.body;
   
-  // Unified Travel Fee: $40.00 Base + $2.00/mile over 10 miles
-  const baseAmount = 4000; 
-  const productName = service.includes('I-9') ? "I-9 Travel Reservation Fee" : "Mobile Travel & Convenience Fee";
+  // Dynamic Pricing Logic 
+  let baseAmount = 4000; // $40.00 Base
+  let productName = "Travel Reservation Fee";
 
+  // I-9 = $60 Flat ($40 Online)
+  if (service.includes('I-9')) {
+      baseAmount = 4000; 
+      productName = "I-9 Travel Reservation Fee";
+  }
+  
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
-  const surchargeAmount = extraMiles * 200; // $2.00 per mile (cents)
+  const surchargeAmount = extraMiles * 200; 
 
   const line_items = [
     {
@@ -115,7 +108,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 
   try {
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
@@ -125,7 +118,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
         invoice_data: {
           description: "Notary services are not subject to sales tax.",
           footer: service.includes('I-9') 
-            ? "I-9 Employment Verification Service Fee is collected separately at appointment." 
+            ? "I-9 Service Fee ($25) is collected separately at appointment." 
             : "State notary fees ($10/stamp) are collected separately at appointment."
         }
       },
@@ -142,10 +135,49 @@ app.post('/api/create-checkout-session', async (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
     try {
+        const { name, email, service, date, time, address, notes, mileage } = req.body;
+        
+        // Save to DB
         const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
-        if (resend) await resend.emails.send({ from: 'onboarding@resend.dev', to: ADMIN_EMAIL, reply_to: req.body.email, subject: 'New Booking', html: `<p>New booking: ${req.body.name}</p>` });
+        
+        // SMART EMAIL LOGIC
+        if (resend) {
+            const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const subjectLine = `📅 BOOKING: ${dateStr} @ ${time} - ${name}`;
+            const calLink = generateCalendarLink(name, service, date, time, address, notes);
+
+            await resend.emails.send({ 
+                from: SENDER_EMAIL, 
+                to: ADMIN_EMAIL, 
+                reply_to: email, 
+                subject: subjectLine, 
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #2c3e50;">New Appointment Request</h2>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
+                            <p><strong>Client:</strong> ${name}</p>
+                            <p><strong>Service:</strong> ${service}</p>
+                            <p><strong>When:</strong> ${dateStr} at ${time}</p>
+                            <p><strong>Where:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(address)}">${address}</a></p>
+                            <p><strong>Distance:</strong> ${mileage || 0} miles</p>
+                            <p><strong>Notes:</strong> ${notes || 'None'}</p>
+                        </div>
+                        <br/>
+                        <div style="text-align: center;">
+                            <a href="${calLink}" style="background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📅 Add to Google Calendar</a>
+                            <br/><br/>
+                            <a href="mailto:${email}" style="color: #64748b; text-decoration: none;">Reply to Client</a>
+                        </div>
+                        <p style="font-size: 10px; color: #999; text-align: center; margin-top: 30px;">Sent via Signature Seal Mobile Notary System</p>
+                    </div>
+                ` 
+            });
+        }
         res.json(booking);
-    } catch (err) { res.status(500).json({ error: "Booking failed" }); }
+    } catch (err) { 
+        console.error(err);
+        res.status(500).json({ error: "Booking failed" }); 
+    }
 });
 
 app.get('/api/bookings', async (req, res) => {
@@ -175,8 +207,8 @@ app.post('/api/create-invoice', async (req, res) => {
     let desc = 'West Virginia Notary Fee';
     let count = parseInt(signatures) || 1;
 
-    if (type === 'custom') { // I-9 or Custom
-         amount = 2500; // $25 Service Fee for I-9
+    if (type === 'custom') { 
+         amount = 2500; 
          desc = 'Professional Service Fee (I-9 / Other)';
          count = 1;
     }
@@ -189,13 +221,12 @@ app.post('/api/create-invoice', async (req, res) => {
       }],
       mode: 'payment',
       success_url: `${CLIENT_URL}?paid=true`,
-      cancel_url: `${CLIENT_URL}?canceled=true`,
+      cancel_url: `${CLIENT_URL}`,
       customer_email: booking.email,
     });
-    // Send invoice link via email
-    if (resend) await resend.emails.send({ from: 'onboarding@resend.dev', to: booking.email, reply_to: ADMIN_EMAIL, subject: 'Invoice: Service Fees', html: `<p>Please pay your service fees here: <a href="${session.url}">Pay Now</a></p>` });
+    if (resend) await resend.emails.send({ from: SENDER_EMAIL, to: booking.email, reply_to: ADMIN_EMAIL, subject: 'Invoice: Service Fees', html: `<p>Please pay your service fees here: <a href="${session.url}">Pay Now</a></p><p>Signature Seal Mobile Notary</p>` });
     res.json({ message: "Invoice sent!" });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV Scope)`));
