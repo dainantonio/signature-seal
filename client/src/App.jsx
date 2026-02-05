@@ -75,7 +75,7 @@ const QRModal = ({ isOpen, onClose }) => {
                 <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
                 <p className="text-gray-500 text-sm mb-6">Share this code with clients for instant access.</p>
                 <div className="bg-white border-4 border-brand-gold/20 rounded-2xl p-4 inline-block mb-6 shadow-inner">
-                    <img src={qrUrl} alt="Signature Seal QR Code" className="w-48 h-48" />
+                    <img src={qrUrl} alt="Signature Seal Mobile Notary QR Code" className="w-48 h-48" />
                 </div>
                 <button onClick={downloadQR} className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold hover:bg-brand-teal transition-all">
                     <Download size={18} /> Download Image
@@ -85,7 +85,7 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// Floating Mobile Action Button (Extra Rounded)
+// Floating Mobile Action Button
 const FloatingBookButton = ({ onClick }) => (
   <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
     <button 
@@ -118,24 +118,12 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Mobile Notary</span>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Notary</span>
           </div>
         </div>
         <div className="flex items-center space-x-8">
           {['Services', 'FAQ', 'Pricing'].map((item) => (
-            <button 
-              key={item} 
-              onClick={() => {
-                onViewChange('home');
-                // Allow a tiny delay for view to switch before scrolling
-                setTimeout(() => {
-                  document.getElementById(item.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }} 
-              className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}
-            >
-              {item}
-            </button>
+            <a key={item} href={`#${item.toLowerCase()}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
           ))}
           <a href={`mailto:${CONTACT_EMAIL}`} className={`font-medium text-base transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>Contact</a>
           
@@ -154,13 +142,13 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
                 <QrCode size={24} />
             </button>
         </div>
-        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
-           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
-            <Award className="w-6 h-6" />
+        <div className="flex flex-row items-center gap-2 cursor-pointer justify-center" onClick={handleRefresh}>
+           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
+            <Award className="w-8 h-8" />
           </div>
-          <div className="flex flex-col justify-center items-center">
-            <h1 className={`font-serif text-xl font-bold leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[10px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV Notary</span>
+          <div className="flex flex-col justify-center items-start">
+            <h1 className={`font-serif text-2xl font-black leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
+            <span className={`text-[11px] uppercase font-bold mt-0.5 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Mobile Notary</span>
           </div>
         </div>
         <div className="justify-self-end">
@@ -171,22 +159,9 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
         {isOpen && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="md:hidden fixed top-0 left-0 w-full h-screen bg-white z-40 flex flex-col items-center justify-center space-y-8">
              {['Services', 'FAQ', 'Pricing'].map((item) => (
-              <button 
-                key={item} 
-                onClick={() => {
-                  setIsOpen(false);
-                  onViewChange('home');
-                  setTimeout(() => {
-                    document.getElementById(item.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
-                }} 
-                className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal"
-              >
-                {item}
-              </button>
+              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">{item}</a>
             ))}
              <a href={`mailto:${CONTACT_EMAIL}`} className="text-3xl font-serif font-bold text-brand-navy-dark hover:text-brand-teal">Contact Us</a>
-            {/* Removed duplicate button from menu since we have floating button */}
           </motion.div>
         )}
       </AnimatePresence>
@@ -474,7 +449,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         </select>
                     </div>
                   </div>
-                  {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
@@ -696,16 +670,16 @@ const Pricing = ({ onBookClick }) => (
 const Footer = ({ onViewChange }) => (
   <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
     <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
-    <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Notary</h2>
+    <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Mobile Notary</h2>
     <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
       <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('services')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Services</button>
       <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('faq')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">FAQ</button>
       <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('pricing')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Pricing</button>
     </div>
-    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
+    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Mobile Notary. Licensed in West Virginia.</p>
     <button 
         onClick={() => { 
-            window.scrollTo({ top: 0, behavior: 'instant' }); 
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); 
             onViewChange('admin'); 
         }} 
         className="mt-10 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"
@@ -726,6 +700,12 @@ const LoginScreen = ({ onLogin }) => {
       if (res.ok) onLogin(data.token); else alert("Incorrect.");
     } catch (err) { alert("Offline."); }
   };
+  
+  // Force scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return <div className="min-h-screen bg-brand-navy-dark flex items-center justify-center"><form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl"><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="p-4 border rounded-xl" placeholder="Admin Password"/><button className="w-full bg-brand-navy-dark text-white mt-4 p-4 rounded-xl font-bold">Login</button></form></div>;
 };
 
@@ -785,7 +765,9 @@ function App() {
   const [view, setView] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState(null);
-  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken')); 
+  const [adminToken, setAdminToken] = useState(() => {
+    try { return localStorage.getItem('adminToken'); } catch (e) { return null; }
+  });
   const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
   const [restoredData, setRestoredData] = useState(null);
 
@@ -810,7 +792,11 @@ function App() {
 
   // NEW: Scroll to top when view changes (Fixes Admin Login scroll issue)
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    // Timeout ensures React finishes rendering the new view before scrolling
+    const timer = setTimeout(() => {
+        window.scrollTo(0, 0);
+    }, 10);
+    return () => clearTimeout(timer);
   }, [view]);
 
   return (
@@ -838,7 +824,7 @@ function App() {
       {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
       {/* Floating Button: Hide if Admin or Booking Open */}
-      {!isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
+      {!adminToken && !isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
     </div>
   );
 }
