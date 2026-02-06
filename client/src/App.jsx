@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, ArrowUp, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
   ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,59 +47,6 @@ const staggerContainer = {
 // SUB-COMPONENTS (Defined BEFORE App)
 // ==========================================
 
-const Credentials = () => (
-  <section className="py-16 bg-white border-b border-gray-100">
-    <div className="container mx-auto px-6">
-      <div className="flex flex-col md:flex-row items-center gap-12">
-        
-        {/* Text Content */}
-        <div className="flex-1 text-center md:text-left">
-          <div className="inline-block p-3 bg-teal-50 rounded-full mb-4">
-            <Award className="text-brand-teal w-8 h-8" />
-          </div>
-          <h2 className="text-3xl font-serif font-bold text-brand-navy-dark mb-4">State Commissioned & Verified</h2>
-          <p className="text-gray-500 mb-6 leading-relaxed">
-            We adhere to the strict standards of the West Virginia Secretary of State. 
-            Our agents are fully exam-certified, background checked, and insured for your peace of mind.
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-             <div className="px-4 py-2 bg-gray-50 rounded-lg text-xs font-bold text-gray-600 flex items-center gap-2">
-                <Check size={14} className="text-green-500"/> WV Commissioned
-             </div>
-             <div className="px-4 py-2 bg-gray-50 rounded-lg text-xs font-bold text-gray-600 flex items-center gap-2">
-                <Check size={14} className="text-green-500"/> Exam Passed
-             </div>
-             <div className="px-4 py-2 bg-gray-50 rounded-lg text-xs font-bold text-gray-600 flex items-center gap-2">
-                <Check size={14} className="text-green-500"/> E&O Insured
-             </div>
-          </div>
-        </div>
-
-        {/* Certificate Image Frame */}
-        <div className="flex-1 w-full max-w-md">
-            <div className="relative group cursor-pointer">
-                <div className="absolute inset-0 bg-brand-teal/10 rounded-xl transform rotate-3 group-hover:rotate-2 transition-all duration-300"></div>
-                <div className="relative bg-white p-2 rounded-xl shadow-lg border border-gray-100 transform transition-transform duration-300 group-hover:-translate-y-1">
-                    <img 
-                        src="/certificate.png" 
-                        onError={(e) => {
-                            e.target.src = 'https://placehold.co/600x450/f1f5f9/334155?text=Certificate+Preview'; 
-                        }}
-                        alt="Notary Commission Certificate" 
-                        className="rounded-lg w-full h-auto object-cover border border-gray-100"
-                    />
-                    <div className="absolute -bottom-4 -right-4 bg-brand-navy-dark text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-xs font-bold">
-                        <FileText size={14} className="text-brand-gold" /> Official Document
-                    </div>
-                </div>
-            </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-);
-
 const QRModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
     
@@ -138,9 +85,9 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// Floating Mobile Action Button (Simplified CSS for Stability)
+// Floating Mobile Action Button
 const FloatingBookButton = ({ onClick }) => (
-  <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden">
+  <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
     <button 
       onClick={onClick}
       className="w-full bg-brand-teal text-white font-bold text-lg py-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
@@ -377,13 +324,11 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     }));
   };
 
-  // DEFENSIVE PROGRAMMING: Prevent crash if service is undefined
-  const isI9 = (formData.service || '').includes('I-9');
+  const isI9 = formData.service.includes('I-9');
 
   const price = useMemo(() => {
     let base = 40; // UNIFIED RESERVATION FEE
-    const serviceName = formData.service || '';
-    if (serviceName.includes('Loan')) base = 150;
+    if (formData.service.includes('Loan')) base = 150;
     
     const extraMiles = Math.max(0, (formData.mileage || 0) - 10);
     const surcharge = formData.locationType === 'public' ? 0 : (extraMiles * 2);
@@ -504,6 +449,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         </select>
                     </div>
                   </div>
+                  {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
@@ -731,7 +677,7 @@ const Footer = ({ onViewChange }) => (
       <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('faq')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">FAQ</button>
       <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('pricing')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Pricing</button>
     </div>
-    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia.</p>
+    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Mobile Notary. Licensed in West Virginia.</p>
     <button 
         onClick={() => { 
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); 
@@ -847,6 +793,7 @@ function App() {
 
   // NEW: Scroll to top when view changes (Fixes Admin Login scroll issue)
   useEffect(() => {
+    // Timeout ensures React finishes rendering the new view before scrolling
     const timer = setTimeout(() => {
         window.scrollTo(0, 0);
     }, 10);
@@ -865,8 +812,6 @@ function App() {
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
-            {/* CREDENTIALS SECTION INSERTED HERE */}
-            <Credentials />
             <Services />
             <FAQ />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
@@ -875,7 +820,9 @@ function App() {
         ) : (!adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />)}
       </main>
       <Footer onViewChange={setView} />
+      {/* Pass restoredData to BookingModal */}
       <BookingModal isOpen={isBookingOpen} onClose={() => { setIsBookingOpen(false); setRestoredData(null); }} initialService={preSelectedService} initialData={restoredData} />
+      {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
       {/* Floating Button: Hide if Admin or Booking Open */}
       {!adminToken && !isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
