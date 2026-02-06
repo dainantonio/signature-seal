@@ -75,7 +75,7 @@ const QRModal = ({ isOpen, onClose }) => {
                 <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
                 <p className="text-gray-500 text-sm mb-6">Share this code with clients for instant access.</p>
                 <div className="bg-white border-4 border-brand-gold/20 rounded-2xl p-4 inline-block mb-6 shadow-inner">
-                    <img src={qrUrl} alt="Signature Seal Mobile Notary QR Code" className="w-48 h-48" />
+                    <img src={qrUrl} alt="Signature Seal QR Code" className="w-48 h-48" />
                 </div>
                 <button onClick={downloadQR} className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold hover:bg-brand-teal transition-all">
                     <Download size={18} /> Download Image
@@ -449,6 +449,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         </select>
                     </div>
                   </div>
+                  {/* I-9 SPECIFIC HOURS NOTE */}
                   {isI9 && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
@@ -508,7 +509,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                     
                     {!isI9 && (
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <label className="text-xs font-bold text-gray-500 uppercase">Signatures Needed</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase">Stamps / Certificates</label>
                             <div className="flex items-center gap-2 mt-2">
                                 <PenTool size={18} className="text-brand-teal" />
                                 <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
@@ -556,7 +557,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
                                 ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. A separate $25 service fee is due at the appointment." 
-                                : "Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure."}
+                                : "Notarization fees are collected at the time of service ($10 per notarial act). Travel fees are prepaid to ensure your appointment is secure."}
                         </span>
                     </label>
 
@@ -730,7 +731,7 @@ const AdminDashboard = ({ token, onLogout }) => {
     link.click();
   };
   const handleSendInvoice = async (id) => {
-    const sigs = prompt("How many signatures were notarized?");
+    const sigs = prompt("How many stamps/certificates?");
     if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
     try {
         const res = await fetch(`${API_URL}/api/create-invoice`, {
