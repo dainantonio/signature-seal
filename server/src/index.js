@@ -42,7 +42,16 @@ app.use(express.json());
 const recommendService = (query) => {
   const q = query.toLowerCase();
   
-  if (q.includes('ohio') || q.includes(' oh ')) return { service: "Waiting List", reasoning: "WV only for now.", action: "read_faq" };
+  if (q.includes('ohio') || q.includes(' oh ')) return { service: "Mobile Notary (WV/OH)", reasoning: "Yes! We are fully commissioned in Ohio (South Point, Chesapeake, etc.).", estimatedPrice: "$40 Travel Reservation + $5/stamp", action: "book_general" };
+
+  if (q.includes('courier') || q.includes('filing') || q.includes('record')) {
+    return {
+      service: "Legal Document Courier",
+      reasoning: "Secure transport for court filings and real estate docs.",
+      estimatedPrice: "$55 Flat Rate + Mileage",
+      action: "book_general"
+    };
+  }
 
   if (q.includes('i9') || q.includes('employment') || q.includes('authorized')) {
     return {
@@ -57,15 +66,9 @@ const recommendService = (query) => {
 };
 
 // --- HELPER: GOOGLE CALENDAR LINK ---
-// Automatically generates a link to add the job to your schedule
 const generateCalendarLink = (name, service, date, time, address, notes) => {
-    // Convert date to YYYYMMDD format for Google
-    const dateObj = new Date(date);
-    const start = dateObj.toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0,8);
-    // Create a 1-hour slot (approximation)
-    const details = `Service: ${service}\nClient: ${name}\nNotes: ${notes || 'None'}`;
-    
-    // Construct the Google Calendar URL
+    const start = new Date(date).toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0,8);
+    const details = `Service: ${service}\nClient: ${name}\nNotes: ${notes}`;
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Job:+${encodeURIComponent(name)}&dates=${start}/${start}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(address)}`;
 };
 
@@ -87,6 +90,12 @@ app.post('/api/create-checkout-session', async (req, res) => {
       productName = "I-9 Travel Reservation Fee";
   }
   
+  // Courier = $55 Flat (Wait... user removed courier on FE. Keeping here just in case they revert, but won't be triggered)
+  if (service.includes('Courier')) {
+      baseAmount = 5500;
+      productName = "Secure Legal Courier Service";
+  }
+
   const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
   const surchargeAmount = extraMiles * 200; 
@@ -125,7 +134,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
           description: "Notary services are not subject to sales tax.",
           footer: service.includes('I-9') 
             ? "I-9 Service Fee ($25) is collected separately at appointment." 
-            : "State notary fees ($10/stamp) are collected separately at appointment."
+            : "State notary fees are collected separately at appointment."
         }
       },
       success_url: `${CLIENT_URL}?success=true`,
@@ -149,7 +158,6 @@ app.post('/api/bookings', async (req, res) => {
         // SMART EMAIL LOGIC
         if (resend) {
             const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            // Subject designed for easy scanning: "📅 BOOKING: Oct 14 @ 2:00 PM - John Doe"
             const subjectLine = `📅 BOOKING: ${dateStr} @ ${time} - ${name}`;
             const calLink = generateCalendarLink(name, service, date, time, address, notes);
 
@@ -159,23 +167,22 @@ app.post('/api/bookings', async (req, res) => {
                 reply_to: email, 
                 subject: subjectLine, 
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                        <h2 style="color: #2c3e50; border-bottom: 2px solid #0d9488; padding-bottom: 10px;">New Appointment Request</h2>
-                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">
-                            <p style="margin: 5px 0;"><strong>👤 Client:</strong> ${name}</p>
-                            <p style="margin: 5px 0;"><strong>📝 Service:</strong> ${service}</p>
-                            <p style="margin: 5px 0;"><strong>⏰ When:</strong> ${dateStr} at ${time}</p>
-                            <p style="margin: 5px 0;"><strong>📍 Where:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(address)}">${address}</a></p>
-                            <p style="margin: 5px 0;"><strong>🚗 Distance:</strong> ${mileage || 0} miles</p>
-                            <p style="margin: 5px 0;"><strong>💬 Notes:</strong> ${notes || 'None'}</p>
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #2c3e50;">New Appointment Request</h2>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
+                            <p><strong>Client:</strong> ${name}</p>
+                            <p><strong>Service:</strong> ${service}</p>
+                            <p><strong>When:</strong> ${dateStr} at ${time}</p>
+                            <p><strong>Where:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(address)}">${address}</a></p>
+                            <p><strong>Distance:</strong> ${mileage || 0} miles</p>
+                            <p><strong>Notes:</strong> ${notes || 'None'}</p>
                         </div>
                         <br/>
-                        <div style="text-align: center; margin-top: 20px;">
-                            <a href="${calLink}" style="background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">📅 Add to Google Calendar</a>
+                        <div style="text-align: center;">
+                            <a href="${calLink}" style="background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📅 Add to Google Calendar</a>
                             <br/><br/>
-                            <a href="mailto:${email}" style="color: #64748b; text-decoration: none; font-size: 14px;">Reply to Client directly</a>
+                            <a href="mailto:${email}" style="color: #64748b; text-decoration: none;">Reply to Client</a>
                         </div>
-                        <p style="font-size: 10px; color: #999; text-align: center; margin-top: 30px;">Sent via Signature Seal Mobile Notary System</p>
                     </div>
                 ` 
             });
@@ -211,7 +218,7 @@ app.post('/api/create-invoice', async (req, res) => {
     if (!booking) return res.status(404).json({ error: "Booking not found" });
     
     let amount = 1000;
-    let desc = 'West Virginia Notary Fee';
+    let desc = 'Notary Fee';
     let count = parseInt(signatures) || 1;
 
     if (type === 'custom') { 
@@ -236,4 +243,4 @@ app.post('/api/create-invoice', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV Scope)`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (WV/OH Scope)`));
