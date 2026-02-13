@@ -9,10 +9,13 @@ const stripeLib = require('stripe');
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
+
+// --- CONFIG ---
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
 const CLIENT_URL = 'https://signaturesealnotaries.com';
 
+// --- INITIALIZE STRIPE ---
 let stripe = null;
 const initStripe = () => {
     if (!stripe && process.env.STRIPE_SECRET_KEY) {
@@ -41,6 +44,15 @@ const recommendService = (query) => {
   
   if (q.includes('ohio') || q.includes(' oh ')) return { service: "Mobile Notary (WV/OH)", reasoning: "Yes! We are fully commissioned in Ohio (South Point, Chesapeake, etc.).", estimatedPrice: "$40 Travel Reservation + $5/stamp", action: "book_general" };
 
+  if (q.includes('courier') || q.includes('filing') || q.includes('record')) {
+    return {
+      service: "Legal Document Courier",
+      reasoning: "Secure transport for court filings and real estate docs.",
+      estimatedPrice: "$55 Flat Rate + Mileage",
+      action: "book_general"
+    };
+  }
+
   if (q.includes('i9') || q.includes('employment') || q.includes('authorized')) {
     return {
       service: "I-9 Employment Verification",
@@ -50,7 +62,7 @@ const recommendService = (query) => {
     };
   }
 
-  return { service: "Mobile Notary", reasoning: "Standard WV/OH appointment.", estimatedPrice: "$40 Reservation + State Fee", action: "book_general" };
+  return { service: "Mobile Notary", reasoning: "Standard WV appointment.", estimatedPrice: "$40 Reservation + $10/stamp", action: "book_general" };
 };
 
 // --- HELPER: GOOGLE CALENDAR LINK ---
@@ -63,22 +75,30 @@ const generateCalendarLink = (name, service, date, time, address, notes) => {
 app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
 
 app.post('/api/create-checkout-session', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: "Stripe not ready." });
+  const stripeInstance = initStripe();
+  if (!stripeInstance) return res.status(500).json({ error: "Stripe not ready." });
 
   const { name, email, service, date, time, mileage } = req.body;
   
+  // Dynamic Pricing Logic 
   let baseAmount = 4000; // $40.00 Base
   let productName = "Travel Reservation Fee";
 
+  // I-9 = $60 Flat ($40 Online)
   if (service.includes('I-9')) {
       baseAmount = 4000; 
       productName = "I-9 Travel Reservation Fee";
   }
   
-  const miles = parseFloat(mileage) || 0;
+  // Courier = $55 Flat (Wait... user removed courier on FE. Keeping here just in case they revert, but won't be triggered)
+  if (service.includes('Courier')) {
+      baseAmount = 5500;
+      productName = "Secure Legal Courier Service";
+  }
+
+  const miles = parseInt(mileage) || 0;
   const extraMiles = Math.max(0, miles - 10);
-  // Round to nearest cent: (extra * 2) * 100 
-  const surchargeAmount = Math.round((extraMiles * 2) * 100); 
+  const surchargeAmount = extraMiles * 200; 
 
   const line_items = [
     {
@@ -95,7 +115,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
       line_items.push({
         price_data: { 
             currency: 'usd', 
-            product_data: { name: `Mileage Surcharge (${extraMiles.toFixed(2)} extra miles)` }, 
+            product_data: { name: `Mileage Surcharge (${extraMiles} extra miles)` }, 
             unit_amount: surchargeAmount,
         },
         quantity: 1,
@@ -103,7 +123,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   }
 
   try {
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeInstance.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
@@ -114,7 +134,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
           description: "Notary services are not subject to sales tax.",
           footer: service.includes('I-9') 
             ? "I-9 Service Fee ($25) is collected separately at appointment." 
-            : "State notary fees ($5-10/stamp) are collected separately at appointment."
+            : "State notary fees are collected separately at appointment."
         }
       },
       success_url: `${CLIENT_URL}?success=true`,
