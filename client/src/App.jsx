@@ -85,7 +85,7 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// Floating Mobile Action Button (Defined ONCE here)
+// Floating Mobile Action Button
 const FloatingBookButton = ({ onClick }) => (
   <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)]">
     <button 
@@ -187,7 +187,7 @@ const BackToTop = () => {
       className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
       title="Back to Top"
     >
-      <ArrowUp size={24} />
+      <ArrowRight size={24} className="-rotate-90" />
     </button>
   );
 };
@@ -197,11 +197,11 @@ const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
   const faqs = [
-    { q: "Do you serve both West Virginia and Ohio?", a: "Yes! We are fully commissioned in both states. We serve Huntington/Barboursville (WV) and South Point/Chesapeake (OH)." },
-    { q: "How much is the travel fee?", a: "We charge a standard Travel Reservation Fee ($40) to secure your appointment. This covers the first 10 miles of travel from our office." },
+    { q: "Do you serve both West Virginia and Ohio?", a: "Yes! We are fully commissioned in both states. We serve the Huntington, WV area and South Point/Chesapeake, OH areas." },
+    { q: "Why do I have to pay a travel fee upfront?", a: "Travel fees help us reserve your time and ensure we can reach you promptly, especially for first-time or long-distance appointments. Prepaying guarantees your slot and covers fuel/time for your appointment." },
     { q: "What are the notary fees?", a: "Per state law: West Virginia is $10 per stamp/certificate. Ohio is $5 per stamp/certificate. These are collected at the appointment." },
-    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports." },
-    { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an 'Authorized Representative' service, not a notarial act. We charge a flat fee for this service." },
+    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
+    { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
 
   return (
@@ -237,7 +237,7 @@ const FAQ = () => {
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with Mobile Notary (WV & OH), I-9 Verification, and scheduling. How can I assist?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with I-9 Verification, Mobile Notary (WV & OH), and scheduling. How can I assist?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -345,7 +345,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
         const destLon = geoData[0].lon;
         
         // 2. Route from Chesapeake, OH (Fixed Base)
-        // Coords for 1020 County Rd 3: 38.4294, -82.4608
         const startLat = 38.4294;
         const startLon = -82.4608;
 
@@ -367,11 +366,12 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     }
   };
 
-  const isI9 = (formData.service || '').includes('I-9');
+  const serviceName = formData.service || '';
+  const isI9 = serviceName.includes('I-9');
 
   const price = useMemo(() => {
     let base = 40; // UNIFIED RESERVATION FEE
-    if ((formData.service || '').includes('Loan')) base = 150;
+    if (serviceName.includes('Loan')) base = 150;
     
     const miles = parseFloat(formData.mileage) || 0;
     const extraMiles = Math.max(0, miles - 10);
@@ -559,12 +559,8 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         </button>
                     </div>
                   )}
-                  {formData.locationType === 'public' && (
-                      <textarea placeholder="Additional Notes (Optional)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal transition-all" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
-                  )}
-                  {formData.locationType === 'my_location' && (
-                      <textarea placeholder="Additional Notes (Optional)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal transition-all" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
-                  )}
+
+                  <textarea placeholder="Additional Notes (Optional)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal transition-all" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                 </div>
               )}
               {step === 3 && (
@@ -585,7 +581,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Includes:</span> {isI9 ? 'I-9 Travel Reservation' : 'Mobile Travel Fee'} to {formData.locationType === 'public' ? 'Public Spot' : `${formData.mileage} miles`}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Summary:</span> {formData.service} in {formData.state}. Travel to {formData.locationType === 'public' ? 'Public Spot' : formData.address}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -620,6 +616,180 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
           </>
         )}
       </motion.div>
+    </div>
+  );
+};
+
+// --- MAIN PAGE SECTIONS ---
+
+const Hero = ({ onBookClick }) => (
+  <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <div className="absolute inset-0 z-0">
+      <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Background" className="w-full h-full object-cover scale-105" />
+      <div className="absolute inset-0 bg-brand-navy-dark/90 mix-blend-multiply"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-dark via-transparent to-transparent opacity-80"></div>
+    </div>
+    <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
+        <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Local, trusted notary & courier service serving Huntington WV, South Point OH, and nearby areas — appointments secured with prepaid travel fees for your convenience.</p>
+        <div className="flex flex-col sm:flex-row justify-center gap-6">
+          {/* HIDDEN ON MOBILE (md:block) */}
+          <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV/OH Appointment</button>
+          <a href={`mailto:${CONTACT_EMAIL}`} className="border-2 border-white/20 text-white font-bold px-12 py-5 rounded-full hover:bg-white/10 transition-all text-lg backdrop-blur-sm text-center flex items-center justify-center gap-2"><Mail size={18}/> Questions? Email Us</a>
+        </div>
+      </motion.div>
+    </div>
+  </section>
+);
+
+const Services = () => (
+  <section id="services" className="py-32 bg-slate-100 relative">
+    <div className="container mx-auto px-6">
+      <div className="text-center mb-24 max-w-3xl mx-auto">
+        <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV & OH Expertise</h2>
+        <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia & Ohio.</p>
+      </div>
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
+        {[
+          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV & OH." },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employees." },
+          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
+        ].map((s, i) => (
+          <motion.div key={i} variants={fadeInUp} className="p-10 rounded-[2.5rem] bg-white hover:shadow-xl transition-all duration-500 border border-gray-200 text-center shadow-lg">
+            <div className="bg-slate-50 w-20 h-20 rounded-3xl flex items-center justify-center mb-8 mx-auto shadow-sm"><s.icon className="text-brand-navy-dark" size={36}/></div>
+            <h3 className="text-2xl font-bold text-brand-navy-dark mb-4">{s.title}</h3>
+            <p className="text-gray-500 leading-relaxed text-sm">{s.desc}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
+  </section>
+);
+
+const Pricing = ({ onBookClick }) => (
+  <section id="pricing" className="py-32 bg-slate-50">
+    <div className="container mx-auto px-6">
+      <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Transparent Pricing</h2><p className="text-xl text-gray-500">West Virginia & Ohio local service.</p></div>
+      <div className="max-w-md mx-auto">
+        <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col items-center group hover:shadow-2xl transition-all">
+          <span className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-4">Mobile Service (WV & OH)</span>
+          <h3 className="text-3xl font-bold mb-6 text-brand-navy-dark">Mobile Service</h3>
+          <div className="text-4xl font-serif font-bold mb-10 text-brand-navy-dark group-hover:scale-105 transition-transform">From $40</div>
+          <ul className="space-y-4 mb-12 text-gray-600 w-full text-sm">
+            {['Travel included (10 miles)', 'Professional Service Fee', 'Evening & Weekends', 'Surcharge: $2.00 per extra mile (10+ miles)'].map(item => (
+              <li key={item} className="flex items-center gap-3 font-medium"><Check size={18} className="text-brand-teal"/> {item}</li>
+            ))}
+          </ul>
+          
+          <div className="bg-slate-50 p-4 rounded-xl mb-6 text-left border border-gray-200">
+             <h4 className="font-bold text-brand-navy-dark text-sm mb-2">Travel & Delivery Fees</h4>
+             <p className="text-xs text-gray-600 mb-2">To reserve your appointment and cover travel time, a small travel or delivery fee may be required at booking for:</p>
+             <ul className="list-disc list-inside text-xs text-gray-500 mb-2 pl-2">
+                 <li>First-time clients</li>
+                 <li>Longer distances (over 10 miles)</li>
+                 <li>Same-day or rush service</li>
+                 <li>After-hours appointments</li>
+             </ul>
+             <p className="text-xs text-brand-teal font-medium">Notarization fees are collected at the time of service. Travel fees are prepaid to ensure your appointment is secure and our availability is guaranteed.</p>
+          </div>
+
+          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl border-2 border-brand-navy-dark text-brand-navy-dark font-bold hover:bg-brand-navy-dark hover:text-white transition-all text-lg">Book Appointment</button>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+const Footer = ({ onViewChange }) => (
+  <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
+    <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
+    <h2 className="font-serif text-3xl font-bold mb-10">Signature Seal Mobile Notary</h2>
+    <div className="flex justify-center gap-10 mb-12 text-gray-400 font-bold uppercase text-[10px] tracking-widest">
+      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('services')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Services</button>
+      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('faq')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">FAQ</button>
+      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('pricing')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Pricing</button>
+    </div>
+    <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in West Virginia & Ohio.</p>
+    <button 
+        onClick={() => { 
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); 
+            onViewChange('admin'); 
+        }} 
+        className="mt-10 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"
+    >
+        <Lock size={12}/> Admin Portal
+    </button>
+  </footer>
+);
+
+// ADMIN
+const LoginScreen = ({ onLogin }) => {
+  const [password, setPassword] = useState('');
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await safeFetch(`${API_URL}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+      const data = await res.json();
+      if (res.ok) onLogin(data.token); else alert("Incorrect.");
+    } catch (err) { alert("Offline."); }
+  };
+  
+  // Force scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return <div className="min-h-screen bg-brand-navy-dark flex items-center justify-center"><form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl"><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="p-4 border rounded-xl" placeholder="Admin Password"/><button className="w-full bg-brand-navy-dark text-white mt-4 p-4 rounded-xl font-bold">Login</button></form></div>;
+};
+
+const AdminDashboard = ({ token, onLogout }) => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [token]);
+  const handleDelete = async (id) => {
+    if(!window.confirm("Delete?")) return;
+    setBookings(prev => prev.filter(b => b.id !== id));
+    await fetch(`${API_URL}/api/bookings/delete/${id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+  };
+  const handleExport = () => {
+    const csv = "ID,Name,Service,Date\n" + bookings.map(b => `${b.id},${b.name},${b.service},${b.date}`).join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    link.download = "bookings.csv";
+    link.click();
+  };
+  const handleSendInvoice = async (id) => {
+    const sigs = prompt("How many stamps/certificates?");
+    if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
+    try {
+        const res = await fetch(`${API_URL}/api/create-invoice`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, signatures: sigs, type: 'notary' })
+        });
+        const data = await res.json();
+        if (res.ok) alert("Invoice sent!");
+        else alert("Failed: " + data.error);
+    } catch (err) { alert("Error connecting."); }
+  };
+  return (
+    <div className="container mx-auto px-6 py-32 pt-40 pb-48">
+      <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
+      <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
+        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
+            <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
+            <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
+            <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
+                <CreditCard size={14}/> Bill Notary Fees
+            </button>
+        </div>
+      ))}</div>
     </div>
   );
 };
