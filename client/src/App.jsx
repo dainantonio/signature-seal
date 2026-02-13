@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
-  Clock, ArrowRight, ArrowUp, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
+  Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
   ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -199,8 +199,8 @@ const FAQ = () => {
   const faqs = [
     { q: "Do you serve both West Virginia and Ohio?", a: "Yes! We are fully commissioned in both states. We serve the Huntington, WV area and South Point/Chesapeake, OH areas." },
     { q: "How does pricing work?", a: "We charge a standard Travel Reservation Fee ($40) to secure your appointment. State notary fees are collected at the appointment: $10/stamp in WV, and $5/stamp in OH." },
-    { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used, and it is not a notarial act." },
-    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. If you do not have an ID, we cannot perform the notarization." },
+    { q: "Is I-9 Verification a notarized service?", a: "No. I-9 Employment Eligibility Verification is performed as an 'Authorized Representative' of the employer. No notary stamp is used." },
+    { q: "What ID do I need?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports." },
     { q: "Do you offer legal advice?", a: "No. We verify identity and witness signatures. We cannot explain legal documents, select forms for you, or provide legal advice." },
   ];
 
@@ -432,7 +432,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {/* NO COURIER */}
                     {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
                       <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
@@ -470,9 +469,9 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                   
                   {/* STATE SELECTOR */}
                   <div className="flex gap-4 items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                     <span className="text-sm font-bold text-gray-500">Service State:</span>
-                     <button onClick={() => setFormData({...formData, state: 'WV'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'WV' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>West Virginia</button>
-                     <button onClick={() => setFormData({...formData, state: 'OH'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'OH' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>Ohio</button>
+                     <span className="text-xs font-bold text-gray-500 uppercase">State:</span>
+                     <button onClick={() => setFormData({...formData, state: 'WV'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'WV' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>WV</button>
+                     <button onClick={() => setFormData({...formData, state: 'OH'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'OH' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>OH</button>
                   </div>
 
                   {/* DYNAMIC LOCATION SELECTOR */}
@@ -487,8 +486,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
 
                   {formData.locationType === 'public' && (
                     <div className="flex flex-wrap gap-2 text-xs">
-                        {/* UPDATED PUBLIC SPOTS TO INCLUDE OH */}
-                        {['Cabell County Library (WV)', 'South Point Library (OH)', 'Starbucks (Rt 60)', 'Panera Bread (Mall)'].map(spot => (
+                        {['Cabell County Library (Main)', 'South Point Library (OH)', 'Starbucks (Rt 60)', 'Panera Bread (Mall)'].map(spot => (
                             <button key={spot} onClick={() => setFormData({...formData, address: spot})} className={`px-3 py-1 rounded-full hover:bg-brand-teal hover:text-white transition-colors ${formData.address === spot ? 'bg-brand-teal text-white' : 'bg-gray-100'}`}>{spot}</button>
                         ))}
                     </div>
@@ -498,9 +496,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                     <div className={`bg-gray-50 p-4 rounded-xl border border-gray-100 ${formData.locationType === 'public' ? 'opacity-50' : ''}`}>
                         <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
                             <span>Travel Distance</span>
-                            {formData.locationType === 'my_location' && (
-                                <a href={`https://www.google.com/maps/dir/25701/${encodeURIComponent(formData.address || '')}`} target="_blank" rel="noopener noreferrer" className="text-brand-teal hover:underline flex items-center gap-1"><Navigation size={12}/> Check Map</a>
-                            )}
                         </label>
                         <div className="flex items-center gap-2 mt-2">
                             <input 
@@ -526,7 +521,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                             <div className="flex items-center gap-2 mt-2">
                                 <PenTool size={18} className="text-brand-teal" />
                                 <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
-                                <span className="text-sm text-gray-600">($10 WV / $5 OH)</span>
+                                <span className="text-sm text-gray-600">($10 ea - at table)</span>
                             </div>
                         </div>
                     )}
@@ -610,9 +605,9 @@ const Hero = ({ onBookClick }) => (
     </div>
     <div className="container mx-auto px-6 relative z-10 pt-40 md:pt-20 text-center">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
-        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & South Point, OH</div>
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-gold text-[10px] font-bold uppercase tracking-widest mb-10 border border-white/10">Serving Huntington, WV & Surrounding Areas</div>
         <h1 className="text-5xl md:text-8xl font-bold text-white font-serif mb-8 leading-tight tracking-tight">Trust in Every <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Signature.</span></h1>
-        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Local, trusted notary & courier service serving Huntington WV, South Point OH, and nearby areas — appointments secured with prepaid travel fees for your convenience.</p>
+        <p className="text-lg md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto font-light">Certified mobile notary & I-9 verification services delivered to your doorstep in West Virginia. Accurate, professional, and ready.</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           {/* HIDDEN ON MOBILE (md:block) */}
           <button onClick={() => onBookClick()} className="hidden md:block bg-brand-teal text-white font-bold px-12 py-5 rounded-full hover:scale-105 transition-all shadow-2xl shadow-brand-teal/40 text-lg">Book WV/OH Appointment</button>
@@ -628,7 +623,7 @@ const Services = () => (
     <div className="container mx-auto px-6">
       <div className="text-center mb-24 max-w-3xl mx-auto">
         <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-navy-dark mb-6 tracking-tight">WV & OH Expertise</h2>
-        <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia and Southern Ohio.</p>
+        <p className="text-xl text-gray-500">Comprehensive legal signing solutions tailored to your schedule in West Virginia & Ohio.</p>
       </div>
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-3 gap-10">
         {[
