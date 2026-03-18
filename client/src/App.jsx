@@ -803,7 +803,7 @@ const Pricing = ({ onBookClick }) => (
             </p>
             <div className="bg-orange-50 border-l-4 border-brand-gold p-4 rounded-r-xl">
                 <p className="text-sm text-brand-navy-dark font-medium">
-                    "Fast, professional, and arrived exactly on time to the hospital. Transparent pricing made the stressful situation much easier."
+                    Your online payment applies to the travel reservation fee only. Any state notary fees and specialty service charges are collected at the appointment.
                 </p>
             </div>
         </div>
