@@ -187,7 +187,7 @@ const FAQ = () => {
     { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to secure your immediate appointment and travel to your location. State notary fees are collected separately at the appointment ($10/stamp in WV, $5/stamp in OH)." },
     { q: "What do I need to bring?", a: "You must provide a valid, unexpired government-issued photo ID (Driver's License, State ID, or Passport). All signers must be physically present." },
     { q: "Can you come to a hospital or nursing home?", a: "Yes, we specialize in facility visits. We frequently visit local hospitals, assisted living facilities, and rehabilitation centers. Please ensure the signer is alert and aware of what they are signing." },
-    { q: "Do you offer same-day service?", a: "Yes! We offer same-day, after-hours, and weekend appointments subject to availability. Call us immediately for urgent requests." },
+    { q: "Do you offer same-day service?", a: "Yes, when scheduling allows. Online booking reflects our current availability: mobile notary appointments are available Monday-Friday from 6:00 PM-9:00 PM and Saturdays from 10:00 AM-4:00 PM, while I-9 verifications are available Monday-Saturday from 9:00 AM-7:00 PM. Call or text for urgent requests outside those windows." },
     { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an 'Authorized Representative' service, not a notarial act. We charge a flat fee for this service." },
   ];
 
@@ -407,6 +407,12 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9]);
 
+  useEffect(() => {
+    if (formData.time && !timeSlots.includes(formData.time)) {
+      setFormData(prev => ({ ...prev, time: '' }));
+    }
+  }, [timeSlots, formData.time]);
+
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
@@ -468,7 +474,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
-                      <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
+                      <button key={svc} onClick={() => setFormData({...formData, service: svc, time: ''})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
                     ))}
@@ -476,7 +482,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
                      <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
-                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value, time: ''})} value={formData.date}/>
                          {formData.date && <p className="text-[10px] text-brand-teal font-medium pl-1">{new Date(formData.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
                     </div>
                     <div className="space-y-1">
@@ -487,12 +493,14 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         </select>
                     </div>
                   </div>
-                  {isI9 && (
-                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
-                        <Info size={16} className="mt-0.5 shrink-0" />
-                        <div><strong>Flexible Hours:</strong> I-9 Verifications are available Mon-Sat (9am-7pm).</div>
-                    </div>
-                  )}
+                  <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
+                      <Info size={16} className="mt-0.5 shrink-0" />
+                      <div>
+                        {isI9
+                          ? <><strong>Availability:</strong> I-9 verifications are available Monday-Saturday from 9:00 AM-7:00 PM.</>
+                          : <><strong>Availability:</strong> Mobile notary appointments are available Monday-Friday from 6:00 PM-9:00 PM and Saturdays from 10:00 AM-4:00 PM. Sundays are unavailable online; call or text for urgent requests.</>}
+                      </div>
+                  </div>
                 </div>
               )}
               {step === 2 && (
@@ -662,7 +670,7 @@ const Hero = ({ onBookClick }) => (
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
         
         <div className="inline-block px-5 py-2 rounded-full bg-brand-gold/20 text-brand-gold text-xs font-bold uppercase tracking-widest mb-8 border border-brand-gold/30">
-            Serving Huntington, WV & Surrounding Areas
+            Serving Huntington, WV, Chesapeake, OH & Surrounding Areas
         </div>
         
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white font-serif mb-6 leading-[1.1] tracking-tight">
@@ -671,7 +679,7 @@ const Hero = ({ onBookClick }) => (
         </h1>
         
         <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-medium">
-          Available Evenings & Weekends. Professional, fast, and secure document notarization at your location.
+          Available Monday-Friday evenings and Saturdays, with flexible weekday daytime I-9 appointments. Professional, fast, and secure document services at your location.
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
@@ -742,7 +750,7 @@ const Services = () => (
           <div>
               <h3 className="text-3xl font-serif font-bold text-brand-navy-dark mb-6">Common Documents We Notarize</h3>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {['Power of Attorney (POA)', 'Wills & Trusts', 'Real Estate Documents', 'Affidavits', 'Medical Directives', 'Vehicle Title Transfers', 'Loan Signings', 'General Contracts'].map(doc => (
+                  {['Power of Attorney (POA)', 'Wills & Trusts', 'Affidavits', 'Medical Directives', 'Vehicle Title Transfers', 'General Contracts'].map(doc => (
                       <li key={doc} className="flex items-center gap-3 text-gray-700 font-medium"><FileText size={18} className="text-brand-gold shrink-0"/> {doc}</li>
                   ))}
               </ul>
@@ -795,7 +803,7 @@ const Pricing = ({ onBookClick }) => (
             </p>
             <div className="bg-orange-50 border-l-4 border-brand-gold p-4 rounded-r-xl">
                 <p className="text-sm text-brand-navy-dark font-medium">
-                    "Fast, professional, and arrived exactly on time to the hospital. Transparent pricing made the stressful situation much easier."
+                    Your online payment applies to the travel reservation fee only. Any state notary fees and specialty service charges are collected at the appointment.
                 </p>
             </div>
         </div>
