@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Search, PhoneCall, CheckCircle2, Zap, Building2, Shield
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Search, PhoneCall, CheckCircle2, Zap, Building2, Shield, Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -18,8 +18,8 @@ const getBackendUrl = () => {
 const API_URL = getBackendUrl();
 const CONTACT_EMAIL = "sseal.notary@gmail.com"; 
 const SITE_URL = "https://signaturesealnotaries.com";
-const PHONE_NUMBER = "(304) 982-4165"; // Replace with your actual number
-const PHONE_LINK = "tel:+13049824165"; // Replace with your actual number
+const PHONE_NUMBER = "(304) 555-0000"; // Replace with your actual number
+const PHONE_LINK = "tel:+13045550000"; // Replace with your actual number
 
 // --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
@@ -123,7 +123,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-center"> 
             <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV & OH Notary</span>
+            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Tri-State Notary & Inspections</span>
           </div>
         </div>
         <div className="flex items-center space-x-6">
@@ -157,7 +157,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
           </div>
           <div className="flex flex-col justify-center items-start">
             <h1 className={`font-serif text-2xl font-black leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[11px] uppercase font-bold mt-0.5 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV & OH Notary</span>
+            <span className={`text-[11px] uppercase font-bold mt-0.5 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV-OH-KY Services</span>
           </div>
         </div>
         <div className="justify-self-end">
@@ -179,16 +179,39 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   );
 };
 
+const BackToTop = () => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) setVisible(true);
+      else setVisible(false);
+    };
+    window.addEventListener("scroll", toggleVisibility);
+    return () => window.removeEventListener("scroll", toggleVisibility);
+  }, []);
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+      title="Back to Top"
+    >
+      <ArrowRight size={24} className="-rotate-90" />
+    </button>
+  );
+};
+
 // --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
   const faqs = [
-    { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to secure your immediate appointment and travel to your location. State notary fees are collected separately at the appointment ($10/stamp in WV, $5/stamp in OH)." },
-    { q: "What do I need to bring?", a: "You must provide a valid, unexpired government-issued photo ID (Driver's License, State ID, or Passport). All signers must be physically present." },
-    { q: "Can you come to a hospital or nursing home?", a: "Yes, we specialize in facility visits. We frequently visit local hospitals, assisted living facilities, and rehabilitation centers. Please ensure the signer is alert and aware of what they are signing." },
-    { q: "Do you offer same-day service?", a: "Yes, when scheduling allows. Online booking reflects our current availability: mobile notary appointments are available Monday-Friday from 6:00 PM-9:00 PM and Saturdays from 10:00 AM-4:00 PM, while I-9 verifications are available Monday-Saturday from 9:00 AM-7:00 PM. Call or text for urgent requests outside those windows." },
-    { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an 'Authorized Representative' service, not a notarial act. We charge a flat fee for this service." },
+    { q: "Do you serve WV, OH, and KY?", a: "Yes! We serve the entire Huntington Tri-State area. This includes parts of West Virginia, Ohio, and Kentucky for both mobile notary and field inspections." },
+    { q: "What does a Field Inspection include?", a: "We support mortgage and insurance companies with occupancy verification, property condition reports, photo documentation, and general site inspections." },
+    { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to secure your immediate appointment. State notary fees are collected separately ($10/stamp in WV, $5/stamp in OH/KY)." },
+    { q: "What ID do I need for notarization?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. All signers must be physically present." },
+    { q: "Do you offer same-day service?", a: "Yes! We offer same-day, after-hours, and weekend appointments subject to availability. Call us immediately for urgent requests." },
   ];
 
   return (
@@ -224,7 +247,7 @@ const FAQ = () => {
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with I-9 Verification, Mobile Notary (WV & OH), and scheduling. How can I assist?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with Field Inspections, Mobile Notary (WV-OH-KY), I-9 Verification, and scheduling. How can I assist?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -367,17 +390,29 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
 
   const serviceName = formData.service || '';
   const isI9 = serviceName.includes('I-9');
+  const isInspection = serviceName.includes('Field Inspection');
+  const isLoan = serviceName.includes('Loan');
 
   const price = useMemo(() => {
     let base = 40; 
-    if (serviceName.includes('Loan')) base = 150;
+    if (isLoan) base = 150;
+    if (isInspection) base = 50; // $50 flat base for inspections
     
     const miles = parseFloat(formData.mileage) || 0;
     const extraMiles = Math.max(0, miles - 10);
     const surcharge = Math.round((extraMiles * 2) * 100) / 100;
     
-    const stampRate = formData.state === 'OH' ? 5 : 10;
-    const dueLater = isI9 ? 25 : (formData.signatures || 0) * stampRate;
+    // Calculate Due Later based on State
+    // WV = $10, OH = $5, KY = $5
+    let stampRate = 5;
+    if (formData.state === 'WV') stampRate = 10;
+
+    let dueLater = 0;
+    if (isI9) {
+        dueLater = 25;
+    } else if (!isInspection && !isLoan) {
+        dueLater = (formData.signatures || 0) * stampRate;
+    }
     
     return { 
         travelTotal: (base + surcharge).toFixed(2),
@@ -385,15 +420,15 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
         dueLater, 
         grandTotal: (base + surcharge + dueLater).toFixed(2)
     };
-  }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9, formData.state]);
+  }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9, isInspection, isLoan, formData.state]);
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
     if (day === 0) return []; 
-    // Flexible Hours for I-9
-    if (isI9) {
+    // Flexible Hours for I-9 and Inspections
+    if (isI9 || isInspection) {
         const slots = [];
         for (let i = 9; i <= 19; i++) {
             const hour = i > 12 ? i - 12 : i;
@@ -402,21 +437,15 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
         }
         return slots;
     }
-    // Standard
+    // Standard Notary
     if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
-  }, [formData.date, isI9]);
-
-  useEffect(() => {
-    if (formData.time && !timeSlots.includes(formData.time)) {
-      setFormData(prev => ({ ...prev, time: '' }));
-    }
-  }, [timeSlots, formData.time]);
+  }, [formData.date, isI9, isInspection]);
 
   const isStepValid = () => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
-        const basicFields = formData.name && formData.email && (isI9 || formData.signatures > 0);
+        const basicFields = formData.name && formData.email && (isI9 || isInspection || isLoan || formData.signatures > 0);
         if (formData.locationType === 'my_location') {
             return basicFields && formData.street && formData.zip && !isNaN(parseFloat(formData.mileage));
         } else {
@@ -473,8 +502,8 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    {['Mobile Notary Service', 'I-9 Employment Verification', 'Oaths & Affirmations', 'Signature Witnessing'].map(svc => (
-                      <button key={svc} onClick={() => setFormData({...formData, service: svc, time: ''})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
+                    {['Mobile Notary Service', 'Field Inspection', 'I-9 Employment Verification', 'Loan Signing'].map(svc => (
+                      <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
                         {svc}
                       </button>
                     ))}
@@ -482,7 +511,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
                      <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
-                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value, time: ''})} value={formData.date}/>
+                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
                          {formData.date && <p className="text-[10px] text-brand-teal font-medium pl-1">{new Date(formData.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
                     </div>
                     <div className="space-y-1">
@@ -493,41 +522,43 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         </select>
                     </div>
                   </div>
-                  <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
-                      <Info size={16} className="mt-0.5 shrink-0" />
-                      <div>
-                        {isI9
-                          ? <><strong>Availability:</strong> I-9 verifications are available Monday-Saturday from 9:00 AM-7:00 PM.</>
-                          : <><strong>Availability:</strong> Mobile notary appointments are available Monday-Friday from 6:00 PM-9:00 PM and Saturdays from 10:00 AM-4:00 PM. Sundays are unavailable online; call or text for urgent requests.</>}
-                      </div>
-                  </div>
+                  {/* I-9 & INSPECTION HOURS NOTE */}
+                  {(isI9 || isInspection) && (
+                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
+                        <Info size={16} className="mt-0.5 shrink-0" />
+                        <div><strong>Flexible Hours:</strong> This service is available Mon-Sat (9am-7pm).</div>
+                    </div>
+                  )}
                 </div>
               )}
               {step === 2 && (
                 <div className="space-y-4">
-                  <input type="text" placeholder="Full Name" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                  <input type="text" placeholder={isInspection ? "Company / Rep Name" : "Full Name"} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   
                   {/* STATE SELECTOR */}
                   <div className="flex gap-4 items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
                      <span className="text-xs font-bold text-gray-500 uppercase">Service State:</span>
-                     <button onClick={() => setFormData({...formData, state: 'WV'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'WV' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>WV ($10)</button>
-                     <button onClick={() => setFormData({...formData, state: 'OH'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'OH' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>OH ($5)</button>
+                     <button onClick={() => setFormData({...formData, state: 'WV'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'WV' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>WV</button>
+                     <button onClick={() => setFormData({...formData, state: 'OH'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'OH' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>OH</button>
+                     <button onClick={() => setFormData({...formData, state: 'KY'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'KY' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>KY</button>
                   </div>
 
                   {/* DYNAMIC LOCATION SELECTOR */}
                   <div className="grid grid-cols-2 gap-4">
                      <button onClick={() => handleLocationTypeChange('my_location')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'my_location' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
-                        <Home size={18} /> My Location
+                        <Home size={18} /> {isInspection ? "Property Address" : "My Location"}
                      </button>
-                     <button onClick={() => handleLocationTypeChange('public')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'public' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
-                        <Coffee size={18} /> Public Spot
-                     </button>
+                     {!isInspection && (
+                         <button onClick={() => handleLocationTypeChange('public')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'public' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
+                            <Coffee size={18} /> Public Spot
+                         </button>
+                     )}
                   </div>
 
-                  {formData.locationType === 'public' && (
+                  {formData.locationType === 'public' && !isInspection && (
                     <div className="flex flex-wrap gap-2 text-xs">
-                        {['Cabell County Library (WV)', 'South Point Library (OH)', 'Starbucks (Rt 60)', 'Panera Bread (Mall)'].map(spot => (
+                        {['Cabell County Library (WV)', 'South Point Library (OH)', 'Ashland Library (KY)', 'Starbucks (Rt 60)'].map(spot => (
                             <button key={spot} onClick={() => setFormData({...formData, address: spot})} className={`px-3 py-1 rounded-full hover:bg-brand-teal hover:text-white transition-colors ${formData.address === spot ? 'bg-brand-teal text-white' : 'bg-gray-100'}`}>{spot}</button>
                         ))}
                     </div>
@@ -586,19 +617,19 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         )}
                     </div>
                     
-                    {!isI9 && (
+                    {!isI9 && !isInspection && !isLoan && (
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                             <label className="text-xs font-bold text-gray-500 uppercase">Stamps / Certificates</label>
                             <div className="flex items-center gap-2 mt-2">
                                 <PenTool size={18} className="text-brand-teal" />
                                 <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
-                                <span className="text-sm text-gray-600">($10 WV / $5 OH)</span>
+                                <span className="text-sm text-gray-600">(${formData.state === 'WV' ? 10 : 5} ea)</span>
                             </div>
                         </div>
                     )}
                   </div>
 
-                  <textarea placeholder="Additional Notes (Optional)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal transition-all" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
+                  <textarea placeholder="Additional Notes (Gate code, specific instructions, etc)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal transition-all" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                 </div>
               )}
               {step === 3 && (
@@ -608,7 +639,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         <div>
                             <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
                             <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
-                            <p className="text-xs text-gray-400">Travel Reservation Fee</p>
+                            <p className="text-xs text-gray-400">{isInspection ? 'Inspection Fee' : 'Travel Reservation Fee'}</p>
                             {parseFloat(price.surcharge) > 0 && <p className="text-[10px] text-red-500">(Includes ${price.surcharge} mileage)</p>}
                         </div>
                         {price.dueLater > 0 && (
@@ -629,7 +660,9 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         <span className="text-xs text-gray-700 leading-relaxed">
                             {isI9 
                                 ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. A separate $25 service fee is due at the appointment." 
-                                : `Notarization fees are collected at the time of service ($${formData.state === 'OH' ? '5' : '10'} per notarial act). Travel fees are prepaid to ensure your appointment is secure.`}
+                                : isInspection 
+                                ? "I understand this is a Field Inspection / Verification service and does not include document notarization. Base fee covers up to 10 miles of travel."
+                                : `Notarization fees are collected at the time of service ($${formData.state === 'WV' ? '10' : '5'} per notarial act). Travel fees are prepaid to ensure your appointment is secure.`}
                         </span>
                     </label>
 
@@ -661,7 +694,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
 // --- MAIN PAGE SECTIONS ---
 
 const Hero = ({ onBookClick }) => (
-  <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-brand-navy-dark">
+  <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-brand-navy-dark">
     <div className="absolute inset-0 z-0">
       <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Background" className="w-full h-full object-cover scale-105 opacity-40 mix-blend-overlay" />
       <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-dark via-brand-navy-dark/80 to-transparent"></div>
@@ -670,16 +703,16 @@ const Hero = ({ onBookClick }) => (
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
         
         <div className="inline-block px-5 py-2 rounded-full bg-brand-gold/20 text-brand-gold text-xs font-bold uppercase tracking-widest mb-8 border border-brand-gold/30">
-            Serving Huntington, WV, Chesapeake, OH & Surrounding Areas
+            Serving the Huntington Tri-State Region (WV–OH–KY)
         </div>
         
         <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white font-serif mb-6 leading-[1.1] tracking-tight">
-          Same-Day Mobile Notary – <br/>
+          Same-Day Mobile Notary & Field Inspections<br/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">We Come to You.</span>
         </h1>
         
-        <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-medium">
-          Available Monday-Friday evenings and Saturdays, with flexible weekday daytime I-9 appointments. Professional, fast, and secure document services at your location.
+        <p className="text-lg md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-medium">
+          Supporting mortgage companies, insurance providers, asset managers, and private clients with fast, accurate, on-site verification and notarization.
         </p>
         
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
@@ -695,7 +728,7 @@ const Hero = ({ onBookClick }) => (
         <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-10 text-sm md:text-base text-gray-200 font-bold">
            <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={20}/> Commissioned Notary Public</span>
            <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={20}/> Fully E&O Insured</span>
-           <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={20}/> Background Screened</span>
+           <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={20}/> Fast, Accurate Reporting</span>
         </div>
 
       </motion.div>
@@ -709,8 +742,8 @@ const WhyChooseUs = () => (
           <div className="grid md:grid-cols-4 gap-8 text-center max-w-6xl mx-auto">
               {[
                   { icon: Zap, title: "Same-Day Service", desc: "Fast response times when you need it most." },
-                  { icon: Car, title: "We Come To You", desc: "Mobile service to your home, office, or hospital." },
-                  { icon: Shield, title: "Compliance Confidence", desc: "We strictly follow all state notary laws." },
+                  { icon: Car, title: "Tri-State Mobile", desc: "We travel across WV, OH, and KY to your location." },
+                  { icon: Shield, title: "Compliance Confidence", desc: "Strict adherence to state notary and inspection laws." },
                   { icon: Clock, title: "Flexible Hours", desc: "Available evenings and weekends by request." }
               ].map((item, i) => (
                   <div key={i} className="flex flex-col items-center">
@@ -728,15 +761,16 @@ const Services = () => (
   <section id="services" className="py-24 bg-slate-50 relative border-b border-gray-200">
     <div className="container mx-auto px-6 max-w-6xl">
       <div className="text-center mb-16 max-w-3xl mx-auto">
-        <h2 className="text-4xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Expert Mobile Services</h2>
-        <p className="text-lg text-gray-500">We specialize in providing secure, legally compliant signings wherever you are.</p>
+        <h2 className="text-4xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Tri-State Services</h2>
+        <p className="text-lg text-gray-500">Comprehensive legal signing and on-site inspection solutions tailored to your schedule.</p>
       </div>
       
-      <div className="grid md:grid-cols-3 gap-8 mb-20">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
         {[
-          { icon: Car, title: "Mobile Notary", desc: "Standard document notarization at your location." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote hires." },
-          { icon: ShieldCheck, title: "Signature Witnessing", desc: "Acting as an impartial witness for sensitive documents." }
+          { icon: Camera, title: "Field Inspections", desc: "Occupancy verification, property condition reports, and photo documentation." },
+          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV, OH & KY." },
+          { icon: FileText, title: "Loan Signings", desc: "Accurate mortgage, real estate, and closing document execution." },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employee onboarding." }
         ].map((s, i) => (
           <div key={i} className="p-8 rounded-3xl bg-white border border-gray-100 text-center shadow-lg hover:-translate-y-1 transition-transform">
             <div className="bg-brand-navy-dark/5 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto text-brand-teal"><s.icon size={32}/></div>
@@ -748,23 +782,23 @@ const Services = () => (
 
       <div className="grid md:grid-cols-2 gap-12 bg-white p-10 md:p-16 rounded-[3rem] shadow-xl border border-gray-100">
           <div>
-              <h3 className="text-3xl font-serif font-bold text-brand-navy-dark mb-6">Common Documents We Notarize</h3>
+              <h3 className="text-3xl font-serif font-bold text-brand-navy-dark mb-6">Documents & Inspections</h3>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {['Power of Attorney (POA)', 'Wills & Trusts', 'Affidavits', 'Medical Directives', 'Vehicle Title Transfers', 'General Contracts'].map(doc => (
+                  {['Occupancy Verification', 'Property Condition Reports', 'Photo Documentation', 'Power of Attorney (POA)', 'Wills & Trusts', 'Real Estate Documents', 'Affidavits', 'Loan Signings'].map(doc => (
                       <li key={doc} className="flex items-center gap-3 text-gray-700 font-medium"><FileText size={18} className="text-brand-gold shrink-0"/> {doc}</li>
                   ))}
               </ul>
           </div>
           <div className="bg-slate-50 p-8 rounded-3xl border border-gray-100">
                <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-6">Where We Travel To</h3>
-               <p className="text-gray-600 text-sm mb-6">We discrete, professional service at facilities requiring special clearance or sensitivity.</p>
+               <p className="text-gray-600 text-sm mb-6">We provide discrete, professional service at facilities requiring special clearance or sensitivity.</p>
                <div className="space-y-4">
                    {[
+                       { icon: Building2, text: "Commercial Properties & Real Estate" },
                        { icon: Building2, text: "Hospitals & Medical Centers" },
                        { icon: Home, text: "Nursing & Assisted Living" },
                        { icon: Lock, text: "Jails & Detention Centers" },
-                       { icon: Briefcase, text: "Corporate Offices" },
-                       { icon: MapPin, text: "Private Residences & Coffee Shops" }
+                       { icon: MapPin, text: "Private Residences & Offices" }
                    ].map((loc, idx) => (
                        <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                            <div className="bg-brand-navy-dark text-white p-2 rounded-lg"><loc.icon size={18}/></div>
@@ -788,22 +822,22 @@ const Pricing = ({ onBookClick }) => (
         <div className="bg-slate-50 p-12 rounded-[3rem] shadow-lg border border-gray-100">
           <h3 className="text-2xl font-bold mb-6 text-brand-navy-dark flex items-center gap-3"><Car className="text-brand-teal"/> Mobile Service Fees</h3>
           <ul className="space-y-5 mb-8 text-gray-700 text-sm font-medium">
-            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>Travel Fee:</strong> Based on distance to secure immediate dispatch. (Starting at $40)</span></li>
-            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>State Notary Fees:</strong> Collected at the appointment ($10/stamp WV, $5/stamp OH).</span></li>
+            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>Field Inspections:</strong> Starting at $50 (Flat fee + mileage). Comprehensive on-site reporting.</span></li>
+            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>Notary Travel Fee:</strong> Based on distance to secure immediate dispatch. (Starting at $40)</span></li>
+            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>State Notary Fees:</strong> Collected at appointment ($10/stamp WV, $5/stamp OH & KY).</span></li>
             <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>After-Hours:</strong> Rush and evening services available for urgent needs.</span></li>
-            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>Facility Fees:</strong> Special rates apply for hospital and jail visits requiring wait times.</span></li>
           </ul>
           <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-4 rounded-2xl bg-brand-navy-dark text-white font-bold hover:bg-brand-teal transition-all text-lg shadow-xl">Book Now & See Exact Price</button>
         </div>
         
         <div className="p-8">
-            <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-4">Why Pre-Pay Travel?</h3>
+            <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-4">Why Pre-Pay Online?</h3>
             <p className="text-gray-600 mb-6 leading-relaxed">
-                When you need a notary immediately, reliability is everything. Pre-paying the travel reservation fee guarantees your appointment time and dispatches our notary directly to your location without delay.
+                When you need an inspection or notary immediately, reliability is everything. Pre-paying the reservation or base fee guarantees your appointment time and dispatches us directly to your location without delay.
             </p>
             <div className="bg-orange-50 border-l-4 border-brand-gold p-4 rounded-r-xl">
                 <p className="text-sm text-brand-navy-dark font-medium">
-                    Your online payment applies to the travel reservation fee only. Any state notary fees and specialty service charges are collected at the appointment.
+                    "Fast, professional, and arrived exactly on time. Transparent pricing made the process incredibly easy to manage."
                 </p>
             </div>
         </div>
@@ -814,8 +848,8 @@ const Pricing = ({ onBookClick }) => (
 
 const InstantResponse = ({ onBookClick }) => (
     <section className="bg-brand-gold py-16 px-6 text-center text-brand-navy-dark border-y-8 border-brand-navy-dark">
-       <h2 className="text-3xl md:text-5xl font-black font-serif mb-4">Need a Notary Right Now?</h2>
-       <p className="text-lg md:text-xl mb-8 font-medium max-w-2xl mx-auto text-brand-navy-dark/80">Don't wait. We can dispatch a commissioned notary to your location immediately.</p>
+       <h2 className="text-3xl md:text-5xl font-black font-serif mb-4">Need Service Right Now?</h2>
+       <p className="text-lg md:text-xl mb-8 font-medium max-w-2xl mx-auto text-brand-navy-dark/80">Don't wait. We can dispatch to your location immediately.</p>
        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
            <a href={PHONE_LINK} className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-brand-navy-dark text-white px-10 py-5 rounded-full text-xl font-black hover:scale-105 transition-transform shadow-2xl">
               <PhoneCall size={24} /> Text or Call Now
@@ -830,8 +864,8 @@ const InstantResponse = ({ onBookClick }) => (
 const Footer = ({ onViewChange }) => (
   <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
     <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
-    <h2 className="font-serif text-3xl font-bold mb-4">Signature Seal Mobile Notary</h2>
-    <p className="text-gray-400 mb-10 max-w-md mx-auto">Professional, reliable, and legally compliant notarizations delivered to your doorstep.</p>
+    <h2 className="font-serif text-3xl font-bold mb-4">Signature Seal Mobile Notary & Inspections</h2>
+    <p className="text-gray-400 mb-10 max-w-md mx-auto">Professional, reliable, and legally compliant services delivered to your doorstep in the Tri-State area.</p>
     
     <div className="flex flex-wrap justify-center gap-8 mb-12 text-gray-300 font-bold uppercase text-xs tracking-widest">
       <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('services')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Services</button>
@@ -842,7 +876,7 @@ const Footer = ({ onViewChange }) => (
 
     <div className="border-t border-white/10 pt-8 mt-8 flex flex-col items-center">
         <p className="text-brand-gold font-bold text-lg flex items-center gap-2 mb-2"><PhoneCall size={18}/> {PHONE_NUMBER}</p>
-        <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed in WV & OH.</p>
+        <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Tri-State Service (WV-OH-KY).</p>
         <button 
             onClick={() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); onViewChange('admin'); }} 
             className="mt-8 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"
@@ -894,7 +928,7 @@ const AdminDashboard = ({ token, onLogout }) => {
     link.click();
   };
   const handleSendInvoice = async (id) => {
-    const sigs = prompt("How many stamps/certificates?");
+    const sigs = prompt("How many stamps/certificates or flat fee items?");
     if (!sigs || isNaN(sigs) || parseInt(sigs) < 1) return alert("Please enter a valid number.");
     try {
         const res = await fetch(`${API_URL}/api/create-invoice`, {
@@ -915,7 +949,7 @@ const AdminDashboard = ({ token, onLogout }) => {
             <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
             <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
             <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <CreditCard size={14}/> Bill Notary Fees
+                <CreditCard size={14}/> Send Follow-Up Invoice
             </button>
         </div>
       ))}</div>
