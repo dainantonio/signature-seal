@@ -688,28 +688,46 @@ const Hero = ({ onBookClick }) => (
       <div className="absolute inset-0 bg-gradient-to-b from-brand-navy-dark/90 via-brand-navy-dark/80 to-brand-navy-dark"></div>
     </div>
 
-    <div className="container mx-auto px-6 relative z-10 pt-32 md:pt-20">
+    <div className="container mx-auto px-4 relative z-10 pt-32 md:pt-24 pb-16">
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-5xl mx-auto text-center">
         
-        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-gold/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-8 border border-brand-gold/20 backdrop-blur-sm">
-            <MapPin size={14}/> Serving Huntington & The Tri-State Region
+        {/* SEO Location Tag */}
+        <div className="inline-flex items-center flex-wrap justify-center gap-2 px-5 py-2.5 rounded-full bg-brand-gold/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-6 border border-brand-gold/20 backdrop-blur-sm">
+            <MapPin size={14} className="shrink-0"/>
+            <span>Huntington, WV • Proctorville, OH • Ashland, KY & Surrounding Areas</span>
         </div>
         
-        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white font-serif mb-6 leading-[1.05] tracking-tight">
-          Same-Day Mobile Notary & Inspections. <br className="hidden md:block"/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">We Come to You.</span>
+        {/* Main SEO Headline */}
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white font-serif mb-6 leading-[1.1] tracking-tight">
+          Trusted Field Inspections & <br className="hidden md:block"/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">Mobile Notary Services</span>
         </h1>
         
-        <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
-          Available Evenings & Weekends. We provide fast, accurate, and fully compliant on-site verification anywhere in WV, OH, or KY.
+        {/* Service Tags */}
+        <div className="flex flex-wrap justify-center items-center gap-3 md:gap-6 mb-8 text-brand-teal font-bold text-sm md:text-base">
+            <span className="flex items-center gap-2"><FileSignature size={18}/> Mobile Notary</span>
+            <span className="hidden md:inline text-gray-600">•</span>
+            <span className="flex items-center gap-2"><Camera size={18}/> Field Inspections</span>
+            <span className="hidden md:inline text-gray-600">•</span>
+            <span className="flex items-center gap-2"><Car size={18}/> On-Site Service</span>
+        </div>
+        
+        {/* Value Proposition */}
+        <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 max-w-3xl mx-auto font-medium leading-relaxed">
+          Fast, reliable, and professional on-site inspections and notarizations across the Tri-State area. I provide property inspections, occupancy verification, photo documentation, and mobile notary services with accuracy, speed, and clear communication every step of the way.
+        </p>
+
+        <p className="text-lg md:text-xl text-white font-bold mb-10">
+          Need dependable local coverage? Let’s get it done right the first time.
         </p>
         
+        {/* CTAs */}
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
-          <a href={PHONE_LINK} className="bg-brand-gold text-brand-navy-dark font-black px-10 py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-gold/20 text-lg flex items-center justify-center gap-3">
-            <PhoneCall size={22} /> Call Now for Immediate Dispatch
+          <a href={PHONE_LINK} className="bg-brand-gold text-brand-navy-dark font-black px-8 py-4 md:py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-gold/20 text-base md:text-lg flex items-center justify-center gap-3">
+            <PhoneCall size={22} /> Call for Immediate Dispatch
           </a>
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-10 py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-teal/20 text-lg flex items-center justify-center gap-3">
-            <Calendar size={22} /> Book an Appointment Online
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-8 py-4 md:py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-teal/20 text-base md:text-lg flex items-center justify-center gap-3">
+            <Calendar size={22} /> Request Service Today
           </button>
         </div>
       </motion.div>
