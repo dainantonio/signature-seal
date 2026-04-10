@@ -88,19 +88,39 @@ const QRModal = ({ isOpen, onClose }) => {
 };
 
 // Fixed Mobile Action Bar (Zero Friction CTA)
-const FloatingBookButton = ({ onClick }) => (
-  <div className="fixed bottom-0 left-0 right-0 z-[45] md:hidden bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex gap-3">
-    <a href={PHONE_LINK} className="flex-[0.35] bg-brand-navy-dark text-brand-gold font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95">
-        <PhoneCall size={20} /> Call
-    </a>
-    <button 
-      onClick={onClick}
-      className="flex-[0.65] bg-brand-teal text-white font-bold text-[17px] py-4 rounded-2xl shadow-lg shadow-brand-teal/30 flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors active:scale-95"
-    >
-      <Calendar size={20} /> Book Online
-    </button>
-  </div>
-);
+const FloatingBookButton = ({ onClick }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      // Hide at the top where Hero buttons are visible, show when scrolled down
+      if (window.scrollY > 400) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+    
+    window.addEventListener("scroll", toggleVisibility);
+    toggleVisibility(); // Check immediately on load
+    
+    return () => window.removeEventListener("scroll", toggleVisibility);
+  }, []);
+
+  return (
+    <div className={`fixed bottom-0 left-0 right-0 z-[45] md:hidden bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex gap-3 transition-all duration-300 ease-in-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
+      <a href={PHONE_LINK} className="flex-[0.35] bg-brand-navy-dark text-brand-gold font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95">
+          <PhoneCall size={20} /> Call
+      </a>
+      <button 
+        onClick={onClick}
+        className="flex-[0.65] bg-brand-teal text-white font-bold text-[17px] py-4 rounded-2xl shadow-lg shadow-brand-teal/30 flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors active:scale-95"
+      >
+        <Calendar size={20} /> Book Online
+      </button>
+    </div>
+  );
+};
 
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
