@@ -4,7 +4,7 @@ import {
   Award, Menu, X, Check, Car, FileSignature, ShieldCheck, 
   MessageSquare, Send, Loader2, MapPin, Lock, Calendar, 
   Clock, ArrowRight, Star, ChevronRight, LogOut, Key, AlertCircle, Trash2, Download, CreditCard, ChevronLeft,
-  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Search, PhoneCall, CheckCircle2, Zap, Building2, Shield, Camera
+  ChevronDown, FileText, HelpCircle, AlertTriangle, Navigation, PenTool, Mail, Coffee, Home, Briefcase, Info, QrCode, Search, PhoneCall, CheckCircle2, Zap, Building2, Shield, Camera, FileCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -53,9 +53,7 @@ const staggerContainer = {
 
 const QRModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
-    
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(SITE_URL)}&color=2c3e50`;
-
     const downloadQR = async () => {
         try {
             const response = await fetch(qrUrl);
@@ -73,15 +71,15 @@ const QRModal = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-brand-navy-dark/80 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-brand-navy-dark/90 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full text-center shadow-2xl relative" onClick={e => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
                 <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-2">Scan to Book</h3>
                 <p className="text-gray-500 text-sm mb-6">Share this code with clients for instant access.</p>
-                <div className="bg-white border-4 border-brand-gold/20 rounded-2xl p-4 inline-block mb-6 shadow-inner">
+                <div className="bg-white border-4 border-brand-gold/20 rounded-3xl p-4 inline-block mb-6 shadow-inner">
                     <img src={qrUrl} alt="Signature Seal QR Code" className="w-48 h-48" />
                 </div>
-                <button onClick={downloadQR} className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-3 rounded-xl font-bold hover:bg-brand-teal transition-all">
+                <button onClick={downloadQR} className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-white py-4 rounded-2xl font-bold hover:bg-brand-teal transition-all">
                     <Download size={18} /> Download Image
                 </button>
             </div>
@@ -89,16 +87,17 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
+// Fixed Mobile Action Bar (Zero Friction CTA)
 const FloatingBookButton = ({ onClick }) => (
-  <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)] flex gap-2">
-    <a href={PHONE_LINK} className="w-16 bg-brand-gold text-brand-navy-dark font-bold py-4 rounded-full shadow-2xl flex items-center justify-center hover:bg-yellow-500 transition-colors border-2 border-white/20">
-        <PhoneCall size={24} />
+  <div className="fixed bottom-0 left-0 right-0 z-[45] md:hidden bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex gap-3">
+    <a href={PHONE_LINK} className="flex-[0.35] bg-brand-navy-dark text-brand-gold font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg active:scale-95">
+        <PhoneCall size={20} /> Call
     </a>
     <button 
       onClick={onClick}
-      className="flex-1 bg-brand-teal text-white font-bold text-lg py-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors border-2 border-white/20"
+      className="flex-[0.65] bg-brand-teal text-white font-bold text-[17px] py-4 rounded-2xl shadow-lg shadow-brand-teal/30 flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors active:scale-95"
     >
-      <Calendar size={24} /> Book Online
+      <Calendar size={20} /> Book Online
     </button>
   </div>
 );
@@ -116,90 +115,66 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const handleRefresh = () => window.location.reload();
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md border-gray-100 py-2' : 'bg-transparent border-transparent py-5'}`}>
-      <div className="hidden lg:flex container mx-auto px-6 justify-between items-center h-24"> 
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-xl border-gray-200 py-3' : 'bg-transparent border-transparent py-5'}`}>
+      <div className="hidden lg:flex container mx-auto px-6 justify-between items-center"> 
         <div className="flex items-center gap-4 cursor-pointer group select-none" onClick={handleRefresh} title="Refresh Page">
-          <div className={`w-14 h-14 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
-            <Award className="w-8 h-8" />
+          <div className={`w-12 h-12 rounded-2xl transition-all duration-300 flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold backdrop-blur-md'}`}>
+            <Award className="w-7 h-7" />
           </div>
-          <div className="flex flex-col justify-center items-center"> 
-            <h1 className={`font-serif text-3xl font-bold leading-none tracking-tight text-center ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-xs leading-none tracking-[0.2em] uppercase font-bold mt-1.5 text-center ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Tri-State Notary & Inspections</span>
+          <div className="flex flex-col justify-center"> 
+            <h1 className={`font-serif text-2xl font-bold leading-none tracking-tight ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
+            <span className={`text-[10px] leading-none tracking-[0.2em] uppercase font-bold mt-1.5 ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Tri-State Notary & Inspections</span>
           </div>
         </div>
-        <div className="flex items-center space-x-6">
-          {['Services', 'Pricing', 'FAQ'].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className={`font-bold text-sm uppercase tracking-wide transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
+        <div className="flex items-center space-x-8">
+          {['Services', 'Coverage', 'Pricing', 'FAQ'].map((item) => (
+            <a key={item} href={`#${item.toLowerCase()}`} className={`font-bold text-sm uppercase tracking-wider transition-all duration-300 hover:text-brand-teal ${scrolled ? 'text-gray-600' : 'text-gray-200'}`}>{item}</a>
           ))}
           
-          <button onClick={onQRClick} className={`p-2 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark hover:bg-gray-100' : 'text-white hover:bg-white/10'}`} title="Show QR Code">
-             <QrCode size={20} />
+          <button onClick={onQRClick} className={`p-2.5 rounded-full transition-colors ${scrolled ? 'text-brand-navy-dark bg-gray-100 hover:bg-gray-200' : 'text-white bg-white/10 hover:bg-white/20'}`} title="Show QR Code">
+             <QrCode size={18} />
           </button>
 
-          <div className="flex items-center gap-3 border-l pl-6 border-gray-400/30">
-              <a href={PHONE_LINK} className={`font-bold text-lg flex items-center gap-2 transition-colors ${scrolled ? 'text-brand-navy-dark hover:text-brand-teal' : 'text-white hover:text-brand-gold'}`}>
-                  <PhoneCall size={20} /> {PHONE_NUMBER}
+          <div className="flex items-center gap-4 border-l-2 pl-8 border-gray-400/30">
+              <a href={PHONE_LINK} className={`font-black text-lg flex items-center gap-2 transition-colors ${scrolled ? 'text-brand-navy-dark hover:text-brand-teal' : 'text-white hover:text-brand-gold'}`}>
+                  <PhoneCall size={20} className={scrolled ? 'text-brand-teal' : 'text-brand-gold'} /> {PHONE_NUMBER}
               </a>
-              <button onClick={() => onBookClick()} className={`font-bold px-8 py-3 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-base ${scrolled ? 'bg-brand-teal text-white shadow-lg' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
+              <button onClick={() => onBookClick()} className={`font-bold px-8 py-3.5 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-sm uppercase tracking-wide ${scrolled ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/30' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
           </div>
         </div>
       </div>
       
-      {/* MOBILE */}
-      <div className="lg:hidden container mx-auto px-6 h-24 grid grid-cols-[1fr_auto_1fr] items-center">
-        <div className="w-10">
-            <button onClick={onQRClick} className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>
-                <QrCode size={24} />
-            </button>
-        </div>
-        <div className="flex flex-row items-center gap-2 cursor-pointer justify-center" onClick={handleRefresh}>
-           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
-            <Award className="w-8 h-8" />
+      {/* MOBILE HEADER - Premium alignment */}
+      <div className="lg:hidden container mx-auto px-4 h-14 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+        <button onClick={onQRClick} className={`p-2 rounded-full ${scrolled ? 'bg-gray-100 text-brand-navy-dark' : 'bg-white/10 text-white'}`}>
+            <QrCode size={18} />
+        </button>
+        <div className="flex flex-row items-center gap-3 cursor-pointer justify-center" onClick={handleRefresh}>
+           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${scrolled ? 'bg-brand-navy-dark text-brand-gold' : 'bg-white/10 text-brand-gold'}`}>
+            <Award className="w-5 h-5" />
           </div>
           <div className="flex flex-col justify-center items-start">
-            <h1 className={`font-serif text-2xl font-black leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
-            <span className={`text-[11px] uppercase font-bold mt-0.5 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>WV-OH-KY Services</span>
+            <h1 className={`font-serif text-lg font-black leading-none ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`}>Signature Seal</h1>
+            <span className={`text-[9px] uppercase font-bold mt-1 tracking-widest ${scrolled ? 'text-brand-teal' : 'text-gray-300'}`}>Tri-State Notary</span>
           </div>
         </div>
-        <div className="justify-self-end">
-          <button className={`p-2 ${scrolled ? 'text-brand-navy-dark' : 'text-white'}`} onClick={() => setIsOpen(!isOpen)}>{isOpen ? <X size={28} /> : <Menu size={28} />}</button>
-        </div>
+        <button className={`p-2 rounded-full ${scrolled ? 'bg-gray-100 text-brand-navy-dark' : 'bg-white/10 text-white'}`} onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
       </div>
+
       <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="lg:hidden fixed top-0 left-0 w-full h-screen bg-brand-navy-dark z-40 flex flex-col items-center justify-center space-y-8">
-             <a href={PHONE_LINK} className="text-4xl font-black text-brand-gold mb-8 flex items-center gap-3"><PhoneCall size={32}/> {PHONE_NUMBER}</a>
-             {['Services', 'Pricing', 'FAQ'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-3xl font-serif font-bold text-white hover:text-brand-teal">{item}</a>
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="lg:hidden fixed top-[72px] left-0 w-full h-[calc(100vh-72px)] bg-brand-navy-dark/95 backdrop-blur-xl z-40 flex flex-col items-center justify-center space-y-8 p-6">
+             <a href={PHONE_LINK} className="text-4xl font-black text-brand-gold mb-4 flex items-center gap-3 bg-white/10 px-8 py-4 rounded-3xl active:scale-95 transition-transform"><PhoneCall size={28}/> Call Now</a>
+             {['Services', 'Coverage', 'Pricing', 'FAQ'].map((item) => (
+              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsOpen(false)} className="text-2xl font-serif font-bold text-white hover:text-brand-teal w-full text-center py-2">{item}</a>
             ))}
-             <button onClick={() => {setIsOpen(false); onBookClick();}} className="bg-brand-teal text-white px-12 py-4 rounded-full font-bold text-xl mt-8">Book Appointment</button>
+             <button onClick={() => {setIsOpen(false); onBookClick();}} className="bg-brand-teal text-white w-full py-5 rounded-2xl font-bold text-xl mt-4 shadow-lg shadow-brand-teal/20 active:scale-95 transition-transform">Book Appointment</button>
           </motion.div>
         )}
       </AnimatePresence>
     </nav>
-  );
-};
-
-const BackToTop = () => {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const toggleVisibility = () => {
-      if (window.pageYOffset > 300) setVisible(true);
-      else setVisible(false);
-    };
-    window.addEventListener("scroll", toggleVisibility);
-    return () => window.removeEventListener("scroll", toggleVisibility);
-  }, []);
-
-  return (
-    <button
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
-      title="Back to Top"
-    >
-      <ArrowRight size={24} className="-rotate-90" />
-    </button>
   );
 };
 
@@ -208,33 +183,30 @@ const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
   const faqs = [
-    { q: "Do you serve WV, OH, and KY?", a: "Yes! We serve the entire Huntington Tri-State area. This includes parts of West Virginia, Ohio, and Kentucky for both mobile notary and field inspections." },
-    { q: "What does a Field Inspection include?", a: "We support mortgage and insurance companies with occupancy verification, property condition reports, photo documentation, and general site inspections." },
-    { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to secure your immediate appointment. State notary fees are collected separately ($10/stamp in WV, $5/stamp in OH/KY)." },
-    { q: "What ID do I need for notarization?", a: "A valid, unexpired government-issued photo ID is required. This includes Driver's Licenses, State IDs, or Passports. All signers must be physically present." },
+    { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to dispatch our agent immediately to your location. State notary fees are collected separately at the appointment ($10/stamp in WV, $5/stamp in OH/KY)." },
+    { q: "What do I need to bring?", a: "You must provide a valid, unexpired government-issued photo ID (Driver's License, State ID, or Passport). All signers must be physically present." },
+    { q: "Can you come to a hospital or nursing home?", a: "Yes, we specialize in facility visits. We frequently visit local hospitals, assisted living facilities, and rehabilitation centers. Please ensure the signer is alert, aware of what they are signing, and has valid ID." },
     { q: "Do you offer same-day service?", a: "Yes! We offer same-day, after-hours, and weekend appointments subject to availability. Call us immediately for urgent requests." },
+    { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an 'Authorized Representative' service, not a notarial act. We charge a flat fee for this service." },
   ];
 
   return (
-    <section id="faq" className="py-24 bg-white">
+    <section id="faq" className="py-24 bg-slate-50 border-t border-gray-200">
       <div className="container mx-auto px-6 max-w-3xl">
-        <h2 className="text-3xl font-serif font-bold text-brand-navy-dark text-center mb-12">Frequently Asked Questions</h2>
+        <h2 className="text-3xl md:text-5xl font-serif font-black text-brand-navy-dark text-center mb-12 tracking-tight">Frequently Asked Questions</h2>
         <div className="space-y-4">
           {faqs.map((faq, i) => (
-            <div key={i} className="bg-slate-50 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <button onClick={() => setActiveIndex(activeIndex === i ? null : i)} className="w-full p-6 text-left flex justify-between items-center hover:bg-white transition-colors">
-                <span className="font-bold text-brand-navy-dark">{faq.q}</span>
-                <ChevronDown className={`text-brand-teal transition-transform duration-300 ${activeIndex === i ? 'rotate-180' : ''}`} size={20} />
+            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <button onClick={() => setActiveIndex(activeIndex === i ? null : i)} className="w-full p-6 text-left flex justify-between items-center hover:bg-slate-50 transition-colors focus:outline-none">
+                <span className="font-bold text-brand-navy-dark text-lg pr-4">{faq.q}</span>
+                <div className={`p-2 rounded-full transition-colors duration-300 ${activeIndex === i ? 'bg-brand-teal text-white' : 'bg-gray-100 text-gray-500'}`}>
+                    <ChevronDown className={`transition-transform duration-300 ${activeIndex === i ? 'rotate-180' : ''}`} size={20} />
+                </div>
               </button>
               <AnimatePresence>
                 {activeIndex === i && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }} 
-                    animate={{ height: "auto", opacity: 1 }} 
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="p-6 pt-0 text-gray-600 text-sm leading-relaxed">{faq.a}</p>
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <p className="p-6 pt-0 text-gray-600 leading-relaxed text-base">{faq.a}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -248,7 +220,7 @@ const FAQ = () => {
 
 const AIChatWidget = ({ onRecommend }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with Field Inspections, Mobile Notary (WV-OH-KY), I-9 Verification, and scheduling. How can I assist?" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "Hi! I'm the Concierge. I can help with Field Inspections, Mobile Notary (WV-OH-KY), and scheduling. How can I assist?" }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -270,24 +242,25 @@ const AIChatWidget = ({ onRecommend }) => {
   };
 
   return (
-    <div className="fixed bottom-24 right-8 z-40 flex flex-col items-end font-sans">
+    <div className="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-40 flex flex-col items-end font-sans pb-[env(safe-area-inset-bottom)]">
       <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-2xl shadow-2xl mb-6 w-[90vw] md:w-96 border border-gray-100 overflow-hidden flex flex-col h-[500px]">
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white rounded-3xl shadow-2xl mb-4 w-[calc(100vw-2rem)] md:w-[400px] border border-gray-100 overflow-hidden flex flex-col h-[500px]">
             <div className="bg-brand-navy-dark p-4 flex items-center gap-3 text-white shadow-md z-10">
-              <h3 className="font-bold text-sm">Notary Concierge</h3>
-              <button onClick={() => setIsOpen(false)} className="ml-auto hover:bg-white/10 p-1 rounded transition"><X size={18} /></button>
+              <div className="w-8 h-8 rounded-full bg-brand-gold flex items-center justify-center text-brand-navy-dark"><Award size={16}/></div>
+              <h3 className="font-bold text-base">Notary Concierge</h3>
+              <button onClick={() => setIsOpen(false)} className="ml-auto bg-white/10 p-2 rounded-full hover:bg-white/20 transition active:scale-95"><X size={16} /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 text-sm">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
-                    <p>{msg.text}</p>
+                  <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
+                    <p className="leading-relaxed text-[15px]">{msg.text}</p>
                     {msg.recommendation && msg.recommendation.action === 'book_general' && (
-                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider">Book Now</button>
+                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white py-3 rounded-xl font-bold mt-4 shadow-md active:scale-95 transition-transform">Book Now</button>
                     )}
                      {msg.recommendation && msg.recommendation.action === 'contact_us' && (
-                        <a href={PHONE_LINK} className="block text-center w-full bg-brand-gold text-brand-navy-dark text-[10px] py-2 rounded font-bold mt-3 uppercase tracking-wider">Call Us</a>
+                        <a href={PHONE_LINK} className="block text-center w-full bg-brand-gold text-brand-navy-dark py-3 rounded-xl font-bold mt-4 shadow-md active:scale-95 transition-transform">Call Us Now</a>
                     )}
                   </div>
                 </div>
@@ -295,13 +268,15 @@ const AIChatWidget = ({ onRecommend }) => {
               <div ref={messagesEndRef} />
             </div>
             <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-gray-100 flex gap-2">
-              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 bg-gray-50 rounded-lg px-4 py-2 text-sm outline-none" />
-              <button type="submit" disabled={isLoading} className="p-2 bg-brand-navy-dark text-white rounded-lg"><Send size={18} /></button>
+              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 bg-gray-100 rounded-xl px-4 py-3 text-base outline-none focus:ring-2 focus:ring-brand-teal/20 transition-all" />
+              <button type="submit" disabled={isLoading} className="p-3 bg-brand-navy-dark text-white rounded-xl shadow-md active:scale-95 transition-transform"><Send size={20} /></button>
             </form>
           </motion.div>
         )}
       </AnimatePresence>
-      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-teal text-white p-4 rounded-full shadow-xl hover:scale-105 transition-all"><MessageSquare size={28} /></button>
+      <button onClick={() => setIsOpen(!isOpen)} className="bg-brand-navy-dark text-white p-4 rounded-full shadow-[0_10px_25px_rgba(29,45,62,0.4)] hover:scale-105 active:scale-95 transition-all border-2 border-brand-teal">
+          <MessageSquare size={28} />
+      </button>
     </div>
   );
 };
@@ -310,7 +285,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
-    street: '', city: '', zip: '', state: 'WV', // Address components
+    street: '', city: '', zip: '', state: 'WV', 
     notes: '', mileage: 0, signatures: 1
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -329,37 +304,31 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
 
   // --- AUTO MILEAGE CALCULATION AGENT ---
   const calculateMileage = async () => {
-    // Compile address elements
     const addressToGeocode = `${formData.street} ${formData.city} ${formData.state} ${formData.zip}`.trim();
-    if (addressToGeocode.length < 10) return; // Wait until adequate info is provided
+    if (addressToGeocode.length < 10) return;
 
     setIsCalculating(true);
     try {
-        // 1. Convert client address to map coordinates
         const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressToGeocode)}`);
         const geoData = await geoRes.json();
-        
         if (!geoData || geoData.length === 0) {
             console.warn("Geocode mapping failed");
             setIsCalculating(false);
             return;
         }
-
         const destLat = geoData[0].lat;
         const destLon = geoData[0].lon;
         
-        // 2. Fixed Starting Location: 1020 County Rd 3, Chesapeake, OH
-        // Hardcoded Coordinates for accuracy
+        // Base Location: 1020 County Rd 3, Chesapeake, OH
         const startLat = 38.4357;
         const startLon = -82.4641;
 
-        // 3. Find optimal driving distance
         const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${destLon},${destLat}?overview=false`);
         const routeData = await routeRes.json();
 
         if (routeData.code === 'Ok' && routeData.routes.length > 0) {
             const meters = routeData.routes[0].distance;
-            const miles = (meters * 0.000621371).toFixed(2); // Convert to Miles
+            const miles = (meters * 0.000621371).toFixed(2);
             setFormData(prev => ({ ...prev, mileage: miles }));
         }
     } catch (e) {
@@ -369,12 +338,9 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     }
   };
 
-  // Debounced listener: Auto-triggers agent 1.5s after user finishes typing
   useEffect(() => {
     if (formData.street && formData.city && formData.zip && formData.zip.length >= 5) {
-        const timer = setTimeout(() => {
-            calculateMileage();
-        }, 1500);
+        const timer = setTimeout(() => calculateMileage(), 1500);
         return () => clearTimeout(timer);
     }
   }, [formData.street, formData.city, formData.zip, formData.state]);
@@ -391,18 +357,14 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     
     const miles = parseFloat(formData.mileage) || 0;
     const extraMiles = Math.max(0, miles - 10);
-    const surcharge = Math.round((extraMiles * 2) * 100) / 100; // $2 per extra mile
+    const surcharge = Math.round((extraMiles * 2) * 100) / 100;
     
-    // WV = $10, OH = $5, KY = $5
     let stampRate = 5;
     if (formData.state === 'WV') stampRate = 10;
 
     let dueLater = 0;
-    if (isI9) {
-        dueLater = 25;
-    } else if (!isInspection && !isLoan) {
-        dueLater = (formData.signatures || 0) * stampRate;
-    }
+    if (isI9) dueLater = 25;
+    else if (!isInspection && !isLoan) dueLater = (formData.signatures || 0) * stampRate;
     
     return { 
         travelTotal: (base + surcharge).toFixed(2),
@@ -417,7 +379,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     const dateObj = new Date(formData.date + 'T12:00:00');
     const day = dateObj.getDay(); 
     if (day === 0) return []; 
-    // Flexible Hours for I-9 and Inspections
     if (isI9 || isInspection) {
         const slots = [];
         for (let i = 9; i <= 19; i++) {
@@ -427,7 +388,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
         }
         return slots;
     }
-    // Standard Notary
     if (day === 6) return ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
     else return ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
   }, [formData.date, isI9, isInspection]);
@@ -447,7 +407,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   const submitBooking = async () => {
     if (!isStepValid()) return; 
     setIsSubmitting(true);
-    // Combine address for backend storage
     const finalPayload = { 
         ...formData, 
         address: `${formData.street}, ${formData.city}, ${formData.state} ${formData.zip}`.trim()
@@ -467,175 +426,229 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-navy-dark/60 backdrop-blur-md">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center bg-brand-navy-dark/80 backdrop-blur-sm sm:p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 100 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        exit={{ opacity: 0, y: 100 }}
+        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+        className="bg-white w-full md:max-w-2xl overflow-hidden flex flex-col h-[95vh] md:h-auto md:max-h-[90vh] rounded-t-3xl md:rounded-3xl shadow-2xl"
+      >
         {success ? (
-          <div className="p-20 text-center">
-            <Check className="w-16 h-16 text-green-500 mx-auto mb-6" />
-            <h3 className="text-3xl font-serif font-bold text-brand-navy-dark mb-4">Confirmed!</h3>
-            <p className="text-gray-500 mb-8">We've received your booking request.</p>
-            <button onClick={onClose} className="bg-brand-navy-dark text-white px-10 py-3 rounded-xl font-bold">Close</button>
+          <div className="p-12 md:p-20 text-center flex-1 flex flex-col justify-center">
+            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Check className="w-12 h-12 text-green-500" />
+            </div>
+            <h3 className="text-3xl md:text-4xl font-serif font-bold text-brand-navy-dark mb-4">Confirmed!</h3>
+            <p className="text-gray-500 mb-10 text-lg">We've received your secure booking request.</p>
+            <button onClick={onClose} className="bg-brand-navy-dark text-white px-10 py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform">Done</button>
           </div>
         ) : (
           <>
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-white sticky top-0 z-10">
-              <h2 className="text-xl font-bold font-serif text-brand-navy-dark">{step === 1 ? 'Service' : step === 2 ? 'Details' : 'Review & Terms'}</h2>
-              <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20}/></button>
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10 shrink-0">
+              <div className="flex flex-col">
+                  <span className="text-xs font-bold text-brand-teal uppercase tracking-wider mb-1">Step {step} of 3</span>
+                  <h2 className="text-2xl font-bold font-serif text-brand-navy-dark leading-none">
+                      {step === 1 ? 'Select Service' : step === 2 ? 'Location Details' : 'Review & Confirm'}
+                  </h2>
+              </div>
+              <button onClick={onClose} className="p-3 bg-gray-50 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"><X size={20} className="text-gray-600"/></button>
             </div>
-            <div className="p-6 overflow-y-auto">
+
+            {/* Scrollable Body */}
+            <div className="p-6 overflow-y-auto flex-1 pb-32 md:pb-6">
               {step === 1 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {['Mobile Notary Service', 'Field Inspection', 'I-9 Employment Verification', 'Loan Signing'].map(svc => (
-                      <button key={svc} onClick={() => setFormData({...formData, service: svc})} className={`p-4 rounded-xl text-left border-2 font-bold transition-all relative ${formData.service === svc ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 hover:border-brand-teal/30'}`}>
-                        {svc}
+                      <button 
+                        key={svc} 
+                        onClick={() => setFormData({...formData, service: svc})} 
+                        className={`p-5 rounded-2xl text-left border-2 font-bold transition-all ${formData.service === svc ? 'border-brand-teal bg-teal-50/50 text-brand-navy-dark shadow-sm' : 'border-gray-100 text-gray-600 hover:border-gray-300'}`}
+                      >
+                        <span className="block text-base mb-1">{svc}</span>
+                        <span className={`text-xs font-normal ${formData.service === svc ? 'text-brand-teal' : 'text-gray-400'}`}>
+                            {svc.includes('Notary') ? 'Standard docs' : svc.includes('Field') ? 'Photo & verify' : svc.includes('I-9') ? 'Remote hires' : 'Real estate docs'}
+                        </span>
                       </button>
                     ))}
                   </div>
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
-                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Date</label>
-                        <input type="date" className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal text-brand-navy-dark font-bold" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
-                         {formData.date && <p className="text-[10px] text-brand-teal font-medium pl-1">{new Date(formData.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-6 border-t border-gray-100">
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Preferred Date</label>
+                        <input type="date" className="p-4 bg-gray-50 border border-gray-200 rounded-xl w-full outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10 text-brand-navy-dark font-bold text-lg min-h-[56px]" onChange={(e) => setFormData({...formData, date: e.target.value})} value={formData.date}/>
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Time</label>
-                        <select className="p-3 border-2 border-gray-100 rounded-xl w-full outline-none focus:border-brand-teal" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider pl-1">Preferred Time</label>
+                        <select className="p-4 bg-gray-50 border border-gray-200 rounded-xl w-full outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10 text-brand-navy-dark font-bold text-lg min-h-[56px] appearance-none" onChange={(e) => setFormData({...formData, time: e.target.value})} value={formData.time} disabled={!formData.date || timeSlots.length === 0}>
                         <option value="">Select Time</option>
                         {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                   </div>
+                  
                   {(isI9 || isInspection) && (
-                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
-                        <Info size={16} className="mt-0.5 shrink-0" />
-                        <div><strong>Flexible Hours:</strong> This service is available Mon-Sat (9am-7pm).</div>
+                    <div className="bg-blue-50/80 p-4 rounded-2xl border border-blue-100 flex gap-3 items-start text-sm text-blue-900">
+                        <Info size={20} className="mt-0.5 shrink-0 text-blue-600" />
+                        <div><strong>Flexible Hours Active:</strong> This specific service allows booking Monday-Saturday, 9AM to 7PM.</div>
                     </div>
                   )}
                 </div>
               )}
+
               {step === 2 && (
-                <div className="space-y-5">
-                  <div className="flex gap-4">
-                      <input type="text" placeholder={isInspection ? "Company / Rep Name" : "Full Name"} className="flex-1 p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                      <input type="email" placeholder="Email Address" className="flex-1 p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                <div className="space-y-6">
+                  {/* Contact Block */}
+                  <div className="space-y-4">
+                      <h4 className="text-sm font-bold text-brand-navy-dark border-b pb-2">Client Information</h4>
+                      <input type="text" placeholder={isInspection ? "Company / Contact Name" : "Full Legal Name"} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                      <input type="email" placeholder="Email Address for Receipt" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   </div>
 
-                  {/* ADDRESS FIELDS FOR AUTO-CALCULATOR */}
-                  <div className="space-y-3 bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                      <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
-                          <span>Service Location</span>
-                          {isCalculating && <span className="text-brand-teal animate-pulse">Calculating driving distance...</span>}
-                      </label>
-                      <input 
-                          type="text" placeholder="Street Address" 
-                          className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white"
-                          value={formData.street} onChange={(e) => setFormData({...formData, street: e.target.value})}
-                      />
-                      <div className="flex gap-2">
+                  {/* Location Block */}
+                  <div className="space-y-4 pt-4">
+                      <h4 className="text-sm font-bold text-brand-navy-dark border-b pb-2 flex justify-between items-center">
+                          Service Address
+                          {isCalculating && <span className="text-xs font-medium text-brand-teal flex items-center gap-1 bg-brand-teal/10 px-2 py-1 rounded-full"><Loader2 size={12} className="animate-spin"/> Calculating Route...</span>}
+                      </h4>
+                      
+                      <div className="flex flex-col sm:flex-row gap-3">
+                          <input 
+                              type="text" placeholder="Street Address (e.g. 123 Main St)" 
+                              className="flex-[2] p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10"
+                              value={formData.street} onChange={(e) => setFormData({...formData, street: e.target.value})}
+                          />
                           <input 
                               type="text" placeholder="City" 
-                              className="flex-1 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white"
+                              className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10"
                               value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})}
                           />
+                      </div>
+                      
+                      <div className="flex gap-3">
                           <select 
-                              className="w-24 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white font-bold text-brand-navy-dark cursor-pointer"
+                              className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl text-base font-bold outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10 text-brand-navy-dark appearance-none"
                               value={formData.state} 
                               onChange={(e) => setFormData({...formData, state: e.target.value})}
                           >
-                              <option value="WV">WV</option>
-                              <option value="OH">OH</option>
-                              <option value="KY">KY</option>
+                              <option value="WV">WV (West Virginia)</option>
+                              <option value="OH">OH (Ohio)</option>
+                              <option value="KY">KY (Kentucky)</option>
                           </select>
                           <input 
-                              type="text" placeholder="Zip Code" 
-                              className="w-24 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white"
+                              type="text" placeholder="Zip Code" maxLength="5"
+                              className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10"
                               value={formData.zip} onChange={(e) => setFormData({...formData, zip: e.target.value})}
                           />
                       </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* DISPLAY THE RESULT OF THE AGENT */}
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Calculated Travel Distance</label>
-                        <div className="flex items-center gap-2 mt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Driving Distance</label>
+                        <div className="flex items-center gap-3">
                             <input 
-                                type="number" min="0" step="0.01"
-                                className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" 
+                                type="number" min="0" step="0.1"
+                                className="w-24 p-3 bg-white border border-gray-200 rounded-xl text-center text-lg font-black text-brand-navy-dark outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10" 
                                 value={formData.mileage} 
                                 onChange={(e) => setFormData({...formData, mileage: e.target.value})} 
                             />
-                            <span className="text-sm text-gray-600">miles from office</span>
+                            <span className="text-sm font-medium text-gray-600">miles from HQ</span>
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">First 10 miles are included in base fee. Extra miles are $2.00/mile.</p>
                     </div>
                     
                     {!isI9 && !isInspection && !isLoan && (
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <label className="text-xs font-bold text-gray-500 uppercase">Stamps / Certificates</label>
-                            <div className="flex items-center gap-2 mt-2">
-                                <PenTool size={18} className="text-brand-teal" />
-                                <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
-                                <span className="text-sm text-gray-600">(${(formData.state === 'WV') ? 10 : 5} / stamp)</span>
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notary Stamps</label>
+                            <div className="flex items-center gap-3">
+                                <input 
+                                    type="number" min="1" 
+                                    className="w-24 p-3 bg-white border border-gray-200 rounded-xl text-center text-lg font-black text-brand-navy-dark outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10" 
+                                    value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} 
+                                />
+                                <span className="text-sm font-medium text-gray-600">(${(formData.state === 'WV') ? 10 : 5} each)</span>
                             </div>
                         </div>
                     )}
                   </div>
 
-                  <textarea placeholder="Additional Notes (Gate code, specific instructions, etc)" rows={2} className="w-full p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal transition-all" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
+                  <textarea placeholder="Facility name, gate code, room number, or specific instructions..." rows={3} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10 resize-none mt-2" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                 </div>
               )}
+
               {step === 3 && (
                 <div className="space-y-6">
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-4">
-                        <div>
-                            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due Online Now</p>
-                            <p className="text-3xl font-bold text-brand-navy-dark">${price.travelTotal}</p>
-                            <p className="text-xs text-gray-400">{isInspection ? 'Inspection Fee' : 'Travel Reservation Fee'}</p>
-                            {parseFloat(price.surcharge) > 0 && <p className="text-[10px] text-red-500">(Includes ${price.surcharge} mileage)</p>}
+                  {/* Digital Receipt Card */}
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                    <div className="bg-slate-50 px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+                        <span className="font-bold text-brand-navy-dark text-lg">Order Summary</span>
+                        <Award className="text-brand-gold" size={24}/>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="flex justify-between items-end border-b border-gray-100 pb-4">
+                            <div>
+                                <p className="text-[11px] text-brand-teal uppercase font-black tracking-widest mb-1">Due Online Now</p>
+                                <p className="text-4xl font-black text-brand-navy-dark">${price.travelTotal}</p>
+                                <p className="text-sm font-medium text-gray-500 mt-1">{isInspection ? 'Base Service Fee' : 'Travel Reservation Fee'}</p>
+                                {parseFloat(price.surcharge) > 0 && <p className="text-xs font-bold text-brand-orange mt-1">Includes ${price.surcharge} mileage surcharge</p>}
+                            </div>
                         </div>
+
                         {price.dueLater > 0 && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Due at Appointment</p>
-                                <p className="text-xl font-bold text-gray-600">${price.dueLater}</p>
-                                <p className="text-xs text-gray-400">{isI9 ? 'Verification Fee' : `Notary Fees (${formData.state})`}</p>
+                            <div className="flex justify-between items-center pt-2">
+                                <div>
+                                    <p className="text-[11px] text-gray-400 uppercase font-bold tracking-widest">Due at Appointment</p>
+                                    <p className="text-sm font-medium text-gray-500">{isI9 ? 'Verification Fee' : `State Notary Fees (${formData.state})`}</p>
+                                </div>
+                                <p className="text-2xl font-bold text-gray-400">${price.dueLater}</p>
                             </div>
                         )}
+                        
+                        <div className="bg-blue-50/50 p-4 rounded-2xl mt-4">
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                <strong className="text-brand-navy-dark">Details:</strong> You are booking <strong>{formData.service}</strong> in <strong>{formData.state}</strong>. We will travel <strong>{formData.mileage} miles</strong> to <strong>{formData.street}</strong> on <strong>{formData.date}</strong> at <strong>{formData.time}</strong>.
+                            </p>
+                        </div>
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Summary:</span> {formData.service} in {formData.state}. Traveling {formData.mileage} miles to {formData.street}.</p>
                   </div>
                   
-                  {/* MANDATORY COMPLIANCE CHECKBOXES */}
+                  {/* Mandatory Compliance */}
                   <div className="space-y-3">
-                    <label className="flex items-start gap-3 p-4 border border-brand-gold/30 bg-orange-50/50 rounded-xl cursor-pointer">
-                        <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-brand-gold" />
-                        <span className="text-xs text-gray-700 leading-relaxed">
+                    <label className="flex items-start gap-4 p-5 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-brand-teal/50 transition-colors">
+                        <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="mt-1 w-6 h-6 rounded accent-brand-teal shrink-0" />
+                        <span className="text-sm text-gray-600 leading-relaxed font-medium">
                             {isI9 
                                 ? "I understand this is an Authorized Representative service for I-9 verification and is NOT a notarization. A separate $25 service fee is due at the appointment." 
                                 : isInspection 
-                                ? "I understand this is a Field Inspection / Verification service and does not include document notarization. Base fee covers up to 10 miles of travel."
-                                : `Notarization fees are collected at the time of service ($${formData.state === 'WV' ? '10' : '5'} per notarial act). Travel fees are prepaid to ensure your appointment is secure.`}
+                                ? "I understand this is a Field Inspection service and does not include document notarization. Base fee covers up to 10 miles of travel."
+                                : `I understand state notarization fees ($${formData.state === 'WV' ? '10' : '5'} per act) are collected at the time of service. Travel fees are prepaid to ensure dispatch.`}
                         </span>
                     </label>
 
-                    <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-colors ${payNow ? 'border-brand-teal bg-teal-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                        <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal" />
-                        <div className="flex-1"><span className="font-bold text-brand-navy-dark flex items-center gap-2"><CreditCard size={18}/> Pay Online</span><p className="text-xs text-gray-500">Secure Checkout via Stripe</p></div>
+                    <label className={`flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-all ${payNow ? 'border-brand-teal bg-brand-teal/5 shadow-md' : 'border-gray-200 bg-white hover:border-brand-teal/50'}`}>
+                        <input type="checkbox" checked={payNow} onChange={e => setPayNow(e.target.checked)} className="w-6 h-6 rounded accent-brand-teal shrink-0" />
+                        <div className="flex-1">
+                            <span className="font-black text-brand-navy-dark text-lg flex items-center gap-2"><CreditCard size={20} className={payNow ? 'text-brand-teal' : 'text-gray-400'}/> Secure Online Payment</span>
+                            <p className="text-sm font-medium text-gray-500 mt-0.5">Proceed to Stripe Checkout</p>
+                        </div>
                     </label>
                   </div>
                 </div>
               )}
             </div>
-            <div className="p-6 border-t flex justify-between bg-white">
-              <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
+            
+            {/* Footer Action Area */}
+            <div className="p-4 md:p-6 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
+              <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-3 hover:text-brand-navy-dark transition-colors ${step === 1 ? 'invisible' : ''}`}>Back</button>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
                 disabled={!isStepValid()} 
-                className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${!isStepValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
+                className={`flex-1 md:flex-none md:px-12 py-4 rounded-2xl font-black text-lg transition-all flex justify-center items-center gap-2 ${!isStepValid() ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal shadow-xl shadow-brand-navy-dark/20 active:scale-95'}`}
               >
-                {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
+                {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Checkout' : 'Confirm') : 'Continue'}
+                {!isSubmitting && step < 3 && <ArrowRight size={20}/>}
               </button>
             </div>
           </>
@@ -648,62 +661,73 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
 // --- MAIN PAGE SECTIONS ---
 
 const Hero = ({ onBookClick }) => (
-  <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-brand-navy-dark">
+  <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-brand-navy-dark">
+    {/* Background Image & Overlay */}
     <div className="absolute inset-0 z-0">
-      <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Background" className="w-full h-full object-cover scale-105 opacity-40 mix-blend-overlay" />
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-dark via-brand-navy-dark/80 to-transparent"></div>
+      <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Executive Notary Background" className="w-full h-full object-cover scale-105 opacity-30 mix-blend-overlay" />
+      <div className="absolute inset-0 bg-gradient-to-b from-brand-navy-dark/90 via-brand-navy-dark/80 to-brand-navy-dark"></div>
     </div>
-    <div className="container mx-auto px-6 relative z-10 pt-32 md:pt-20 text-center">
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-4xl mx-auto">
+
+    <div className="container mx-auto px-6 relative z-10 pt-32 md:pt-20">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-5xl mx-auto text-center">
         
-        <div className="inline-block px-5 py-2 rounded-full bg-brand-gold/20 text-brand-gold text-xs font-bold uppercase tracking-widest mb-8 border border-brand-gold/30">
-            Serving the Huntington Tri-State Region (WV–OH–KY)
+        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-gold/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-8 border border-brand-gold/20 backdrop-blur-sm">
+            <MapPin size={14}/> Serving Huntington & The Tri-State Region
         </div>
         
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white font-serif mb-6 leading-[1.1] tracking-tight">
-          Same-Day Mobile Notary & Field Inspections<br/>
+        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white font-serif mb-6 leading-[1.05] tracking-tight">
+          Same-Day Mobile Notary & Inspections. <br className="hidden md:block"/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-gold">We Come to You.</span>
         </h1>
         
-        <p className="text-lg md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-medium">
-          Supporting mortgage companies, insurance providers, asset managers, and private clients with fast, accurate, on-site verification and notarization.
+        <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
+          Available Evenings & Weekends. We provide fast, accurate, and fully compliant on-site verification anywhere in WV, OH, or KY.
         </p>
         
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-          <a href={PHONE_LINK} className="bg-brand-gold text-brand-navy-dark font-black px-8 py-5 rounded-full hover:scale-105 transition-all shadow-xl text-lg flex items-center justify-center gap-2">
-            <PhoneCall size={24} /> Call Now for Immediate Service
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
+          <a href={PHONE_LINK} className="bg-brand-gold text-brand-navy-dark font-black px-10 py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-gold/20 text-lg flex items-center justify-center gap-3">
+            <PhoneCall size={22} /> Call Now for Immediate Dispatch
           </a>
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-8 py-5 rounded-full hover:scale-105 transition-all shadow-xl text-lg flex items-center justify-center gap-2">
-            <Calendar size={24} /> Book an Appointment
+          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-10 py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-teal/20 text-lg flex items-center justify-center gap-3">
+            <Calendar size={22} /> Book an Appointment Online
           </button>
         </div>
-
-        {/* TRUST SIGNALS */}
-        <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-10 text-sm md:text-base text-gray-200 font-bold">
-           <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={20}/> Commissioned Notary Public</span>
-           <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={20}/> Fully E&O Insured</span>
-           <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={20}/> Fast, Accurate Reporting</span>
-        </div>
-
       </motion.div>
     </div>
   </section>
 );
 
+const TrustBar = () => (
+    <div className="bg-white border-b border-gray-100 py-6 relative z-20">
+        <div className="container mx-auto px-6">
+            <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 md:gap-16 text-sm md:text-base text-brand-navy-dark font-bold">
+                <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={22}/> Commissioned Notary Public</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={22}/> Fully E&O Insured</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={22}/> Background Screened</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="text-brand-teal" size={22}/> Tri-State Coverage</span>
+            </div>
+        </div>
+    </div>
+);
+
 const WhyChooseUs = () => (
-  <section className="py-20 bg-brand-teal text-white">
+  <section className="py-24 bg-slate-50">
       <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8 text-center max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+              <h2 className="text-4xl font-serif font-black text-brand-navy-dark mb-4">Speed. Accuracy. Compliance.</h2>
+              <p className="text-lg text-gray-500 font-medium">Why top mortgage companies and private clients choose Signature Seal.</p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
               {[
-                  { icon: Zap, title: "Same-Day Service", desc: "Fast response times when you need it most." },
-                  { icon: Car, title: "Tri-State Mobile", desc: "We travel across WV, OH, and KY to your location." },
-                  { icon: Shield, title: "Compliance Confidence", desc: "Strict adherence to state notary and inspection laws." },
-                  { icon: Clock, title: "Flexible Hours", desc: "Available evenings and weekends by request." }
+                  { icon: Zap, title: "Same-Day Service", desc: "Urgent requests accommodated with fast dispatch." },
+                  { icon: Car, title: "100% Mobile", desc: "We travel directly to your home, office, or facility." },
+                  { icon: Shield, title: "Compliance First", desc: "Strict adherence to WV, OH, and KY state laws." },
+                  { icon: Clock, title: "Available Always", desc: "Evening and weekend appointments available." }
               ].map((item, i) => (
-                  <div key={i} className="flex flex-col items-center">
-                      <div className="bg-white/20 p-4 rounded-2xl mb-4"><item.icon size={32} /></div>
-                      <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-                      <p className="text-sm text-teal-100">{item.desc}</p>
+                  <div key={i} className="flex flex-col items-center bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+                      <div className="bg-teal-50 text-brand-teal p-4 rounded-2xl mb-5"><item.icon size={32} /></div>
+                      <h3 className="font-bold text-xl mb-2 text-brand-navy-dark">{item.title}</h3>
+                      <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
                   </div>
               ))}
           </div>
@@ -712,53 +736,71 @@ const WhyChooseUs = () => (
 );
 
 const Services = () => (
-  <section id="services" className="py-24 bg-slate-50 relative border-b border-gray-200">
+  <section id="services" className="py-24 bg-white relative border-t border-gray-100">
     <div className="container mx-auto px-6 max-w-6xl">
-      <div className="text-center mb-16 max-w-3xl mx-auto">
-        <h2 className="text-4xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Tri-State Services</h2>
-        <p className="text-lg text-gray-500">Comprehensive legal signing and on-site inspection solutions tailored to your schedule.</p>
+      <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl md:text-5xl font-serif font-black text-brand-navy-dark mb-4 tracking-tight">Core Services</h2>
+            <p className="text-lg text-gray-500 font-medium">Professional on-site solutions for individuals and enterprise clients.</p>
+          </div>
+          <div className="hidden md:block">
+              <a href={PHONE_LINK} className="text-brand-teal font-bold flex items-center gap-2 hover:text-brand-navy-dark transition-colors"><PhoneCall size={20}/> Need Help? Call Us</a>
+          </div>
       </div>
       
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
         {[
-          { icon: Camera, title: "Field Inspections", desc: "Occupancy verification, property condition reports, and photo documentation." },
-          { icon: Car, title: "Mobile Notary", desc: "Traveling to homes, offices, or hospitals across WV, OH & KY." },
-          { icon: FileText, title: "Loan Signings", desc: "Accurate mortgage, real estate, and closing document execution." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Authorized Representative services for remote employee onboarding." }
+          { icon: Camera, title: "Field Inspections", desc: "Occupancy verification, property condition reports, and photo documentation for asset managers." },
+          { icon: Car, title: "Mobile Notary", desc: "General document notarization traveling directly to your location across the Tri-State area." },
+          { icon: FileSignature, title: "Loan Signings", desc: "Accurate mortgage, real estate, and closing document execution for title companies." },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Acting as an Authorized Representative for secure, remote employee onboarding." }
         ].map((s, i) => (
-          <div key={i} className="p-8 rounded-3xl bg-white border border-gray-100 text-center shadow-lg hover:-translate-y-1 transition-transform">
-            <div className="bg-brand-navy-dark/5 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto text-brand-teal"><s.icon size={32}/></div>
-            <h3 className="text-xl font-bold text-brand-navy-dark mb-3">{s.title}</h3>
-            <p className="text-gray-500 text-sm leading-relaxed">{s.desc}</p>
+          <div key={i} className="p-8 rounded-[2rem] bg-slate-50 border border-gray-100 hover:bg-brand-navy-dark hover:text-white group transition-colors duration-300">
+            <div className="bg-white group-hover:bg-white/10 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 text-brand-teal group-hover:text-brand-gold transition-colors"><s.icon size={28}/></div>
+            <h3 className="text-xl font-bold text-brand-navy-dark group-hover:text-white mb-3">{s.title}</h3>
+            <p className="text-gray-500 group-hover:text-gray-300 text-sm leading-relaxed font-medium">{s.desc}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-12 bg-white p-10 md:p-16 rounded-[3rem] shadow-xl border border-gray-100">
-          <div>
-              <h3 className="text-3xl font-serif font-bold text-brand-navy-dark mb-6">Documents & Inspections</h3>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {['Occupancy Verification', 'Property Condition Reports', 'Photo Documentation', 'Power of Attorney (POA)', 'Wills & Trusts', 'Real Estate Documents', 'Affidavits', 'Loan Signings'].map(doc => (
-                      <li key={doc} className="flex items-center gap-3 text-gray-700 font-medium"><FileText size={18} className="text-brand-gold shrink-0"/> {doc}</li>
+      {/* SEO Targets: Documents & Locations */}
+      <div id="coverage" className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+          <div className="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-gray-100">
+              <div className="flex items-center gap-4 mb-8">
+                  <div className="bg-brand-teal/10 p-3 rounded-xl text-brand-teal"><FileCheck size={28}/></div>
+                  <h3 className="text-2xl font-serif font-bold text-brand-navy-dark">Common Documents</h3>
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+                  {['Power of Attorney (POA)', 'Wills & Estate Docs', 'Real Estate Documents', 'Affidavits', 'Medical Directives', 'Title Transfers', 'Mortgage Closings', 'Business Contracts'].map(doc => (
+                      <li key={doc} className="flex items-center gap-3 text-gray-700 font-medium text-sm"><Check size={16} className="text-brand-gold shrink-0"/> {doc}</li>
                   ))}
               </ul>
           </div>
-          <div className="bg-slate-50 p-8 rounded-3xl border border-gray-100">
-               <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-6">Where We Travel To</h3>
-               <p className="text-gray-600 text-sm mb-6">We provide discrete, professional service at facilities requiring special clearance or sensitivity.</p>
-               <div className="space-y-4">
-                   {[
-                       { icon: Building2, text: "Commercial Properties & Real Estate" },
-                       { icon: Building2, text: "Hospitals & Medical Centers" },
-                       { icon: Home, text: "Nursing & Assisted Living" },
-                       { icon: Lock, text: "Jails & Detention Centers" },
-                       { icon: MapPin, text: "Private Residences & Offices" }
-                   ].map((loc, idx) => (
-                       <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                           <div className="bg-brand-navy-dark text-white p-2 rounded-lg"><loc.icon size={18}/></div>
-                           <span className="font-bold text-brand-navy-dark text-sm">{loc.text}</span>
-                       </div>
-                   ))}
+
+          <div className="bg-brand-navy-dark p-8 md:p-12 rounded-[2.5rem] text-white relative overflow-hidden">
+               <div className="absolute top-0 right-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+                   <MapPin size={250} />
+               </div>
+               <div className="relative z-10">
+                   <div className="flex items-center gap-4 mb-8">
+                       <div className="bg-brand-gold/20 p-3 rounded-xl text-brand-gold"><Building2 size={28}/></div>
+                       <h3 className="text-2xl font-serif font-bold text-white">Where We Travel</h3>
+                   </div>
+                   <p className="text-gray-400 text-sm mb-8 font-medium leading-relaxed max-w-md">We provide discrete, professional service at specialized facilities requiring clearance, privacy, or sensitivity.</p>
+                   <div className="space-y-4">
+                       {[
+                           "Hospitals & Medical Centers",
+                           "Nursing & Assisted Living",
+                           "Jails & Detention Centers",
+                           "Corporate Offices",
+                           "Private Residences & Cafes"
+                       ].map((loc, idx) => (
+                           <div key={idx} className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                               <MapPin size={18} className="text-brand-teal"/>
+                               <span className="font-bold text-gray-200 text-sm">{loc}</span>
+                           </div>
+                       ))}
+                   </div>
                </div>
           </div>
       </div>
@@ -768,75 +810,129 @@ const Services = () => (
 );
 
 const Pricing = ({ onBookClick }) => (
-  <section id="pricing" className="py-24 bg-white">
+  <section id="pricing" className="py-24 bg-slate-50 border-t border-gray-200">
     <div className="container mx-auto px-6">
-      <div className="text-center mb-16"><h2 className="text-4xl font-serif font-bold text-brand-navy-dark mb-4 tracking-tight">Urgency Pricing Positioning</h2><p className="text-lg text-gray-500">Transparent pricing provided upfront. No hidden fees.</p></div>
+      <div className="text-center mb-16">
+          <span className="text-brand-teal font-black tracking-widest uppercase text-xs mb-2 block">Transparent Upfront</span>
+          <h2 className="text-4xl md:text-5xl font-serif font-black text-brand-navy-dark mb-4 tracking-tight">Urgency Pricing</h2>
+          <p className="text-lg text-gray-500 font-medium max-w-2xl mx-auto">We don't hide our fees. You pay for the travel reservation to guarantee your slot, and standard state fees at the table.</p>
+      </div>
       
-      <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8 items-center">
-        <div className="bg-slate-50 p-12 rounded-[3rem] shadow-lg border border-gray-100">
-          <h3 className="text-2xl font-bold mb-6 text-brand-navy-dark flex items-center gap-3"><Car className="text-brand-teal"/> Mobile Service Fees</h3>
-          <ul className="space-y-5 mb-8 text-gray-700 text-sm font-medium">
-            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>Field Inspections:</strong> Starting at $50 (Flat fee + mileage). Comprehensive on-site reporting.</span></li>
-            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>Notary Travel Fee:</strong> Based on distance to secure immediate dispatch. (Starting at $40)</span></li>
-            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>State Notary Fees:</strong> Collected at appointment ($10/stamp WV, $5/stamp OH & KY).</span></li>
-            <li className="flex items-start gap-3"><CheckCircle2 size={20} className="text-brand-teal shrink-0"/> <span><strong>After-Hours:</strong> Rush and evening services available for urgent needs.</span></li>
-          </ul>
-          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-4 rounded-2xl bg-brand-navy-dark text-white font-bold hover:bg-brand-teal transition-all text-lg shadow-xl">Book Now & See Exact Price</button>
+      <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-8 items-stretch">
+        
+        {/* Left Card: The Pricing Structure */}
+        <div className="bg-white p-10 md:p-12 rounded-[2.5rem] shadow-xl border border-gray-100 flex flex-col h-full">
+          <div className="flex items-center gap-4 mb-8 pb-8 border-b border-gray-100">
+              <div className="bg-brand-navy-dark text-brand-gold p-4 rounded-2xl"><Car size={32}/></div>
+              <div>
+                  <h3 className="text-2xl font-black text-brand-navy-dark">Mobile Service</h3>
+                  <p className="text-gray-500 font-medium text-sm">Base reservation covers 10 miles.</p>
+              </div>
+          </div>
+
+          <div className="flex-1 space-y-6 mb-10">
+            <div className="flex items-start gap-4">
+                <CheckCircle2 size={24} className="text-brand-teal shrink-0 mt-0.5"/> 
+                <div>
+                    <h4 className="font-bold text-brand-navy-dark text-lg">Travel Fee (Starting at $40)</h4>
+                    <p className="text-gray-600 text-sm mt-1 leading-relaxed">Secures your immediate dispatch. Extra miles beyond 10 are calculated at $2.00/mile.</p>
+                </div>
+            </div>
+            <div className="flex items-start gap-4">
+                <CheckCircle2 size={24} className="text-brand-teal shrink-0 mt-0.5"/> 
+                <div>
+                    <h4 className="font-bold text-brand-navy-dark text-lg">State Notary Fees</h4>
+                    <p className="text-gray-600 text-sm mt-1 leading-relaxed">Collected at appointment per state law. <br/><strong className="text-brand-navy-dark">WV:</strong> $10/stamp | <strong className="text-brand-navy-dark">OH/KY:</strong> $5/stamp</p>
+                </div>
+            </div>
+            <div className="flex items-start gap-4">
+                <CheckCircle2 size={24} className="text-brand-teal shrink-0 mt-0.5"/> 
+                <div>
+                    <h4 className="font-bold text-brand-navy-dark text-lg">Field Inspections</h4>
+                    <p className="text-gray-600 text-sm mt-1 leading-relaxed">Flat base fee starting at $50 plus mileage. No stamps required.</p>
+                </div>
+            </div>
+          </div>
+          
+          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl bg-brand-navy-dark text-white font-black hover:bg-brand-teal transition-colors text-lg shadow-[0_10px_20px_rgba(29,45,62,0.2)] active:scale-95">
+              Book Now to Calculate Exact Price
+          </button>
         </div>
         
-        <div className="p-8">
-            <h3 className="text-2xl font-serif font-bold text-brand-navy-dark mb-4">Why Pre-Pay Online?</h3>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-                When you need an inspection or notary immediately, reliability is everything. Pre-paying the reservation or base fee guarantees your appointment time and dispatches us directly to your location without delay.
+        {/* Right Side: The Value Prop */}
+        <div className="p-8 md:p-12 flex flex-col justify-center h-full">
+            <h3 className="text-3xl font-serif font-bold text-brand-navy-dark mb-6">Why Pre-Pay Online?</h3>
+            <p className="text-gray-600 mb-8 leading-relaxed text-lg">
+                When you need an inspection or notary immediately, reliability is everything. Pre-paying the reservation travel fee <strong className="text-brand-navy-dark">guarantees your appointment time</strong> and immediately dispatches an agent directly to your location without delay.
             </p>
-            <div className="bg-orange-50 border-l-4 border-brand-gold p-4 rounded-r-xl">
-                <p className="text-sm text-brand-navy-dark font-medium">
-                    "Fast, professional, and arrived exactly on time. Transparent pricing made the process incredibly easy to manage."
+            
+            <div className="bg-brand-gold/10 border-l-4 border-brand-gold p-6 rounded-r-2xl">
+                <div className="flex text-brand-gold mb-3">
+                    <Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/>
+                </div>
+                <p className="text-base text-brand-navy-dark font-medium italic leading-relaxed mb-4">
+                    "Fast, professional, and arrived exactly on time to the nursing home. Transparent pricing made a stressful situation incredibly easy to manage."
                 </p>
+                <p className="text-sm font-bold text-brand-navy-dark/60 uppercase tracking-wider">— Verified Client</p>
             </div>
         </div>
+
       </div>
     </div>
   </section>
 );
 
 const InstantResponse = ({ onBookClick }) => (
-    <section className="bg-brand-gold py-16 px-6 text-center text-brand-navy-dark border-y-8 border-brand-navy-dark">
-       <h2 className="text-3xl md:text-5xl font-black font-serif mb-4">Need Service Right Now?</h2>
-       <p className="text-lg md:text-xl mb-8 font-medium max-w-2xl mx-auto text-brand-navy-dark/80">Don't wait. We can dispatch to your location immediately.</p>
-       <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-           <a href={PHONE_LINK} className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-brand-navy-dark text-white px-10 py-5 rounded-full text-xl font-black hover:scale-105 transition-transform shadow-2xl">
-              <PhoneCall size={24} /> Text or Call Now
-           </a>
-           <button onClick={onBookClick} className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white text-brand-navy-dark border-2 border-brand-navy-dark px-10 py-5 rounded-full text-xl font-black hover:bg-brand-navy-dark hover:text-white transition-all shadow-xl">
-              <Calendar size={24} /> Book Online 24/7
-           </button>
+    <section className="bg-brand-navy-dark py-24 px-6 text-center text-white border-y-8 border-brand-gold relative overflow-hidden">
+       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+       <div className="relative z-10">
+           <h2 className="text-4xl md:text-6xl font-black font-serif mb-6 tracking-tight">Need Service Right Now?</h2>
+           <p className="text-lg md:text-2xl mb-12 font-medium max-w-2xl mx-auto text-gray-300">Don't wait. We can dispatch an agent to your location immediately.</p>
+           <div className="flex flex-col sm:flex-row justify-center items-center gap-5">
+               <a href={PHONE_LINK} className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-brand-gold text-brand-navy-dark px-12 py-5 rounded-2xl text-xl font-black hover:-translate-y-1 transition-transform shadow-xl shadow-brand-gold/20">
+                  <PhoneCall size={24} /> Text or Call Now
+               </a>
+               <button onClick={onBookClick} className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white/10 backdrop-blur-sm text-white border border-white/20 px-12 py-5 rounded-2xl text-xl font-bold hover:bg-brand-teal hover:border-brand-teal transition-all shadow-xl">
+                  <Calendar size={24} /> Book Online 24/7
+               </button>
+           </div>
        </div>
     </section>
-  );
+);
 
 const Footer = ({ onViewChange }) => (
-  <footer className="bg-brand-navy-dark text-white pt-20 pb-44 text-center">
-    <div className="inline-block p-4 bg-white/10 rounded-2xl mb-8"><Award className="text-brand-gold" size={40}/></div>
-    <h2 className="font-serif text-3xl font-bold mb-4">Signature Seal Mobile Notary & Inspections</h2>
-    <p className="text-gray-400 mb-10 max-w-md mx-auto">Professional, reliable, and legally compliant services delivered to your doorstep in the Tri-State area.</p>
-    
-    <div className="flex flex-wrap justify-center gap-8 mb-12 text-gray-300 font-bold uppercase text-xs tracking-widest">
-      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('services')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Services</button>
-      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('pricing')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Pricing</button>
-      <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('faq')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">FAQ</button>
-      <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-brand-teal">Email Us</a>
-    </div>
+  <footer className="bg-white text-brand-navy-dark pt-20 pb-40 md:pb-24 border-t border-gray-200">
+    <div className="container mx-auto px-6 max-w-6xl">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-10 mb-16 text-center md:text-left">
+            <div>
+                <div className="inline-block p-4 bg-slate-50 rounded-2xl mb-6 shadow-sm border border-gray-100"><Award className="text-brand-navy-dark" size={32}/></div>
+                <h2 className="font-serif text-3xl font-black mb-3">Signature Seal</h2>
+                <p className="text-gray-500 font-medium max-w-sm">Professional, reliable, and legally compliant services delivered to your doorstep in the Tri-State area.</p>
+            </div>
+            
+            <div className="flex flex-col items-center md:items-end gap-6">
+                <a href={PHONE_LINK} className="text-3xl font-black text-brand-navy-dark hover:text-brand-teal transition-colors flex items-center gap-3">
+                    <div className="bg-brand-gold/20 p-2 rounded-lg text-brand-gold"><PhoneCall size={24}/></div>
+                    {PHONE_NUMBER}
+                </a>
+                <div className="flex flex-wrap justify-center md:justify-end gap-6 text-gray-500 font-bold uppercase text-xs tracking-widest">
+                  <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('services')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Services</button>
+                  <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('pricing')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">Pricing</button>
+                  <button onClick={() => { onViewChange('home'); setTimeout(() => document.getElementById('faq')?.scrollIntoView(), 100); }} className="hover:text-brand-teal">FAQ</button>
+                  <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-brand-teal">Email Us</a>
+                </div>
+            </div>
+        </div>
 
-    <div className="border-t border-white/10 pt-8 mt-8 flex flex-col items-center">
-        <p className="text-brand-gold font-bold text-lg flex items-center gap-2 mb-2"><PhoneCall size={18}/> {PHONE_NUMBER}</p>
-        <p className="text-gray-500 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Tri-State Service (WV-OH-KY).</p>
-        <button 
-            onClick={() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); onViewChange('admin'); }} 
-            className="mt-8 text-xs text-gray-600 hover:text-white flex items-center justify-center gap-1 mx-auto"
-        >
-            <Lock size={12}/> Admin Portal
-        </button>
+        <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-gray-400 text-xs font-medium">© {new Date().getFullYear()} Signature Seal Notaries. Licensed & Insured (WV-OH-KY).</p>
+            <button 
+                onClick={() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); onViewChange('admin'); }} 
+                className="text-xs text-gray-400 hover:text-brand-navy-dark font-bold flex items-center gap-1 transition-colors"
+            >
+                <Lock size={14}/> Admin Portal
+            </button>
+        </div>
     </div>
   </footer>
 );
@@ -853,12 +949,9 @@ const LoginScreen = ({ onLogin }) => {
     } catch (err) { alert("Offline."); }
   };
   
-  // Force scroll to top on mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
-  return <div className="min-h-screen bg-brand-navy-dark flex items-center justify-center"><form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl"><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="p-4 border rounded-xl" placeholder="Admin Password"/><button className="w-full bg-brand-navy-dark text-white mt-4 p-4 rounded-xl font-bold">Login</button></form></div>;
+  return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6"><form onSubmit={handleLogin} className="bg-white p-10 rounded-3xl shadow-xl border border-gray-100 w-full max-w-sm"><div className="w-16 h-16 bg-brand-navy-dark rounded-2xl flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-brand-gold"/></div><h2 className="text-2xl font-black text-center mb-8 text-brand-navy-dark">Admin Access</h2><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-4 border border-gray-200 bg-gray-50 rounded-xl outline-none focus:border-brand-teal mb-4 font-bold text-center" placeholder="Enter Password"/><button className="w-full bg-brand-navy-dark text-white py-4 rounded-xl font-bold hover:bg-brand-teal transition-colors active:scale-95">Login</button></form></div>;
 };
 
 const AdminDashboard = ({ token, onLogout }) => {
@@ -896,14 +989,16 @@ const AdminDashboard = ({ token, onLogout }) => {
     } catch (err) { alert("Error connecting."); }
   };
   return (
-    <div className="container mx-auto px-6 py-32 pt-40 pb-48">
-      <div className="flex justify-between mb-8"><h2 className="text-3xl font-bold">Admin</h2><div className="flex gap-4"><button onClick={handleExport}><Download/></button><button onClick={onLogout} className="text-red-500"><LogOut/></button></div></div>
-      <div className="grid md:grid-cols-3 gap-6">{bookings.map(b => (
-        <div key={b.id} className="bg-white p-6 rounded-2xl shadow border relative">
-            <button onClick={() => handleDelete(b.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 size={18}/></button>
-            <h3 className="font-bold">{b.name}</h3><p className="text-sm">{b.service}</p><p className="text-xs text-gray-500">{new Date(b.date).toLocaleDateString()}</p>
-            <button onClick={() => handleSendInvoice(b.id)} className="mt-4 w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                <CreditCard size={14}/> Send Follow-Up Invoice
+    <div className="container mx-auto px-6 py-32 min-h-screen bg-slate-50">
+      <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-6"><h2 className="text-3xl font-black text-brand-navy-dark">Admin Dashboard</h2><div className="flex gap-4"><button onClick={handleExport} className="bg-white border border-gray-200 p-3 rounded-xl hover:bg-gray-50"><Download size={20}/></button><button onClick={onLogout} className="bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-100"><LogOut size={20}/></button></div></div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">{bookings.map(b => (
+        <div key={b.id} className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 relative group hover:shadow-md transition-shadow">
+            <button onClick={() => handleDelete(b.id)} className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={20}/></button>
+            <div className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-2">{new Date(b.date).toLocaleDateString()}</div>
+            <h3 className="font-black text-xl text-brand-navy-dark mb-1">{b.name}</h3>
+            <p className="text-sm font-medium text-gray-500 mb-6">{b.service}</p>
+            <button onClick={() => handleSendInvoice(b.id)} className="w-full flex items-center justify-center gap-2 bg-brand-navy-dark text-brand-gold py-3 rounded-xl text-sm font-bold hover:bg-brand-teal hover:text-white transition-colors active:scale-95">
+                <CreditCard size={16}/> Send Follow-Up Invoice
             </button>
         </div>
       ))}</div>
@@ -960,6 +1055,7 @@ function App() {
         {view === 'home' ? (
           <>
             <Hero onBookClick={() => handleBookingOpen()} />
+            <TrustBar />
             <WhyChooseUs />
             <Services />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
@@ -972,7 +1068,9 @@ function App() {
       <Footer onViewChange={setView} />
       <BookingModal isOpen={isBookingOpen} onClose={() => { setIsBookingOpen(false); setRestoredData(null); }} initialService={preSelectedService} initialData={restoredData} />
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
-      {!adminToken && !isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
+      
+      {/* Mobile Sticky Bar - Zero Friction */}
+      {!adminToken && !isBookingOpen && view === 'home' && <FloatingBookButton onClick={() => handleBookingOpen()} />}
     </div>
   );
 }
