@@ -18,8 +18,10 @@ const getBackendUrl = () => {
 const API_URL = getBackendUrl();
 const CONTACT_EMAIL = "sseal.notary@gmail.com"; 
 const SITE_URL = "https://signaturesealnotaries.com";
-const PHONE_NUMBER = "(304) 555-0000"; // Replace with your actual number
-const PHONE_LINK = "tel:+13045550000"; // Replace with your actual number
+
+// UPDATED PHONE NUMBER
+const PHONE_NUMBER = "(304) 982-4165"; 
+const PHONE_LINK = "tel:+13049824165"; 
 
 // --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
@@ -46,7 +48,7 @@ const staggerContainer = {
 };
 
 // ==========================================
-// SUB-COMPONENTS (Defined BEFORE App)
+// SUB-COMPONENTS
 // ==========================================
 
 const QRModal = ({ isOpen, onClose }) => {
@@ -87,7 +89,6 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
-// Floating Mobile Action Button
 const FloatingBookButton = ({ onClick }) => (
   <div className="fixed bottom-8 left-4 right-4 z-[45] md:hidden pb-[env(safe-area-inset-bottom)] flex gap-2">
     <a href={PHONE_LINK} className="w-16 bg-brand-gold text-brand-navy-dark font-bold py-4 rounded-full shadow-2xl flex items-center justify-center hover:bg-yellow-500 transition-colors border-2 border-white/20">
@@ -309,11 +310,8 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
-    address: '', // Full address for display
-    street: '', city: '', zip: '', // Individual fields
-    notes: '', mileage: 0, signatures: 1,
-    locationType: 'my_location', // Default
-    state: 'WV' // Default State
+    street: '', city: '', zip: '', state: 'WV', // Address components
+    notes: '', mileage: 0, signatures: 1
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -329,28 +327,20 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     }
   }, [initialService, initialData]);
 
-  const handleLocationTypeChange = (type) => {
-    setFormData(prev => ({ 
-        ...prev, 
-        locationType: type,
-        mileage: type === 'public' ? 0 : prev.mileage,
-        address: ''
-    }));
-  };
-
-  // --- AUTO MILEAGE CALCULATION ---
+  // --- AUTO MILEAGE CALCULATION AGENT ---
   const calculateMileage = async () => {
+    // Compile address elements
     const addressToGeocode = `${formData.street} ${formData.city} ${formData.state} ${formData.zip}`.trim();
-    if (addressToGeocode.length < 5) return;
+    if (addressToGeocode.length < 10) return; // Wait until adequate info is provided
 
     setIsCalculating(true);
     try {
-        // 1. Geocode
+        // 1. Convert client address to map coordinates
         const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressToGeocode)}`);
         const geoData = await geoRes.json();
         
         if (!geoData || geoData.length === 0) {
-            console.warn("Geocode failed");
+            console.warn("Geocode mapping failed");
             setIsCalculating(false);
             return;
         }
@@ -358,29 +348,30 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
         const destLat = geoData[0].lat;
         const destLon = geoData[0].lon;
         
-        // 2. Route from Chesapeake, OH
-        // 1020 County Rd 3: 38.4294, -82.4608
-        const startLat = 38.4294;
-        const startLon = -82.4608;
+        // 2. Fixed Starting Location: 1020 County Rd 3, Chesapeake, OH
+        // Hardcoded Coordinates for accuracy
+        const startLat = 38.4357;
+        const startLon = -82.4641;
 
+        // 3. Find optimal driving distance
         const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${destLon},${destLat}?overview=false`);
         const routeData = await routeRes.json();
 
         if (routeData.code === 'Ok' && routeData.routes.length > 0) {
             const meters = routeData.routes[0].distance;
-            const miles = (meters * 0.000621371).toFixed(2);
-            setFormData(prev => ({ ...prev, mileage: miles, address: addressToGeocode }));
+            const miles = (meters * 0.000621371).toFixed(2); // Convert to Miles
+            setFormData(prev => ({ ...prev, mileage: miles }));
         }
     } catch (e) {
-        console.error("Calc Error:", e);
+        console.error("Mileage Agent Error:", e);
     } finally {
         setIsCalculating(false);
     }
   };
 
-  // Debounced auto-calc
+  // Debounced listener: Auto-triggers agent 1.5s after user finishes typing
   useEffect(() => {
-    if (formData.locationType === 'my_location' && formData.street && formData.zip && formData.zip.length >= 5) {
+    if (formData.street && formData.city && formData.zip && formData.zip.length >= 5) {
         const timer = setTimeout(() => {
             calculateMileage();
         }, 1500);
@@ -396,13 +387,12 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   const price = useMemo(() => {
     let base = 40; 
     if (isLoan) base = 150;
-    if (isInspection) base = 50; // $50 flat base for inspections
+    if (isInspection) base = 50; 
     
     const miles = parseFloat(formData.mileage) || 0;
     const extraMiles = Math.max(0, miles - 10);
-    const surcharge = Math.round((extraMiles * 2) * 100) / 100;
+    const surcharge = Math.round((extraMiles * 2) * 100) / 100; // $2 per extra mile
     
-    // Calculate Due Later based on State
     // WV = $10, OH = $5, KY = $5
     let stampRate = 5;
     if (formData.state === 'WV') stampRate = 10;
@@ -420,7 +410,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
         dueLater, 
         grandTotal: (base + surcharge + dueLater).toFixed(2)
     };
-  }, [formData.service, formData.mileage, formData.signatures, formData.locationType, isI9, isInspection, isLoan, formData.state]);
+  }, [formData.service, formData.mileage, formData.signatures, isI9, isInspection, isLoan, formData.state]);
 
   const timeSlots = useMemo(() => {
     if (!formData.date) return [];
@@ -446,11 +436,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
         const basicFields = formData.name && formData.email && (isI9 || isInspection || isLoan || formData.signatures > 0);
-        if (formData.locationType === 'my_location') {
-            return basicFields && formData.street && formData.zip && !isNaN(parseFloat(formData.mileage));
-        } else {
-            return basicFields && formData.address;
-        }
+        return basicFields && formData.street && formData.city && formData.zip && !isNaN(parseFloat(formData.mileage));
     }
     if (step === 3) return termsAccepted && payNow;
     return false;
@@ -461,12 +447,10 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
   const submitBooking = async () => {
     if (!isStepValid()) return; 
     setIsSubmitting(true);
-    // Combine address for backend
+    // Combine address for backend storage
     const finalPayload = { 
         ...formData, 
-        address: formData.locationType === 'my_location' 
-            ? `${formData.street}, ${formData.city}, ${formData.state} ${formData.zip}` 
-            : formData.address 
+        address: `${formData.street}, ${formData.city}, ${formData.state} ${formData.zip}`.trim()
     };
     
     try { localStorage.setItem('pendingBooking', JSON.stringify(finalPayload)); } catch (e) {}
@@ -522,7 +506,6 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                         </select>
                     </div>
                   </div>
-                  {/* I-9 & INSPECTION HOURS NOTE */}
                   {(isI9 || isInspection) && (
                     <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex gap-2 items-start text-xs text-blue-800">
                         <Info size={16} className="mt-0.5 shrink-0" />
@@ -532,89 +515,60 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                 </div>
               )}
               {step === 2 && (
-                <div className="space-y-4">
-                  <input type="text" placeholder={isInspection ? "Company / Rep Name" : "Full Name"} className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                  <input type="email" placeholder="Email Address" className="w-full p-4 border-2 border-gray-100 rounded-xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                  
-                  {/* STATE SELECTOR */}
-                  <div className="flex gap-4 items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                     <span className="text-xs font-bold text-gray-500 uppercase">Service State:</span>
-                     <button onClick={() => setFormData({...formData, state: 'WV'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'WV' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>WV</button>
-                     <button onClick={() => setFormData({...formData, state: 'OH'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'OH' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>OH</button>
-                     <button onClick={() => setFormData({...formData, state: 'KY'})} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${formData.state === 'KY' ? 'bg-brand-navy-dark text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>KY</button>
+                <div className="space-y-5">
+                  <div className="flex gap-4">
+                      <input type="text" placeholder={isInspection ? "Company / Rep Name" : "Full Name"} className="flex-1 p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                      <input type="email" placeholder="Email Address" className="flex-1 p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-brand-teal" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   </div>
 
-                  {/* DYNAMIC LOCATION SELECTOR */}
-                  <div className="grid grid-cols-2 gap-4">
-                     <button onClick={() => handleLocationTypeChange('my_location')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'my_location' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
-                        <Home size={18} /> {isInspection ? "Property Address" : "My Location"}
-                     </button>
-                     {!isInspection && (
-                         <button onClick={() => handleLocationTypeChange('public')} className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors ${formData.locationType === 'public' ? 'border-brand-teal bg-teal-50 text-brand-navy-dark' : 'border-gray-100 text-gray-500'}`}>
-                            <Coffee size={18} /> Public Spot
-                         </button>
-                     )}
+                  {/* ADDRESS FIELDS FOR AUTO-CALCULATOR */}
+                  <div className="space-y-3 bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                      <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
+                          <span>Service Location</span>
+                          {isCalculating && <span className="text-brand-teal animate-pulse">Calculating driving distance...</span>}
+                      </label>
+                      <input 
+                          type="text" placeholder="Street Address" 
+                          className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white"
+                          value={formData.street} onChange={(e) => setFormData({...formData, street: e.target.value})}
+                      />
+                      <div className="flex gap-2">
+                          <input 
+                              type="text" placeholder="City" 
+                              className="flex-1 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white"
+                              value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})}
+                          />
+                          <select 
+                              className="w-24 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white font-bold text-brand-navy-dark cursor-pointer"
+                              value={formData.state} 
+                              onChange={(e) => setFormData({...formData, state: e.target.value})}
+                          >
+                              <option value="WV">WV</option>
+                              <option value="OH">OH</option>
+                              <option value="KY">KY</option>
+                          </select>
+                          <input 
+                              type="text" placeholder="Zip Code" 
+                              className="w-24 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal bg-white"
+                              value={formData.zip} onChange={(e) => setFormData({...formData, zip: e.target.value})}
+                          />
+                      </div>
                   </div>
-
-                  {formData.locationType === 'public' && !isInspection && (
-                    <div className="flex flex-wrap gap-2 text-xs">
-                        {['Cabell County Library (WV)', 'South Point Library (OH)', 'Ashland Library (KY)', 'Starbucks (Rt 60)'].map(spot => (
-                            <button key={spot} onClick={() => setFormData({...formData, address: spot})} className={`px-3 py-1 rounded-full hover:bg-brand-teal hover:text-white transition-colors ${formData.address === spot ? 'bg-brand-teal text-white' : 'bg-gray-100'}`}>{spot}</button>
-                        ))}
-                    </div>
-                  )}
-
-                  {/* SPLIT ADDRESS FIELDS (MY LOCATION) */}
-                  {formData.locationType === 'my_location' && (
-                    <div className="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <div className="flex gap-2">
-                            <input 
-                                type="text" placeholder="Street Address" 
-                                className="flex-[2] p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal"
-                                value={formData.street} onChange={(e) => setFormData({...formData, street: e.target.value})}
-                            />
-                            <input 
-                                type="text" placeholder="City" 
-                                className="flex-1 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal"
-                                value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})}
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <input 
-                                type="text" placeholder="Zip Code" 
-                                className="flex-1 p-3 border border-gray-200 rounded-lg outline-none focus:border-brand-teal"
-                                value={formData.zip} onChange={(e) => setFormData({...formData, zip: e.target.value})}
-                            />
-                            {/* Visual State Indicator */}
-                            <div className="flex-1 p-3 border border-gray-200 bg-gray-100 rounded-lg text-gray-500 font-bold text-center">
-                                {formData.state}
-                            </div>
-                        </div>
-                        {isCalculating && <p className="text-xs text-brand-teal animate-pulse">Calculating distance...</p>}
-                    </div>
-                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className={`bg-gray-50 p-4 rounded-xl border border-gray-100 ${formData.locationType === 'public' ? 'opacity-50' : ''}`}>
-                        <label className="text-xs font-bold text-gray-500 uppercase flex justify-between">
-                            <span>Travel Distance</span>
-                        </label>
+                    {/* DISPLAY THE RESULT OF THE AGENT */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Calculated Travel Distance</label>
                         <div className="flex items-center gap-2 mt-2">
                             <input 
-                                type="number" min="0" step="0.1"
-                                className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal disabled:bg-gray-200" 
+                                type="number" min="0" step="0.01"
+                                className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" 
                                 value={formData.mileage} 
-                                disabled={formData.locationType === 'public'} // LOCKED FOR PUBLIC SPOTS
                                 onChange={(e) => setFormData({...formData, mileage: e.target.value})} 
                             />
-                            <span className="text-sm text-gray-600">miles</span>
+                            <span className="text-sm text-gray-600">miles from office</span>
                         </div>
-                        {/* SURCHARGE DISCLAIMER */}
-                        {formData.locationType === 'my_location' && (
-                            <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">
-                                Base fee covers 10 miles. Excess mileage is charged at $2.00/mile.
-                            </p>
-                        )}
+                        <p className="text-[10px] text-gray-500 mt-2 italic leading-tight">First 10 miles are included in base fee. Extra miles are $2.00/mile.</p>
                     </div>
                     
                     {!isI9 && !isInspection && !isLoan && (
@@ -623,7 +577,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                             <div className="flex items-center gap-2 mt-2">
                                 <PenTool size={18} className="text-brand-teal" />
                                 <input type="number" min="1" className="w-20 p-2 border-2 border-gray-200 rounded-lg text-center font-bold outline-none focus:border-brand-teal" value={formData.signatures} onChange={(e) => setFormData({...formData, signatures: Math.max(1, parseInt(e.target.value) || 1)})} />
-                                <span className="text-sm text-gray-600">(${formData.state === 'WV' ? 10 : 5} ea)</span>
+                                <span className="text-sm text-gray-600">(${(formData.state === 'WV') ? 10 : 5} / stamp)</span>
                             </div>
                         </div>
                     )}
@@ -650,7 +604,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                             </div>
                         )}
                     </div>
-                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Summary:</span> {formData.service} in {formData.state}. Travel to {formData.locationType === 'public' ? 'Public Spot' : formData.address}.</p>
+                    <p className="text-sm text-gray-600 pt-2"><span className="font-bold">Summary:</span> {formData.service} in {formData.state}. Traveling {formData.mileage} miles to {formData.street}.</p>
                   </div>
                   
                   {/* MANDATORY COMPLIANCE CHECKBOXES */}
@@ -678,7 +632,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
               <button onClick={() => setStep(s => s - 1)} className={`text-gray-400 font-bold px-6 py-2 ${step === 1 ? 'invisible' : ''}`}>Back</button>
               <button 
                 onClick={() => step < 3 ? setStep(s => s + 1) : submitBooking()} 
-                disabled={!isStepValid()} // LOCK BUTTON UNTIL VALID
+                disabled={!isStepValid()} 
                 className={`px-12 py-3.5 rounded-xl font-bold shadow-lg transition-all ${!isStepValid() ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-brand-navy-dark text-white hover:bg-brand-teal'}`}
               >
                 {isSubmitting ? <Loader2 className="animate-spin" /> : step === 3 ? (payNow ? 'Proceed to Payment' : 'Confirm Booking') : 'Continue'}
@@ -694,7 +648,7 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
 // --- MAIN PAGE SECTIONS ---
 
 const Hero = ({ onBookClick }) => (
-  <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-brand-navy-dark">
+  <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-brand-navy-dark">
     <div className="absolute inset-0 z-0">
       <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Background" className="w-full h-full object-cover scale-105 opacity-40 mix-blend-overlay" />
       <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-dark via-brand-navy-dark/80 to-transparent"></div>
@@ -973,7 +927,6 @@ function App() {
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
 
-  // BACK BUTTON LOGIC: Check for ?canceled=true
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('canceled')) {
@@ -988,7 +941,6 @@ function App() {
     }
   }, []);
 
-  // NEW: Scroll to top when view changes (Fixes Admin Login scroll issue)
   useEffect(() => {
     const timer = setTimeout(() => {
         window.scrollTo(0, 0);
@@ -1018,11 +970,8 @@ function App() {
         ) : (!adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />)}
       </main>
       <Footer onViewChange={setView} />
-      {/* Pass restoredData to BookingModal */}
       <BookingModal isOpen={isBookingOpen} onClose={() => { setIsBookingOpen(false); setRestoredData(null); }} initialService={preSelectedService} initialData={restoredData} />
-      {/* QR MODAL ADDED AT END FOR ACCESS */}
       <QRModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} /> 
-      {/* Floating Button: Hide if Admin or Booking Open */}
       {!adminToken && !isBookingOpen && <FloatingBookButton onClick={() => handleBookingOpen()} />}
     </div>
   );
