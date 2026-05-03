@@ -4,242 +4,185 @@ const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const { Resend } = require('resend');
-const stripeLib = require('stripe');
 
 const app = express();
 const prisma = new PrismaClient();
+
+// Use system port (required for deployment) or fallback to 3001
 const PORT = process.env.PORT || 3001;
 
-// --- CONFIG ---
+// --- SECURITY CONFIG ---
+// Reads from environment variables, falls back to defaults for dev
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
-const CLIENT_URL = 'https://signaturesealnotaries.com';
 
-// --- INITIALIZE STRIPE ---
-let stripe = null;
-const initStripe = () => {
-    if (!stripe && process.env.STRIPE_SECRET_KEY) {
-        try {
-            stripe = stripeLib(process.env.STRIPE_SECRET_KEY.trim());
-            console.log("✅ STRIPE: Initialized successfully.");
-        } catch (e) {
-            console.error("❌ STRIPE: Failed to initialize:", e.message);
-        }
-    }
-    return stripe;
-};
-initStripe();
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// --- SAFER EMAIL CONFIG ---
+// Only initialize Resend if the key exists, otherwise use a placeholder to prevent crashes
+const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY) 
+  : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
-const SENDER_EMAIL = process.env.SENDER_EMAIL || 'bookings@signaturesealnotaries.com';
 
-app.use(cors({ origin: '*' })); 
-app.options('*', cors());
+app.use(cors());
 app.use(express.json());
 
-// --- AI LOGIC ---
-const recommendService = (query) => {
-  const q = query.toLowerCase();
-
-  if (q.includes('inspect') || q.includes('property') || q.includes('occupancy') || q.includes('photo')) {
-    return { service: "Field Inspection", reasoning: "We offer professional site verifications and property condition reports for the Tri-State area.", estimatedPrice: "$50 Base + Mileage", action: "book_general" };
-  }
-  
-  if (q.includes('ohio') || q.includes(' oh ') || q.includes('kentucky') || q.includes(' ky ')) {
-      return { service: "Mobile Notary (Tri-State)", reasoning: "Yes! We serve the entire Huntington Tri-State area including parts of OH and KY.", estimatedPrice: "$40 Travel Reservation + $5/stamp", action: "book_general" };
-  }
-
-  if (q.includes('i9') || q.includes('employment') || q.includes('authorized')) {
-    return {
-      service: "I-9 Employment Verification",
-      reasoning: "We act as an Authorized Representative for remote hires.",
-      estimatedPrice: "$40 Travel Reservation + $25 Service",
-      action: "book_general"
-    };
-  }
-
-  return { service: "Mobile Notary", reasoning: "Standard appointment for the Tri-State area.", estimatedPrice: "$40 Reservation + State Fee", action: "book_general" };
-};
-
-// --- HELPER: GOOGLE CALENDAR LINK ---
-const generateCalendarLink = (name, service, date, time, address, notes) => {
-    const start = new Date(date).toISOString().replace(/-|:|\.\d\d\d/g, "").substring(0,8);
-    const details = `Service: ${service}\nClient: ${name}\nNotes: ${notes}`;
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Job:+${encodeURIComponent(name)}&dates=${start}/${start}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(address)}`;
-};
-
-app.post('/api/recommend', (req, res) => res.json(recommendService(req.body.query || '')));
-
-app.post('/api/create-checkout-session', async (req, res) => {
-  const stripeInstance = initStripe();
-  if (!stripeInstance) return res.status(500).json({ error: "Stripe not ready." });
-
-  const { name, email, service, date, time, mileage } = req.body;
-  
-  // Dynamic Pricing Logic 
-  let baseAmount = 4000; // $40.00 Base
-  let productName = "Travel Reservation Fee";
-
-  // Flat pricing tiers
-  if (service.includes('I-9')) {
-      baseAmount = 4000; 
-      productName = "I-9 Travel Reservation Fee";
-  } else if (service.includes('Field Inspection')) {
-      baseAmount = 5000; 
-      productName = "Field Inspection Base Fee";
-  } else if (service.includes('Loan')) {
-      baseAmount = 15000; 
-      productName = "Loan Signing Service";
-  }
-
-  const miles = parseFloat(mileage) || 0;
-  const extraMiles = Math.max(0, miles - 10);
-  const surchargeAmount = Math.round((extraMiles * 2) * 100); 
-
-  const line_items = [
-    {
-      price_data: { 
-          currency: 'usd', 
-          product_data: { name: productName }, 
-          unit_amount: baseAmount,
-      },
-      quantity: 1,
-    }
-  ];
-
-  if (surchargeAmount > 0) {
-      line_items.push({
-        price_data: { 
-            currency: 'usd', 
-            product_data: { name: `Mileage Surcharge (${extraMiles.toFixed(2)} extra miles)` }, 
-            unit_amount: surchargeAmount,
-        },
-        quantity: 1,
-      });
+// --- HELPER: SEND REAL EMAIL VIA RESEND ---
+const sendConfirmationEmail = async (email, name, service, date, time) => {
+  if (!resend) {
+    console.log("⚠️ Email skipped: RESEND_API_KEY not set.");
+    return;
   }
 
   try {
-    const session = await stripeInstance.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: line_items,
-      mode: 'payment',
-      automatic_tax: { enabled: false }, 
-      invoice_creation: { 
-        enabled: true,
-        invoice_data: {
-          description: "Professional services are not subject to sales tax.",
-          footer: service.includes('I-9') 
-            ? "I-9 Service Fee ($25) is collected separately at appointment." 
-            : service.includes('Field Inspection') 
-            ? "No additional notary fees apply to standard inspections." 
-            : "State notary fees ($5-10/stamp) are collected separately at appointment."
-        }
-      },
-      success_url: `${CLIENT_URL}?success=true`,
-      cancel_url: `${CLIENT_URL}?canceled=true`,
-      customer_email: email,
-      metadata: { name, service, date, time, mileage }
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev', // Default Resend test domain
+      to: ADMIN_EMAIL, // This sends the notification to YOU
+      subject: `New Booking: ${name} - ${service}`,
+      html: `
+        <h1>New Appointment Request</h1>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Service:</strong> ${service}</p>
+        <p><strong>Date:</strong> ${date}</p>
+        <p><strong>Time:</strong> ${time}</p>
+        <p><strong>Client Email:</strong> ${email}</p>
+        <hr />
+        <p><em>Login to your dashboard to view full details.</em></p>
+      `
     });
-    res.json({ url: session.url });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+
+    if (error) {
+      console.error("Resend Error:", error);
+    } else {
+      console.log("📧 Email sent successfully:", data);
+    }
+  } catch (err) {
+    console.error("Email System Fail:", err);
+  }
+};
+
+// --- MIDDLEWARE ---
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+// --- AGENTIC AI LOGIC ---
+const recommendService = (query) => {
+  const lowerQuery = query.toLowerCase();
+  
+  // Default payload structure
+  let response = {
+      service: "Mobile Notary Service",
+      confidence: "Medium",
+      reasoning: "A standard Mobile Notary appointment fits your needs.",
+      estimatedPrice: "$40 Travel + $5-$10 per stamp",
+      action: "book_general",
+      prefillLocation: ""
+  };
+
+  // 1. Extract Location Context
+  if (lowerQuery.includes('hospital') || lowerQuery.includes('st. mary') || lowerQuery.includes('cabell')) {
+      response.prefillLocation = "Hospital / Medical Facility";
+  } else if (lowerQuery.includes('jail') || lowerQuery.includes('detention')) {
+      response.prefillLocation = "Detention Center";
+  } else if (lowerQuery.includes('nursing') || lowerQuery.includes('assisted')) {
+      response.prefillLocation = "Assisted Living Facility";
+  }
+
+  // 2. Determine Service Type
+  if (lowerQuery.includes('inspect') || lowerQuery.includes('property') || lowerQuery.includes('photo')) {
+      response.service = "Field Inspection";
+      response.confidence = "High";
+      response.reasoning = "We can complete your Field Inspection. Our flat rate includes photo documentation.";
+      response.estimatedPrice = "$50 Base + Mileage";
+  } 
+  else if (lowerQuery.includes('mortgage') || lowerQuery.includes('loan') || lowerQuery.includes('closing')) {
+      response.service = "Loan Signing";
+      response.confidence = "High";
+      response.reasoning = "Real estate transactions require a certified Loan Signing Agent.";
+      response.estimatedPrice = "$150 flat rate";
+      response.action = "book_loan";
+  }
+  else if (lowerQuery.includes('i9') || lowerQuery.includes('i-9') || lowerQuery.includes('employment')) {
+      response.service = "I-9 Employment Verification";
+      response.confidence = "High";
+      response.reasoning = "We act as an Authorized Representative for remote hires.";
+      response.estimatedPrice = "$40 Travel + $25 Service";
+  }
+  else if (lowerQuery.includes('will') || lowerQuery.includes('trust') || lowerQuery.includes('poa') || lowerQuery.includes('power')) {
+      response.reasoning = "These are sensitive documents. Please ensure you have any necessary witnesses ready.";
+  }
+
+  return response;
+};
+
+// --- ROUTES ---
+
+// Health Check
+app.get('/', (req, res) => {
+  res.send('Signature Seal API is running.');
+});
+
+app.post('/api/recommend', (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ error: "Query required" });
+    // Simulate slight AI thinking delay
+    setTimeout(() => res.json(recommendService(query)), 600);
+  } catch (error) {
+    res.status(500).json({ error: "AI failed" });
+  }
+});
+
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASSWORD) {
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' });
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: "Invalid password" });
   }
 });
 
 app.post('/api/bookings', async (req, res) => {
-    try {
-        const { name, email, service, date, time, address, notes, mileage } = req.body;
-        
-        // Save to DB
-        const booking = await prisma.booking.create({ data: { ...req.body, date: new Date(req.body.date) } });
-        
-        // SMART EMAIL LOGIC
-        if (resend) {
-            const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const subjectLine = `📅 BOOKING: ${dateStr} @ ${time} - ${name}`;
-            const calLink = generateCalendarLink(name, service, date, time, address, notes);
-
-            await resend.emails.send({ 
-                from: SENDER_EMAIL, 
-                to: ADMIN_EMAIL, 
-                reply_to: email, 
-                subject: subjectLine, 
-                html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #2c3e50;">New Appointment Request</h2>
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
-                            <p><strong>Client:</strong> ${name}</p>
-                            <p><strong>Service:</strong> ${service}</p>
-                            <p><strong>When:</strong> ${dateStr} at ${time}</p>
-                            <p><strong>Where:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(address)}">${address}</a></p>
-                            <p><strong>Distance:</strong> ${mileage || 0} miles</p>
-                            <p><strong>Notes:</strong> ${notes || 'None'}</p>
-                        </div>
-                        <br/>
-                        <div style="text-align: center;">
-                            <a href="${calLink}" style="background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">📅 Add to Google Calendar</a>
-                            <br/><br/>
-                            <a href="mailto:${email}" style="color: #64748b; text-decoration: none;">Reply to Client</a>
-                        </div>
-                    </div>
-                ` 
-            });
-        }
-        res.json(booking);
-    } catch (err) { 
-        console.error(err);
-        res.status(500).json({ error: "Booking failed" }); 
-    }
-});
-
-app.get('/api/bookings', async (req, res) => {
-    try { const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } }); res.json({ data: bookings }); } 
-    catch (err) { res.status(500).json({ error: "Fetch failed" }); }
-});
-
-app.post('/api/bookings/delete/:id', async (req, res) => {
-  try { await prisma.booking.delete({ where: { id: parseInt(req.params.id) } }); res.json({ message: "Deleted" }); }
-  catch (err) { res.json({ message: "Deleted" }); }
-});
-
-app.post('/api/login', (req, res) => {
-    if (req.body.password === ADMIN_PASSWORD) res.json({ token: jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' }) });
-    else res.status(401).json({ error: "Invalid password" });
-});
-
-// I-9 / Notary Invoice Endpoint
-app.post('/api/create-invoice', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: "Stripe not ready." });
-  const { id, signatures, type } = req.body;
   try {
-    const booking = await prisma.booking.findUnique({ where: { id: parseInt(id) } });
-    if (!booking) return res.status(404).json({ error: "Booking not found" });
-    
-    let amount = 1000;
-    let desc = 'Notary Fee';
-    let count = parseInt(signatures) || 1;
+    const { name, email, service, date, time, notes, address } = req.body;
 
-    if (type === 'custom') { 
-         amount = 2500; 
-         desc = 'Professional Service Fee (I-9 / Other)';
-         count = 1;
+    if (!name || !email || !service || !date || !time) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: { currency: 'usd', product_data: { name: desc }, unit_amount: amount },
-        quantity: count,
-      }],
-      mode: 'payment',
-      success_url: `${CLIENT_URL}?paid=true`,
-      cancel_url: `${CLIENT_URL}`,
-      customer_email: booking.email,
+    const booking = await prisma.booking.create({
+      data: { name, email, service, date: new Date(date), time, notes, address }
     });
-    if (resend) await resend.emails.send({ from: SENDER_EMAIL, to: booking.email, reply_to: ADMIN_EMAIL, subject: 'Invoice: Service Fees', html: `<p>Please pay your service fees here: <a href="${session.url}">Pay Now</a></p><p>Signature Seal Mobile Notary</p>` });
-    res.json({ message: "Invoice sent!" });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    
+    // Send Real Email Notification
+    await sendConfirmationEmail(email, name, service, date, time);
+    
+    console.log(`✅ Booking confirmed for ${name}`);
+    res.json(booking);
+  } catch (error) {
+    console.error("Booking Error:", error);
+    res.status(500).json({ error: "Booking failed" });
+  }
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 API active on ${PORT} (Tri-State Scope)`));
+app.get('/api/bookings', authenticateToken, async (req, res) => {
+  try {
+    const bookings = await prisma.booking.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
