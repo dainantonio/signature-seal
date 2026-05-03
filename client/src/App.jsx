@@ -325,9 +325,18 @@ const AIChatWidget = ({ onRecommend }) => {
     "I-9 for new hire"
   ];
   const runQuickPrompt = async (prompt) => {
-    setInput(prompt);
-    const fakeEvent = { preventDefault: () => {} };
-    setTimeout(() => handleSubmit(fakeEvent), 0);
+    if (isLoading) return;
+    setMessages(prev => [...prev, { role: 'user', text: prompt }]);
+    setIsLoading(true);
+    try {
+      const res = await safeFetch(`${API_URL}/api/recommend`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: prompt }) });
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting. Please use the 'Book Now' button." }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -848,7 +857,7 @@ const Hero = ({ onBookClick }) => (
   <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-brand-navy-dark">
     {/* Background Image & Overlay */}
     <div className="absolute inset-0 z-0">
-      <img src="/certificate.png" alt="Signature Seal Notary credentials" className="w-full h-full object-cover scale-105 opacity-25 mix-blend-overlay" />
+      <img src="/notary-headshot-card.svg" alt="Signature Seal Notary credentials" className="w-full h-full object-cover scale-105 opacity-25 mix-blend-overlay" />
       <div className="absolute inset-0 bg-gradient-to-b from-brand-navy-dark/90 via-brand-navy-dark/80 to-brand-navy-dark"></div>
     </div>
 
@@ -892,7 +901,7 @@ const Hero = ({ onBookClick }) => (
         </div>
         </div>
         <div className="bg-white/10 border border-white/20 rounded-3xl p-6 backdrop-blur-sm">
-          <img src="/certificate.png" alt="Notary headshot and credential card" className="rounded-2xl w-full h-64 object-cover mb-4" />
+          <img src="/notary-headshot-card.svg" alt="Notary headshot and credential card" className="rounded-2xl w-full h-64 object-cover mb-4" />
           <p className="text-white font-bold">Commission No: WV-NS-2026-0142</p>
           <p className="text-brand-gold text-sm font-semibold">NNA Member • E&O Insured • Background Screened</p>
         </div>
