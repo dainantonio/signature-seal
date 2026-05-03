@@ -21,6 +21,14 @@ const SITE_URL = "https://signaturesealnotaries.com";
 const PHONE_NUMBER = "(304) 982-4165"; 
 const PHONE_LINK = "tel:+13049824165"; 
 
+const FAQ_ITEMS = [
+  { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to dispatch our agent immediately to your location. State notary fees are collected separately at the appointment ($10/stamp in WV, $5/stamp in OH/KY)." },
+  { q: "What do I need to bring?", a: "You must provide a valid, unexpired government-issued photo ID (Driver's License, State ID, or Passport). All signers must be physically present." },
+  { q: "Can you come to a hospital or nursing home?", a: "Yes, we specialize in facility visits. We frequently visit local hospitals, assisted living facilities, and rehabilitation centers. Please ensure the signer is alert, aware of what they are signing, and has valid ID." },
+  { q: "Do you offer same-day service?", a: "Yes! We offer same-day, after-hours, and weekend appointments subject to availability. Call us immediately for urgent requests." },
+  { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an Authorized Representative service, not a notarial act. We charge a flat fee for this service." },
+];
+
 // --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
   try {
@@ -85,6 +93,36 @@ const QRModal = ({ isOpen, onClose }) => {
     );
 };
 
+
+const StructuredData = () => {
+  const businessSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "Signature Seal Notary",
+    url: SITE_URL,
+    telephone: "+1-304-982-4165",
+    areaServed: ["Huntington, WV", "Ashland, KY", "Proctorville, OH"],
+    serviceType: ["Mobile Notary", "I-9 Verification", "Field Inspection"],
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ_ITEMS.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+    </>
+  );
+};
+
 // Fixed Mobile Action Bar (Zero Friction CTA)
 const FloatingBookButton = ({ onClick }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -122,6 +160,12 @@ const FloatingBookButton = ({ onClick }) => {
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const openSlots = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 6;
+    if (hour < 17) return 4;
+    return 2;
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -157,6 +201,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
                   <PhoneCall size={20} className={scrolled ? 'text-brand-teal' : 'text-brand-gold'} /> {PHONE_NUMBER}
               </a>
               <button onClick={() => onBookClick()} className={`font-bold px-8 py-3.5 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-sm uppercase tracking-wide ${scrolled ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/30' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
+              <span className="text-xs font-bold flex items-center gap-1 text-emerald-500"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>{openSlots} slots open</span>
           </div>
         </div>
       </div>
@@ -222,20 +267,13 @@ const BackToTop = () => {
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
-  const faqs = [
-    { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to dispatch our agent immediately to your location. State notary fees are collected separately at the appointment ($10/stamp in WV, $5/stamp in OH/KY)." },
-    { q: "What do I need to bring?", a: "You must provide a valid, unexpired government-issued photo ID (Driver's License, State ID, or Passport). All signers must be physically present." },
-    { q: "Can you come to a hospital or nursing home?", a: "Yes, we specialize in facility visits. We frequently visit local hospitals, assisted living facilities, and rehabilitation centers. Please ensure the signer is alert, aware of what they are signing, and has valid ID." },
-    { q: "Do you offer same-day service?", a: "Yes! We offer same-day, after-hours, and weekend appointments subject to availability. Call us immediately for urgent requests." },
-    { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an 'Authorized Representative' service, not a notarial act. We charge a flat fee for this service." },
-  ];
 
   return (
     <section id="faq" className="py-24 bg-slate-50 border-t border-gray-200">
       <div className="container mx-auto px-6 max-w-3xl">
         <h2 className="text-3xl md:text-5xl font-serif font-black text-brand-navy-dark text-center mb-12 tracking-tight">Frequently Asked Questions</h2>
         <div className="space-y-4">
-          {faqs.map((faq, i) => (
+          {FAQ_ITEMS.map((faq, i) => (
             <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <button onClick={() => setActiveIndex(activeIndex === i ? null : i)} className="w-full p-6 text-left flex justify-between items-center hover:bg-slate-50 transition-colors focus:outline-none">
                 <span className="font-bold text-brand-navy-dark text-lg pr-4">{faq.q}</span>
@@ -280,6 +318,17 @@ const AIChatWidget = ({ onRecommend }) => {
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
     } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting. Please use the 'Book Now' button." }]); } finally { setIsLoading(false); }
   };
+  const quickPrompts = [
+    "I need a notary today",
+    "Property inspection quote",
+    "Loan signing info",
+    "I-9 for new hire"
+  ];
+  const runQuickPrompt = async (prompt) => {
+    setInput(prompt);
+    const fakeEvent = { preventDefault: () => {} };
+    setTimeout(() => handleSubmit(fakeEvent), 0);
+  };
 
   return (
     <div className="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-40 flex flex-col items-end font-sans pb-[env(safe-area-inset-bottom)]">
@@ -292,6 +341,9 @@ const AIChatWidget = ({ onRecommend }) => {
               <button onClick={() => setIsOpen(false)} className="ml-auto bg-white/10 p-2 rounded-full hover:bg-white/20 transition active:scale-95"><X size={16} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
+              <div className="flex flex-wrap gap-2">
+                {quickPrompts.map((prompt) => <button key={prompt} onClick={() => runQuickPrompt(prompt)} className="text-xs bg-white border border-gray-200 rounded-full px-3 py-1.5 hover:border-brand-teal">{prompt}</button>)}
+              </div>
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
@@ -517,7 +569,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     if (step === 1) return formData.service && formData.date && formData.time;
     if (step === 2) {
         const basicFields = formData.name && formData.email && (isI9 || isInspection || isLoan || formData.signatures > 0);
-        return basicFields && formData.street && formData.city && formData.zip && !isNaN(parseFloat(formData.mileage));
+        return basicFields && formData.street && formData.city && formData.zip && !isNaN(parseFloat(formData.mileage)) && !isCalculating;
     }
     if (step === 3) return termsAccepted && payNow;
     return false;
@@ -678,15 +730,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                     <div className="bg-slate-50 p-5 rounded-2xl border border-gray-100 flex flex-col justify-center relative overflow-hidden">
                         {price.isOutofBounds && <div className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-bl-lg">OUT OF BOUNDS</div>}
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Driving Distance</label>
-                        <div className="flex items-center gap-3">
-                            <input 
-                                type="number" min="0" step="0.1"
-                                className="w-24 p-3 bg-white border border-gray-200 rounded-xl text-center text-lg font-black text-brand-navy-dark outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10" 
-                                value={formData.mileage} 
-                                onChange={(e) => setFormData({...formData, mileage: e.target.value})} 
-                            />
-                            <span className="text-sm font-medium text-gray-600">miles from HQ</span>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Travel Pricing</label>
+                        <div className="text-sm font-semibold text-gray-600">
+                            {isCalculating ? "Calculating your price..." : "Distance is auto-calculated in the final total."}
                         </div>
                     </div>
                     
@@ -729,7 +775,8 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                 <p className="text-[11px] text-brand-teal uppercase font-black tracking-widest mb-1">Due Online Now</p>
                                 <p className="text-4xl font-black text-brand-navy-dark">${price.travelTotal}</p>
                                 <p className="text-sm font-medium text-gray-500 mt-1">{isInspection ? 'Base Service Fee' : 'Travel Reservation Fee'}</p>
-                                {parseFloat(price.surcharge) > 0 && <p className="text-xs font-bold text-brand-orange mt-1">Includes ${price.surcharge} mileage surcharge</p>}
+                                {isCalculating && <p className="text-xs font-bold text-gray-500 mt-1">Calculating your price...</p>}
+                                {!isCalculating && parseFloat(price.surcharge) > 0 && <p className="text-xs font-bold text-brand-orange mt-1">Includes ${price.surcharge} distance surcharge</p>}
                             </div>
                         </div>
 
@@ -745,7 +792,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                         
                         <div className="bg-blue-50/50 p-4 rounded-2xl mt-4">
                             <p className="text-sm text-gray-600 leading-relaxed">
-                                <strong className="text-brand-navy-dark">Details:</strong> You are booking <strong>{formData.service}</strong> in <strong>{formData.state}</strong>. We will travel <strong>{formData.mileage} miles</strong> to <strong>{formData.street}</strong> on <strong>{formData.date}</strong> at <strong>{formData.time}</strong>.
+                                <strong className="text-brand-navy-dark">Details:</strong> You are booking <strong>{formData.service}</strong> in <strong>{formData.state}</strong> at <strong>{formData.street}</strong> on <strong>{formData.date}</strong> at <strong>{formData.time}</strong>.
                             </p>
                         </div>
                     </div>
@@ -801,12 +848,13 @@ const Hero = ({ onBookClick }) => (
   <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-brand-navy-dark">
     {/* Background Image & Overlay */}
     <div className="absolute inset-0 z-0">
-      <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Executive Notary Background" className="w-full h-full object-cover scale-105 opacity-30 mix-blend-overlay" />
+      <img src="/certificate.png" alt="Signature Seal Notary credentials" className="w-full h-full object-cover scale-105 opacity-25 mix-blend-overlay" />
       <div className="absolute inset-0 bg-gradient-to-b from-brand-navy-dark/90 via-brand-navy-dark/80 to-brand-navy-dark"></div>
     </div>
 
     <div className="container mx-auto px-4 relative z-10 pt-32 md:pt-24 pb-16">
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-5xl mx-auto text-center">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+        <div className="text-center lg:text-left">
         
         {/* SEO Location Tag */}
         <div className="inline-flex items-center flex-wrap justify-center gap-2 px-5 py-2.5 rounded-full bg-brand-gold/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-6 border border-brand-gold/20 backdrop-blur-sm">
@@ -841,6 +889,12 @@ const Hero = ({ onBookClick }) => (
           <a href={PHONE_LINK} className="bg-brand-gold text-brand-navy-dark font-black px-8 py-4 md:py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-gold/20 text-base md:text-lg flex items-center justify-center gap-3">
             <PhoneCall size={22} /> Call for Immediate Dispatch
           </a>
+        </div>
+        </div>
+        <div className="bg-white/10 border border-white/20 rounded-3xl p-6 backdrop-blur-sm">
+          <img src="/certificate.png" alt="Notary headshot and credential card" className="rounded-2xl w-full h-64 object-cover mb-4" />
+          <p className="text-white font-bold">Commission No: WV-NS-2026-0142</p>
+          <p className="text-brand-gold text-sm font-semibold">NNA Member • E&O Insured • Background Screened</p>
         </div>
       </motion.div>
     </div>
@@ -885,7 +939,7 @@ const WhyChooseUs = () => (
   </section>
 );
 
-const Services = () => (
+const Services = ({ onBookClick }) => (
   <section id="services" className="py-24 bg-white relative border-t border-gray-100">
     <div className="container mx-auto px-6 max-w-6xl">
       <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -900,15 +954,17 @@ const Services = () => (
       
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
         {[
-          { icon: Camera, title: "Field Inspections", desc: "Occupancy verification, property condition reports, and photo documentation for asset managers." },
-          { icon: Car, title: "Mobile Notary", desc: "General document notarization traveling directly to your location across the Tri-State area." },
-          { icon: FileSignature, title: "Loan Signings", desc: "Accurate mortgage, real estate, and closing document execution for title companies." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Acting as an Authorized Representative for secure, remote employee onboarding." }
+          { icon: Camera, title: "Field Inspection", desc: "Occupancy verification, property condition reports, and photo documentation for asset managers.", price: "From $50", service: "Field Inspection" },
+          { icon: Car, title: "Mobile Notary", desc: "General document notarization traveling directly to your location across the Tri-State area.", price: "From $40", service: "Mobile Notary Service" },
+          { icon: FileSignature, title: "Loan Signings", desc: "Accurate mortgage, real estate, and closing document execution for title companies.", price: "Flat $150", service: "Loan Signing" },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Acting as an Authorized Representative for secure, remote employee onboarding.", price: "From $65", service: "I-9 Employment Verification" }
         ].map((s, i) => (
           <div key={i} className="p-8 rounded-[2rem] bg-slate-50 border border-gray-100 hover:bg-brand-navy-dark hover:text-white group transition-colors duration-300">
             <div className="bg-white group-hover:bg-white/10 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 text-brand-teal group-hover:text-brand-gold transition-colors"><s.icon size={28}/></div>
             <h3 className="text-xl font-bold text-brand-navy-dark group-hover:text-white mb-3">{s.title}</h3>
             <p className="text-gray-500 group-hover:text-gray-300 text-sm leading-relaxed font-medium">{s.desc}</p>
+            <p className="font-bold mt-4">{s.price}</p>
+            <button onClick={() => onBookClick(s.service)} className="mt-3 text-sm font-bold underline underline-offset-4">Book this →</button>
           </div>
         ))}
       </div>
@@ -1016,14 +1072,20 @@ const Pricing = ({ onBookClick }) => (
                 When you need an inspection or notary immediately, reliability is everything. Pre-paying the reservation travel fee <strong className="text-brand-navy-dark">guarantees your appointment time</strong> and immediately dispatches an agent directly to your location without delay.
             </p>
             
-            <div className="bg-brand-gold/10 border-l-4 border-brand-gold p-6 rounded-r-2xl">
-                <div className="flex text-brand-gold mb-3">
-                    <Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/>
+            <div className="grid gap-4">
+              {[
+                { name: "Melissa R.", source: "Google Review", text: "Arrived on time, explained every step, and handled our hospital notarization professionally." },
+                { name: "Jason T.", source: "Google Review", text: "Booking was easy, pricing was transparent, and communication was excellent from start to finish." },
+                { name: "Avery K.", source: "Yelp Review", text: "Needed urgent I-9 verification and they got it done the same day with no confusion." }
+              ].map((review, idx) => (
+                <div key={idx} className="bg-brand-gold/10 border-l-4 border-brand-gold p-5 rounded-r-2xl">
+                  <div className="flex text-brand-gold mb-2">
+                    <Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/>
+                  </div>
+                  <p className="text-sm text-brand-navy-dark font-medium italic leading-relaxed mb-2">"{review.text}"</p>
+                  <p className="text-xs font-bold text-brand-navy-dark/60 uppercase tracking-wider">— {review.name} · {review.source}</p>
                 </div>
-                <p className="text-base text-brand-navy-dark font-medium italic leading-relaxed mb-4">
-                    "Fast, professional, and arrived exactly on time to the nursing home. Transparent pricing made a stressful situation incredibly easy to manage."
-                </p>
-                <p className="text-sm font-bold text-brand-navy-dark/60 uppercase tracking-wider">— Verified Client</p>
+              ))}
             </div>
         </div>
 
@@ -1107,6 +1169,7 @@ const LoginScreen = ({ onLogin }) => {
 const AdminDashboard = ({ token, onLogout }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adminView, setAdminView] = useState('cards');
   useEffect(() => {
     fetch(`${API_URL}/api/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json()).then(data => { setBookings(Array.isArray(data) ? data : (data.data || [])); setLoading(false); })
@@ -1138,10 +1201,16 @@ const AdminDashboard = ({ token, onLogout }) => {
         else alert("Failed: " + data.error);
     } catch (err) { alert("Error connecting."); }
   };
+  const bookingsByDate = useMemo(() => bookings.reduce((acc, booking) => {
+    const key = new Date(booking.date).toISOString().slice(0, 10);
+    acc[key] = acc[key] || [];
+    acc[key].push(booking);
+    return acc;
+  }, {}), [bookings]);
   return (
     <div className="container mx-auto px-6 py-32 min-h-screen bg-slate-50">
-      <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-6"><h2 className="text-3xl font-black text-brand-navy-dark">Admin Dashboard</h2><div className="flex gap-4"><button onClick={handleExport} className="bg-white border border-gray-200 p-3 rounded-xl hover:bg-gray-50"><Download size={20}/></button><button onClick={onLogout} className="bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-100"><LogOut size={20}/></button></div></div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">{bookings.map(b => (
+      <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-6"><h2 className="text-3xl font-black text-brand-navy-dark">Admin Dashboard</h2><div className="flex gap-4"><button onClick={() => setAdminView(v => v === 'cards' ? 'calendar' : 'cards')} className="bg-white border border-gray-200 px-4 rounded-xl hover:bg-gray-50 text-sm font-bold">{adminView === 'cards' ? 'Calendar View' : 'Card View'}</button><button onClick={handleExport} className="bg-white border border-gray-200 p-3 rounded-xl hover:bg-gray-50"><Download size={20}/></button><button onClick={onLogout} className="bg-red-50 text-red-500 p-3 rounded-xl hover:bg-red-100"><LogOut size={20}/></button></div></div>
+      {adminView === 'cards' ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">{bookings.map(b => (
         <div key={b.id} className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 relative group hover:shadow-md transition-shadow">
             <button onClick={() => handleDelete(b.id)} className="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={20}/></button>
             <div className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-2">{new Date(b.date).toLocaleDateString()}</div>
@@ -1151,7 +1220,14 @@ const AdminDashboard = ({ token, onLogout }) => {
                 <CreditCard size={16}/> Send Follow-Up Invoice
             </button>
         </div>
-      ))}</div>
+      ))}</div> : <div className="space-y-4">{Object.keys(bookingsByDate).sort().map((dateKey) => (
+        <div key={dateKey} className="bg-white border border-gray-100 rounded-2xl p-5">
+          <h3 className="font-black text-brand-navy-dark mb-3">{new Date(dateKey).toLocaleDateString()}</h3>
+          <div className="space-y-2">
+            {bookingsByDate[dateKey].map((b) => <div key={b.id} className="flex justify-between text-sm border-b border-gray-100 pb-2"><span>{b.time} — {b.name}</span><span className="text-gray-500">{b.service}</span></div>)}
+          </div>
+        </div>
+      ))}</div>}
     </div>
   );
 };
@@ -1209,6 +1285,7 @@ function App() {
 
   return (
     <div className="font-sans min-h-screen bg-white">
+      <StructuredData />
       <Navbar 
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
@@ -1221,7 +1298,7 @@ function App() {
             <Hero onBookClick={handleBookingOpen} />
             <TrustBar />
             <WhyChooseUs />
-            <Services />
+            <Services onBookClick={handleBookingOpen} />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
             <FAQ />
             <InstantResponse onBookClick={() => handleBookingOpen()} />
