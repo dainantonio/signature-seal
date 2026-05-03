@@ -21,6 +21,14 @@ const SITE_URL = "https://signaturesealnotaries.com";
 const PHONE_NUMBER = "(304) 982-4165"; 
 const PHONE_LINK = "tel:+13049824165"; 
 
+const FAQ_ITEMS = [
+  { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to dispatch our agent immediately to your location. State notary fees are collected separately at the appointment ($10/stamp in WV, $5/stamp in OH/KY)." },
+  { q: "What do I need to bring?", a: "You must provide a valid, unexpired government-issued photo ID (Driver's License, State ID, or Passport). All signers must be physically present." },
+  { q: "Can you come to a hospital or nursing home?", a: "Yes, we specialize in facility visits. We frequently visit local hospitals, assisted living facilities, and rehabilitation centers. Please ensure the signer is alert, aware of what they are signing, and has valid ID." },
+  { q: "Do you offer same-day service?", a: "Yes! We offer same-day, after-hours, and weekend appointments subject to availability. Call us immediately for urgent requests." },
+  { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an Authorized Representative service, not a notarial act. We charge a flat fee for this service." },
+];
+
 // --- SAFE FETCH HELPER ---
 const safeFetch = async (url, options) => {
   try {
@@ -83,6 +91,36 @@ const QRModal = ({ isOpen, onClose }) => {
             </div>
         </div>
     );
+};
+
+
+const StructuredData = () => {
+  const businessSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "Signature Seal Notary",
+    url: SITE_URL,
+    telephone: "+1-304-982-4165",
+    areaServed: ["Huntington, WV", "Ashland, KY", "Proctorville, OH"],
+    serviceType: ["Mobile Notary", "I-9 Verification", "Field Inspection"],
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ_ITEMS.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+    </>
+  );
 };
 
 // Fixed Mobile Action Bar (Zero Friction CTA)
@@ -222,20 +260,13 @@ const BackToTop = () => {
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   
-  const faqs = [
-    { q: "How much does a mobile notary cost?", a: "We charge a standard Travel Reservation Fee ($40 base) to dispatch our agent immediately to your location. State notary fees are collected separately at the appointment ($10/stamp in WV, $5/stamp in OH/KY)." },
-    { q: "What do I need to bring?", a: "You must provide a valid, unexpired government-issued photo ID (Driver's License, State ID, or Passport). All signers must be physically present." },
-    { q: "Can you come to a hospital or nursing home?", a: "Yes, we specialize in facility visits. We frequently visit local hospitals, assisted living facilities, and rehabilitation centers. Please ensure the signer is alert, aware of what they are signing, and has valid ID." },
-    { q: "Do you offer same-day service?", a: "Yes! We offer same-day, after-hours, and weekend appointments subject to availability. Call us immediately for urgent requests." },
-    { q: "Is I-9 Verification notarized?", a: "No. Form I-9 verification is an 'Authorized Representative' service, not a notarial act. We charge a flat fee for this service." },
-  ];
 
   return (
     <section id="faq" className="py-24 bg-slate-50 border-t border-gray-200">
       <div className="container mx-auto px-6 max-w-3xl">
         <h2 className="text-3xl md:text-5xl font-serif font-black text-brand-navy-dark text-center mb-12 tracking-tight">Frequently Asked Questions</h2>
         <div className="space-y-4">
-          {faqs.map((faq, i) => (
+          {FAQ_ITEMS.map((faq, i) => (
             <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <button onClick={() => setActiveIndex(activeIndex === i ? null : i)} className="w-full p-6 text-left flex justify-between items-center hover:bg-slate-50 transition-colors focus:outline-none">
                 <span className="font-bold text-brand-navy-dark text-lg pr-4">{faq.q}</span>
@@ -1209,6 +1240,7 @@ function App() {
 
   return (
     <div className="font-sans min-h-screen bg-white">
+      <StructuredData />
       <Navbar 
         onBookClick={() => handleBookingOpen()} 
         onViewChange={setView} 
