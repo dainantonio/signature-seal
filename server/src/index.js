@@ -4,6 +4,7 @@ const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const { Resend } = require('resend');
+const twilio = require('twilio');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -15,6 +16,9 @@ const PORT = process.env.PORT || 3001;
 // Reads from environment variables, falls back to defaults for dev
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin"; 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-123"; 
+if (process.env.NODE_ENV === 'production' && (ADMIN_PASSWORD === 'admin' || JWT_SECRET === 'dev-secret-key-123')) {
+  throw new Error("Security misconfiguration: set strong ADMIN_PASSWORD and JWT_SECRET in production.");
+}
 
 // --- SAFER EMAIL CONFIG ---
 // Only initialize Resend if the key exists, otherwise use a placeholder to prevent crashes
@@ -22,6 +26,10 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY) 
   : null;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'your-email@example.com';
+const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
+const TWILIO_FROM_PHONE = process.env.TWILIO_FROM_PHONE || null;
 
 app.use(cors());
 app.use(express.json());
@@ -57,6 +65,19 @@ const sendConfirmationEmail = async (email, name, service, date, time) => {
     }
   } catch (err) {
     console.error("Email System Fail:", err);
+  }
+};
+
+const sendConfirmationSms = async (phone, date, time) => {
+  if (!twilioClient || !TWILIO_FROM_PHONE || !phone) return;
+  try {
+    await twilioClient.messages.create({
+      body: `Signature Seal: Your appointment is confirmed for ${date} at ${time}. Reply STOP to opt out.`,
+      from: TWILIO_FROM_PHONE,
+      to: phone
+    });
+  } catch (err) {
+    console.error("SMS send failed:", err.message);
   }
 };
 
@@ -153,7 +174,7 @@ app.post('/api/login', (req, res) => {
 
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { name, email, service, date, time, notes, address } = req.body;
+    const { name, email, service, date, time, notes, address, phone } = req.body;
 
     if (!name || !email || !service || !date || !time) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -165,6 +186,7 @@ app.post('/api/bookings', async (req, res) => {
     
     // Send Real Email Notification
     await sendConfirmationEmail(email, name, service, date, time);
+    await sendConfirmationSms(phone, date, time);
     
     console.log(`✅ Booking confirmed for ${name}`);
     res.json(booking);
