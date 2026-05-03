@@ -18,8 +18,6 @@ const getBackendUrl = () => {
 const API_URL = getBackendUrl();
 const CONTACT_EMAIL = "sseal.notary@gmail.com"; 
 const SITE_URL = "https://signaturesealnotaries.com";
-
-// UPDATED PHONE NUMBER
 const PHONE_NUMBER = "(304) 982-4165"; 
 const PHONE_LINK = "tel:+13049824165"; 
 
@@ -93,7 +91,6 @@ const FloatingBookButton = ({ onClick }) => {
 
   useEffect(() => {
     const toggleVisibility = () => {
-      // Hide at the top where Hero buttons are visible, show when scrolled down
       if (window.scrollY > 400) {
         setIsVisible(true);
       } else {
@@ -102,7 +99,7 @@ const FloatingBookButton = ({ onClick }) => {
     };
     
     window.addEventListener("scroll", toggleVisibility);
-    toggleVisibility(); // Check immediately on load
+    toggleVisibility(); 
     
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
@@ -113,7 +110,7 @@ const FloatingBookButton = ({ onClick }) => {
           <PhoneCall size={20} /> Call
       </a>
       <button 
-        onClick={onClick}
+        onClick={() => onClick()}
         className="flex-[0.65] bg-brand-teal text-white font-bold text-[17px] py-4 rounded-2xl shadow-lg shadow-brand-teal/30 flex items-center justify-center gap-2 hover:bg-teal-600 transition-colors active:scale-95"
       >
         <Calendar size={20} /> Book Online
@@ -198,6 +195,29 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   );
 };
 
+const BackToTop = () => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) setVisible(true);
+      else setVisible(false);
+    };
+    window.addEventListener("scroll", toggleVisibility);
+    return () => window.removeEventListener("scroll", toggleVisibility);
+  }, []);
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      className={`fixed bottom-24 right-8 z-30 p-3 bg-brand-navy-dark text-white rounded-full shadow-xl hover:bg-brand-teal transition-all duration-300 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+      title="Back to Top"
+    >
+      <ArrowRight size={24} className="-rotate-90" />
+    </button>
+  );
+};
+
 // --- FAQ SECTION ---
 const FAQ = () => {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -277,7 +297,7 @@ const AIChatWidget = ({ onRecommend }) => {
                   <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
                     <p className="leading-relaxed text-[15px]">{msg.text}</p>
                     {msg.recommendation && msg.recommendation.action === 'book_general' && (
-                      <button onClick={() => { setIsOpen(false); onRecommend(msg.recommendation.service); }} className="w-full bg-brand-navy-dark text-white py-3 rounded-xl font-bold mt-4 shadow-md active:scale-95 transition-transform">Book Now</button>
+                      <button onClick={() => { setIsOpen(false); onRecommend({service: msg.recommendation.service, prefillLocation: msg.recommendation.prefillLocation}); }} className="w-full bg-brand-navy-dark text-white py-3 rounded-xl font-bold mt-4 shadow-md active:scale-95 transition-transform">Book Now</button>
                     )}
                      {msg.recommendation && msg.recommendation.action === 'contact_us' && (
                         <a href={PHONE_LINK} className="block text-center w-full bg-brand-gold text-brand-navy-dark py-3 rounded-xl font-bold mt-4 shadow-md active:scale-95 transition-transform">Call Us Now</a>
@@ -301,26 +321,106 @@ const AIChatWidget = ({ onRecommend }) => {
   );
 };
 
-const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
+const SmartHeroInput = ({ onBookClick }) => {
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+        setIsLoading(true);
+        try {
+            const res = await safeFetch(`${API_URL}/api/recommend`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ query: input }) 
+            });
+            const data = await res.json();
+            // Pass the entire data object to populate the modal
+            onBookClick(data);
+        } catch (err) {
+            console.error("Agentic booking failed:", err);
+            // Fallback to empty modal
+            onBookClick();
+        } finally {
+            setIsLoading(false);
+            setInput('');
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto mt-8 mb-4">
+            <div className="flex flex-col sm:flex-row items-center gap-2 p-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl shadow-2xl">
+                <div className="flex-1 w-full relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gold" size={20} />
+                    <input 
+                        type="text" 
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="E.g., I need a notary at St. Mary's hospital tomorrow..." 
+                        className="w-full bg-white/90 text-brand-navy-dark placeholder-gray-500 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-brand-gold transition-all text-base md:text-lg"
+                        disabled={isLoading}
+                    />
+                </div>
+                <button 
+                    type="submit" 
+                    disabled={isLoading || !input.trim()} 
+                    className="w-full sm:w-auto bg-brand-gold text-brand-navy-dark font-black px-8 py-4 rounded-2xl hover:-translate-y-1 transition-transform shadow-lg disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                >
+                    {isLoading ? <Loader2 className="animate-spin" size={20}/> : 'Instant Book'}
+                </button>
+            </div>
+            <p className="text-sm text-gray-300 mt-3 font-medium text-center">
+                ✨ Our AI instantly sets up your appointment. Try it out.
+            </p>
+        </form>
+    );
+}
+
+const BookingModal = ({ isOpen, onClose, initialData }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ 
     service: '', date: '', time: '', name: '', email: '', 
     street: '', city: '', zip: '', state: 'WV', 
-    notes: '', mileage: 0, signatures: 1
+    notes: '', mileage: 0, signatures: 1, locationType: 'my_location'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [payNow, setPayNow] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  
+  // High Priority Alerts
+  const [priorityAlert, setPriorityAlert] = useState(null);
 
+  // Initialize from Agentic Data
   useEffect(() => { 
-    if (initialService) setFormData(prev => ({ ...prev, service: initialService })); 
-    if (initialData) {
-        setFormData(initialData);
-        setStep(3);
+    if (isOpen) {
+        if (initialData) {
+             setFormData(prev => ({ 
+                 ...prev, 
+                 service: initialData.service || prev.service,
+                 notes: initialData.prefillLocation ? `Requested Location: ${initialData.prefillLocation}` : prev.notes
+             }));
+             
+             // Handle Agentic Alerts
+             if (initialData.prefillLocation && initialData.prefillLocation.toLowerCase().includes('hospital')) {
+                 setPriorityAlert("Please ensure the patient is alert, aware, and possesses a valid physical ID.");
+             } else if (initialData.service && initialData.service.includes('Estate')) {
+                 setPriorityAlert("Remember: Wills and Trusts often require witnesses. We can witness, but additional witnesses may be needed depending on state law.");
+             } else {
+                 setPriorityAlert(null);
+             }
+        }
+        // If returning from stripe cancel, initialData has a specific shape
+        if(initialData && initialData.email){
+             setFormData(initialData);
+             setStep(3);
+        } else {
+             setStep(1); // Default to step 1 on new open
+        }
     }
-  }, [initialService, initialData]);
+  }, [isOpen, initialData]);
 
   // --- AUTO MILEAGE CALCULATION AGENT ---
   const calculateMileage = async () => {
@@ -390,7 +490,8 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
         travelTotal: (base + surcharge).toFixed(2),
         surcharge: surcharge.toFixed(2),
         dueLater, 
-        grandTotal: (base + surcharge + dueLater).toFixed(2)
+        grandTotal: (base + surcharge + dueLater).toFixed(2),
+        isOutofBounds: miles > 25
     };
   }, [formData.service, formData.mileage, formData.signatures, isI9, isInspection, isLoan, formData.state]);
 
@@ -478,6 +579,15 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
 
             {/* Scrollable Body */}
             <div className="p-6 overflow-y-auto flex-1 pb-32 md:pb-6">
+                
+              {/* Agentic Alerts */}
+              {priorityAlert && step === 2 && (
+                  <div className="bg-orange-50 border border-brand-gold p-4 rounded-xl mb-6 flex gap-3 items-start">
+                      <AlertTriangle className="text-brand-orange shrink-0 mt-0.5" size={20}/>
+                      <p className="text-sm font-medium text-brand-navy-dark">{priorityAlert}</p>
+                  </div>
+              )}
+
               {step === 1 && (
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -566,7 +676,8 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+                        {price.isOutofBounds && <div className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-bl-lg">OUT OF BOUNDS</div>}
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Driving Distance</label>
                         <div className="flex items-center gap-3">
                             <input 
@@ -594,7 +705,13 @@ const BookingModal = ({ isOpen, onClose, initialService, initialData }) => {
                     )}
                   </div>
 
-                  <textarea placeholder="Facility name, gate code, room number, or specific instructions..." rows={3} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10 resize-none mt-2" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
+                  {price.isOutofBounds && (
+                      <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm font-medium border border-red-100">
+                          You are located over 25 miles away. We require upfront travel payment to dispatch an agent this distance.
+                      </div>
+                  )}
+
+                  <textarea placeholder={initialData?.prefillLocation ? "Specific instructions (Room number, contact details)..." : "Additional Notes (Gate code, specific instructions, etc)"} rows={3} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-base outline-none focus:border-brand-teal focus:bg-white focus:ring-4 focus:ring-brand-teal/10 resize-none mt-2" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
                 </div>
               )}
 
@@ -711,13 +828,11 @@ const Hero = ({ onBookClick }) => (
             <span className="hidden md:inline text-gray-600">•</span>
             <span className="flex items-center gap-2"><Car size={18}/> On-Site Service</span>
         </div>
-        
-        {/* Value Proposition */}
-        <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 max-w-3xl mx-auto font-medium leading-relaxed">
-          Fast, reliable, and professional on-site inspections and notarizations across the Tri-State area. I provide property inspections, occupancy verification, photo documentation, and mobile notary services with accuracy, speed, and clear communication every step of the way.
-        </p>
 
-        <p className="text-lg md:text-xl text-white font-bold mb-10">
+        {/* AGENTIC INPUT */}
+        <SmartHeroInput onBookClick={onBookClick} />
+
+        <p className="text-lg md:text-xl text-white font-bold mb-10 mt-6">
           Need dependable local coverage? Let’s get it done right the first time.
         </p>
         
@@ -726,9 +841,6 @@ const Hero = ({ onBookClick }) => (
           <a href={PHONE_LINK} className="bg-brand-gold text-brand-navy-dark font-black px-8 py-4 md:py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-gold/20 text-base md:text-lg flex items-center justify-center gap-3">
             <PhoneCall size={22} /> Call for Immediate Dispatch
           </a>
-          <button onClick={() => onBookClick()} className="bg-brand-teal text-white font-bold px-8 py-4 md:py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-teal/20 text-base md:text-lg flex items-center justify-center gap-3">
-            <Calendar size={22} /> Request Service Today
-          </button>
         </div>
       </motion.div>
     </div>
@@ -892,7 +1004,7 @@ const Pricing = ({ onBookClick }) => (
             </div>
           </div>
           
-          <button onClick={() => onBookClick('Mobile Notary Service')} className="w-full py-5 rounded-2xl bg-brand-navy-dark text-white font-black hover:bg-brand-teal transition-colors text-lg shadow-[0_10px_20px_rgba(29,45,62,0.2)] active:scale-95">
+          <button onClick={() => onBookClick()} className="w-full py-5 rounded-2xl bg-brand-navy-dark text-white font-black hover:bg-brand-teal transition-colors text-lg shadow-[0_10px_20px_rgba(29,45,62,0.2)] active:scale-95">
               Book Now to Calculate Exact Price
           </button>
         </div>
@@ -1056,7 +1168,21 @@ function App() {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false); 
   const [restoredData, setRestoredData] = useState(null);
 
-  const handleBookingOpen = (service = null) => { if (service) setPreSelectedService(service); setIsBookingOpen(true); };
+  // Updated to handle both direct service strings AND agentic objects
+  const handleBookingOpen = (agenticData = null) => { 
+      if (typeof agenticData === 'string') {
+           setPreSelectedService(agenticData);
+           setRestoredData(null);
+      } else if (agenticData && typeof agenticData === 'object') {
+           setPreSelectedService(agenticData.service || null);
+           setRestoredData(agenticData); // Pass the whole object down
+      } else {
+           setPreSelectedService(null);
+           setRestoredData(null);
+      }
+      setIsBookingOpen(true); 
+  };
+  
   const handleLogin = (token) => { localStorage.setItem('adminToken', token); setAdminToken(token); };
   const handleLogout = () => { localStorage.removeItem('adminToken'); setAdminToken(null); setView('home'); };
 
@@ -1092,14 +1218,14 @@ function App() {
       <main>
         {view === 'home' ? (
           <>
-            <Hero onBookClick={() => handleBookingOpen()} />
+            <Hero onBookClick={handleBookingOpen} />
             <TrustBar />
             <WhyChooseUs />
             <Services />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
             <FAQ />
             <InstantResponse onBookClick={() => handleBookingOpen()} />
-            <AIChatWidget onRecommend={(service) => handleBookingOpen(service)} />
+            <AIChatWidget onRecommend={(data) => handleBookingOpen(data)} />
           </>
         ) : (!adminToken ? <LoginScreen onLogin={handleLogin} /> : <AdminDashboard token={adminToken} onLogout={handleLogout} />)}
       </main>
