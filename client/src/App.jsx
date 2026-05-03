@@ -160,6 +160,12 @@ const FloatingBookButton = ({ onClick }) => {
 const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const openSlots = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 6;
+    if (hour < 17) return 4;
+    return 2;
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -195,6 +201,7 @@ const Navbar = ({ onBookClick, onViewChange, onQRClick }) => {
                   <PhoneCall size={20} className={scrolled ? 'text-brand-teal' : 'text-brand-gold'} /> {PHONE_NUMBER}
               </a>
               <button onClick={() => onBookClick()} className={`font-bold px-8 py-3.5 rounded-full transition-all duration-300 hover:-translate-y-0.5 text-sm uppercase tracking-wide ${scrolled ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/30' : 'bg-white text-brand-navy-dark shadow-xl'}`}>Book Now</button>
+              <span className="text-xs font-bold flex items-center gap-1 text-emerald-500"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>{openSlots} slots open</span>
           </div>
         </div>
       </div>
@@ -311,6 +318,17 @@ const AIChatWidget = ({ onRecommend }) => {
       setMessages(prev => [...prev, { role: 'assistant', text: data.reasoning, recommendation: data }]);
     } catch (err) { setMessages(prev => [...prev, { role: 'assistant', text: "I'm having trouble connecting. Please use the 'Book Now' button." }]); } finally { setIsLoading(false); }
   };
+  const quickPrompts = [
+    "I need a notary today",
+    "Property inspection quote",
+    "Loan signing info",
+    "I-9 for new hire"
+  ];
+  const runQuickPrompt = async (prompt) => {
+    setInput(prompt);
+    const fakeEvent = { preventDefault: () => {} };
+    setTimeout(() => handleSubmit(fakeEvent), 0);
+  };
 
   return (
     <div className="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-40 flex flex-col items-end font-sans pb-[env(safe-area-inset-bottom)]">
@@ -323,6 +341,9 @@ const AIChatWidget = ({ onRecommend }) => {
               <button onClick={() => setIsOpen(false)} className="ml-auto bg-white/10 p-2 rounded-full hover:bg-white/20 transition active:scale-95"><X size={16} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
+              <div className="flex flex-wrap gap-2">
+                {quickPrompts.map((prompt) => <button key={prompt} onClick={() => runQuickPrompt(prompt)} className="text-xs bg-white border border-gray-200 rounded-full px-3 py-1.5 hover:border-brand-teal">{prompt}</button>)}
+              </div>
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-brand-teal text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-700 rounded-bl-none'}`}>
@@ -827,12 +848,13 @@ const Hero = ({ onBookClick }) => (
   <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-brand-navy-dark">
     {/* Background Image & Overlay */}
     <div className="absolute inset-0 z-0">
-      <img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070" alt="Executive Notary Background" className="w-full h-full object-cover scale-105 opacity-30 mix-blend-overlay" />
+      <img src="/certificate.png" alt="Signature Seal Notary credentials" className="w-full h-full object-cover scale-105 opacity-25 mix-blend-overlay" />
       <div className="absolute inset-0 bg-gradient-to-b from-brand-navy-dark/90 via-brand-navy-dark/80 to-brand-navy-dark"></div>
     </div>
 
     <div className="container mx-auto px-4 relative z-10 pt-32 md:pt-24 pb-16">
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-5xl mx-auto text-center">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+        <div className="text-center lg:text-left">
         
         {/* SEO Location Tag */}
         <div className="inline-flex items-center flex-wrap justify-center gap-2 px-5 py-2.5 rounded-full bg-brand-gold/10 text-brand-gold text-xs font-bold uppercase tracking-widest mb-6 border border-brand-gold/20 backdrop-blur-sm">
@@ -867,6 +889,12 @@ const Hero = ({ onBookClick }) => (
           <a href={PHONE_LINK} className="bg-brand-gold text-brand-navy-dark font-black px-8 py-4 md:py-5 rounded-2xl hover:-translate-y-1 transition-transform shadow-xl shadow-brand-gold/20 text-base md:text-lg flex items-center justify-center gap-3">
             <PhoneCall size={22} /> Call for Immediate Dispatch
           </a>
+        </div>
+        </div>
+        <div className="bg-white/10 border border-white/20 rounded-3xl p-6 backdrop-blur-sm">
+          <img src="/certificate.png" alt="Notary headshot and credential card" className="rounded-2xl w-full h-64 object-cover mb-4" />
+          <p className="text-white font-bold">Commission No: WV-NS-2026-0142</p>
+          <p className="text-brand-gold text-sm font-semibold">NNA Member • E&O Insured • Background Screened</p>
         </div>
       </motion.div>
     </div>
@@ -911,7 +939,7 @@ const WhyChooseUs = () => (
   </section>
 );
 
-const Services = () => (
+const Services = ({ onBookClick }) => (
   <section id="services" className="py-24 bg-white relative border-t border-gray-100">
     <div className="container mx-auto px-6 max-w-6xl">
       <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -926,15 +954,17 @@ const Services = () => (
       
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
         {[
-          { icon: Camera, title: "Field Inspections", desc: "Occupancy verification, property condition reports, and photo documentation for asset managers." },
-          { icon: Car, title: "Mobile Notary", desc: "General document notarization traveling directly to your location across the Tri-State area." },
-          { icon: FileSignature, title: "Loan Signings", desc: "Accurate mortgage, real estate, and closing document execution for title companies." },
-          { icon: Briefcase, title: "I-9 Verification", desc: "Acting as an Authorized Representative for secure, remote employee onboarding." }
+          { icon: Camera, title: "Field Inspection", desc: "Occupancy verification, property condition reports, and photo documentation for asset managers.", price: "From $50", service: "Field Inspection" },
+          { icon: Car, title: "Mobile Notary", desc: "General document notarization traveling directly to your location across the Tri-State area.", price: "From $40", service: "Mobile Notary Service" },
+          { icon: FileSignature, title: "Loan Signings", desc: "Accurate mortgage, real estate, and closing document execution for title companies.", price: "Flat $150", service: "Loan Signing" },
+          { icon: Briefcase, title: "I-9 Verification", desc: "Acting as an Authorized Representative for secure, remote employee onboarding.", price: "From $65", service: "I-9 Employment Verification" }
         ].map((s, i) => (
           <div key={i} className="p-8 rounded-[2rem] bg-slate-50 border border-gray-100 hover:bg-brand-navy-dark hover:text-white group transition-colors duration-300">
             <div className="bg-white group-hover:bg-white/10 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 text-brand-teal group-hover:text-brand-gold transition-colors"><s.icon size={28}/></div>
             <h3 className="text-xl font-bold text-brand-navy-dark group-hover:text-white mb-3">{s.title}</h3>
             <p className="text-gray-500 group-hover:text-gray-300 text-sm leading-relaxed font-medium">{s.desc}</p>
+            <p className="font-bold mt-4">{s.price}</p>
+            <button onClick={() => onBookClick(s.service)} className="mt-3 text-sm font-bold underline underline-offset-4">Book this →</button>
           </div>
         ))}
       </div>
@@ -1268,7 +1298,7 @@ function App() {
             <Hero onBookClick={handleBookingOpen} />
             <TrustBar />
             <WhyChooseUs />
-            <Services />
+            <Services onBookClick={handleBookingOpen} />
             <Pricing onBookClick={(service) => handleBookingOpen(service)} />
             <FAQ />
             <InstantResponse onBookClick={() => handleBookingOpen()} />
